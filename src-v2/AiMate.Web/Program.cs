@@ -52,11 +52,15 @@ builder.Services.AddScoped<AiMate.Core.Services.ILiteLLMService, AiMate.Infrastr
 builder.Services.AddScoped<AiMate.Core.Services.IPersonalityService, AiMate.Infrastructure.Services.PersonalityService>();
 builder.Services.AddScoped<AiMate.Core.Services.IKnowledgeGraphService, AiMate.Infrastructure.Services.KnowledgeGraphService>();
 builder.Services.AddScoped<AiMate.Core.Services.IWorkspaceService, AiMate.Infrastructure.Services.WorkspaceService>();
+builder.Services.AddScoped<AiMate.Core.Services.IAuthService, AiMate.Infrastructure.Services.AuthService>();
+builder.Services.AddScoped<AiMate.Core.Services.IFileUploadService, AiMate.Infrastructure.Services.FileUploadService>();
+builder.Services.AddScoped<AiMate.Core.Services.IEmbeddingService, AiMate.Infrastructure.Services.OpenAIEmbeddingService>();
 
-// Register HttpClient for LiteLLMService
+// Register HttpClient for services that need it
 builder.Services.AddHttpClient<AiMate.Infrastructure.Services.LiteLLMService>();
+builder.Services.AddHttpClient<AiMate.Infrastructure.Services.OpenAIEmbeddingService>();
 
-Log.Information("All services registered successfully");
+Log.Information("All services registered successfully (Phase 5 complete)");
 
 var app = builder.Build();
 

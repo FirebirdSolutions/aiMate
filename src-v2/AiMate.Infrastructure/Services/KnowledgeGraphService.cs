@@ -16,15 +16,18 @@ public class KnowledgeGraphService : IKnowledgeGraphService
 {
     private readonly AiMateDbContext _context;
     private readonly ILiteLLMService _liteLLM;
+    private readonly IEmbeddingService _embeddingService;
     private readonly ILogger<KnowledgeGraphService> _logger;
 
     public KnowledgeGraphService(
         AiMateDbContext context,
         ILiteLLMService liteLLM,
+        IEmbeddingService embeddingService,
         ILogger<KnowledgeGraphService> logger)
     {
         _context = context;
         _liteLLM = liteLLM;
+        _embeddingService = embeddingService;
         _logger = logger;
     }
 
@@ -153,22 +156,8 @@ Conversation:
         string text,
         CancellationToken cancellationToken = default)
     {
-        // In production, use OpenAI embeddings or local embedding model
-        // For now, create a simple hash-based pseudo-embedding (replace this!)
-        // TODO: Integrate with actual embedding API (OpenAI text-embedding-ada-002 or local model)
-
-        _logger.LogWarning("Using placeholder embeddings - integrate real embedding service!");
-
-        // Placeholder: create deterministic 1536-dim vector from text hash
-        var hash = text.GetHashCode();
-        var random = new Random(hash);
-        var embedding = new float[1536];
-        for (int i = 0; i < 1536; i++)
-        {
-            embedding[i] = (float)(random.NextDouble() * 2 - 1); // -1 to 1
-        }
-
-        return embedding;
+        // Use real OpenAI embedding service
+        return await _embeddingService.GenerateEmbeddingAsync(text, cancellationToken);
     }
 
     public async Task<KnowledgeItem> UpsertKnowledgeItemAsync(
