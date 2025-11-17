@@ -226,23 +226,84 @@
 7. **Tier selection** - Free, BYOK, Developer options
 8. **Redux debugging** - All settings state in DevTools
 
-### 🔜 Coming Next (Phase 5)
+---
+
+## Phase 5 Complete - Migrations, Auth, Uploads & Real Embeddings 🚀
+
+### 🚀 Major Features Implemented
+
+#### **Database Migrations**
+- ✅ **InitialCreate Migration** - Complete schema with all tables
+- ✅ **pgvector Extension** - Enabled for vector similarity
+- ✅ **All Tables** - Users, Projects, Workspaces, Conversations, Messages, KnowledgeItems, WorkspaceFiles
+- ✅ **Relationships** - Foreign keys and cascading deletes
+- ✅ **Indexes** - Performance indexes on all key fields
+- ✅ **Vector Index** - ivfflat index for fast similarity search
+- ✅ **Model Snapshot** - EF Core tracking
+
+#### **Authentication System**
+- ✅ **AuthState** - Fluxor state management
+- ✅ **JWT Tokens** - 7-day expiry with HS256 signing
+- ✅ **BCrypt Hashing** - Secure password storage (workFactor: 12)
+- ✅ **Token Persistence** - localStorage integration
+- ✅ **Login/Register UI** - Beautiful MudBlazor tabs
+- ✅ **Token Validation** - Automatic validation and refresh
+- ✅ **Auth Actions** - Login, Register, Logout, CheckAuth, RefreshToken
+- ✅ **Free Tier** - Auto-assigned on registration
+
+#### **File Upload System**
+- ✅ **Local Storage** - Files saved to uploads directory
+- ✅ **Database Tracking** - WorkspaceFiles records
+- ✅ **File Size Limits** - 10MB default (configurable)
+- ✅ **Multiple Files** - Upload up to 5 files at once
+- ✅ **MIME Type Validation** - Supported file types
+- ✅ **FileUploadDialog** - Drag & drop UI component
+- ✅ **Workspace Integration** - Files linked to workspaces
+
+#### **Real Embeddings Integration**
+- ✅ **OpenAI API** - text-embedding-ada-002 integration
+- ✅ **1536 Dimensions** - Standard embedding size
+- ✅ **Batch Generation** - Multiple texts at once
+- ✅ **Fallback Support** - Placeholder when API unavailable
+- ✅ **KnowledgeGraph Updated** - No more placeholder embeddings!
+- ✅ **HTTP Client** - Configured for OpenAI API
+- ✅ **Error Handling** - Graceful degradation
+
+### 📊 Stats
+
+- **Files Created:** 16 new files
+- **Lines of Code:** ~1,800 lines added
+- **Fluxor State Slices:** 5 total (Chat, Workspace, Knowledge, Settings, Auth)
+- **Services:** 10 total (3 new: Auth, FileUpload, Embedding)
+- **Migrations:** 1 complete schema migration
+
+### 🎯 What Works RIGHT NOW
+
+1. **User Registration** - Create account with email/username/password
+2. **Login/Logout** - JWT authentication with token persistence
+3. **File Uploads** - Upload files to workspaces (10MB limit)
+4. **Real Embeddings** - OpenAI vector embeddings (no more placeholders!)
+5. **Database Ready** - Full schema with migrations
+6. **Token Management** - Auto-refresh, validation, expiry
+7. **Secure Passwords** - BCrypt hashing
+8. **Redux Debugging** - Auth state in DevTools
+
+### 🔜 Coming Next (Phase 6)
 
 - [ ] MCP tools integration
-- [ ] File upload system
-- [ ] User authentication implementation
-- [ ] Database migrations
-- [ ] Real OpenAI embeddings integration
 - [ ] Blazor component generator (Developer tier)
-- [ ] API access (Developer tier)
+- [ ] API access layer (Developer tier)
+- [ ] Production deployment guide
+- [ ] Docker Compose for full stack
+- [ ] CI/CD pipeline
 
 ### 🐛 Known Issues / TODOs
 
-- Embeddings use placeholder (need OpenAI API integration)
-- No database persistence yet (schema ready, need migrations)
-- No user auth (entities ready, need implementation)
 - MCP tools defined but not wired up yet
 - Settings persist to localStorage (need backend sync for multi-device)
+- Need to run migrations on first deployment
+- OpenAI API key required for real embeddings (falls back to placeholder)
+- File storage is local (could use S3/Azure Blob in production)
 
 ### 💡 Technical Highlights
 
