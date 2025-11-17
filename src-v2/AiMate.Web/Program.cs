@@ -47,11 +47,15 @@ builder.Services.AddHttpClient();
 // Add localization
 builder.Services.AddLocalization();
 
-// TODO: Add custom services
-// builder.Services.AddScoped<ILocalizationService, LocalizationService>();
-// builder.Services.AddScoped<IChatService, ChatService>();
-// builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
-// builder.Services.AddScoped<IPersonalityService, PersonalityService>();
+// Register our services
+builder.Services.AddScoped<AiMate.Core.Services.ILiteLLMService, AiMate.Infrastructure.Services.LiteLLMService>();
+builder.Services.AddScoped<AiMate.Core.Services.IPersonalityService, AiMate.Infrastructure.Services.PersonalityService>();
+builder.Services.AddScoped<AiMate.Core.Services.IKnowledgeGraphService, AiMate.Infrastructure.Services.KnowledgeGraphService>();
+
+// Register HttpClient for LiteLLMService
+builder.Services.AddHttpClient<AiMate.Infrastructure.Services.LiteLLMService>();
+
+Log.Information("All services registered successfully");
 
 var app = builder.Build();
 
