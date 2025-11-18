@@ -1,0 +1,54 @@
+# Code of Conduct
+
+## Our Pledge
+
+In the spirit of manaakitanga (hospitality and kindness), we pledge to make participation in aiMate a welcoming, respectful, and harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, nationality, personal appearance, race, religion, or sexual identity and orientation.
+
+We're building this for the community. Let's be good to each other.
+
+## Our Standards
+
+**Examples of behaviour that contributes to a positive environment:**
+
+- Being respectful and considerate of differing viewpoints and experiences
+- Giving and gracefully accepting constructive feedback
+- Focusing on what's best for the community
+- Showing empathy towards other community members
+- Using welcoming and inclusive language
+- Being patient with newcomers
+
+**Examples of unacceptable behaviour:**
+
+- Trolling, insulting/derogatory comments, and personal or political attacks
+- Public or private harassment
+- Publishing others' private information without explicit permission
+- Spam or excessive self-promotion
+- Any conduct which could reasonably be considered inappropriate in a professional setting
+
+## Our Responsibilities
+
+Project maintainers are responsible for clarifying the standards of acceptable behaviour and are expected to take appropriate and fair corrective action in response to any instances of unacceptable behaviour.
+
+Project maintainers have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned with this Code of Conduct, or to ban temporarily or permanently any contributor for behaviours they deem inappropriate, threatening, offensive, or harmful.
+
+## Scope
+
+This Code of Conduct applies both within project spaces and in public spaces when an individual is representing the project or its community. Examples include using an official project email address, posting via an official social media account, or acting as an appointed representative at an online or offline event.
+
+## Enforcement
+
+Instances of abusive, harassing, or otherwise unacceptable behaviour may be reported by contacting the project team at conduct@aimate.co.nz. All complaints will be reviewed and investigated and will result in a response that is deemed necessary and appropriate to the circumstances. The project team is obligated to maintain confidentiality with regard to the reporter of an incident.
+
+Project maintainers who do not follow or enforce the Code of Conduct in good faith may face temporary or permanent repercussions as determined by other members of the project's leadership.
+
+## Attribution
+
+This Code of Conduct is adapted from the [Contributor Covenant](https://www.contributor-covenant.org), version 2.1, with modifications to reflect New Zealand values and the aiMate community culture.
+
+## The Bottom Line
+
+**Be kind. Be respectful. We're all here to build something great together.**
+
+If someone's being a jerk, let us know. We'll sort it out.
+
+**Kia kaha** (stay strong) 🇳🇿

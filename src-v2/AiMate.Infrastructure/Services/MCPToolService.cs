@@ -1,4 +1,6 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Web;
 using AiMate.Core.Entities;
 using AiMate.Core.Services;
 using Microsoft.Extensions.Logging;
@@ -11,15 +13,24 @@ namespace AiMate.Infrastructure.Services;
 public class MCPToolService : IMCPToolService
 {
     private readonly ILogger<MCPToolService> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IFileUploadService? _fileUploadService;
+    private readonly IKnowledgeGraphService? _knowledgeService;
     private readonly IDatasetGeneratorService? _datasetGenerator;
     private readonly Dictionary<string, MCPTool> _registeredTools = new();
     private readonly Dictionary<string, Func<Dictionary<string, object>, Task<MCPToolResult>>> _toolExecutors = new();
 
     public MCPToolService(
         ILogger<MCPToolService> logger,
+        IHttpClientFactory httpClientFactory,
+        IFileUploadService? fileUploadService = null,
+        IKnowledgeGraphService? knowledgeService = null,
         IDatasetGeneratorService? datasetGenerator = null)
     {
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
+        _fileUploadService = fileUploadService;
+        _knowledgeService = knowledgeService;
         _datasetGenerator = datasetGenerator;
         RegisterBuiltInTools();
     }
@@ -232,36 +243,86 @@ public class MCPToolService : IMCPToolService
 
     private async Task<MCPToolResult> ExecuteWebSearchAsync(Dictionary<string, object> parameters)
     {
-        // MOCK IMPLEMENTATION: Returns example search results
-        // REAL IMPLEMENTATION OPTIONS:
-        // 1. DuckDuckGo HTML scraping: https://html.duckduckgo.com/html/?q={query}
-        // 2. SerpApi: https://serpapi.com/ (requires API key)
-        // 3. Brave Search API: https://brave.com/search/api/ (requires API key)
         var query = parameters["query"].ToString();
         var maxResults = parameters.ContainsKey("max_results")
             ? Convert.ToInt32(parameters["max_results"])
             : 5;
 
-        await Task.Delay(500); // Simulate API call
-
-        return new MCPToolResult
+        try
         {
-            Success = true,
-            Result = new
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; aiMate/1.0)");
+
+            var encodedQuery = HttpUtility.UrlEncode(query);
+            var url = $"https://html.duckduckgo.com/html/?q={encodedQuery}";
+
+            var startTime = DateTime.UtcNow;
+            var response = await client.GetStringAsync(url);
+            var queryTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+
+            // Parse DuckDuckGo HTML results
+            var results = ParseDuckDuckGoResults(response, maxResults);
+
+            return new MCPToolResult
             {
-                query,
-                results = new[]
+                Success = true,
+                Result = new
                 {
-                    new { title = "Example Result 1", url = "https://example.com/1", snippet = "This is a mock search result for: " + query },
-                    new { title = "Example Result 2", url = "https://example.com/2", snippet = "Another mock result showing web search functionality" }
+                    query,
+                    results = results.Select(r => new
+                    {
+                        title = r.Title,
+                        url = r.Url,
+                        snippet = r.Snippet
+                    }).ToArray()
+                },
+                Metadata = new Dictionary<string, object>
+                {
+                    ["source"] = "DuckDuckGo",
+                    ["query_time_ms"] = queryTime,
+                    ["result_count"] = results.Count
                 }
-            },
-            Metadata = new Dictionary<string, object>
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Web search failed for query: {Query}", query);
+            return new MCPToolResult
             {
-                ["source"] = "DuckDuckGo",
-                ["query_time_ms"] = 500
+                Success = false,
+                Error = $"Web search failed: {ex.Message}"
+            };
+        }
+    }
+
+    private List<(string Title, string Url, string Snippet)> ParseDuckDuckGoResults(string html, int maxResults)
+    {
+        var results = new List<(string, string, string)>();
+
+        try
+        {
+            // Extract result links and snippets using regex
+            var linkPattern = @"<a[^>]+class=""result__a""[^>]+href=""([^""]+)""[^>]*>([^<]+)</a>";
+            var snippetPattern = @"<a[^>]+class=""result__snippet""[^>]*>([^<]+)</a>";
+
+            var linkMatches = Regex.Matches(html, linkPattern);
+            var snippetMatches = Regex.Matches(html, snippetPattern);
+
+            for (int i = 0; i < Math.Min(Math.Min(linkMatches.Count, snippetMatches.Count), maxResults); i++)
+            {
+                var url = HttpUtility.HtmlDecode(linkMatches[i].Groups[1].Value);
+                var title = HttpUtility.HtmlDecode(linkMatches[i].Groups[2].Value);
+                var snippet = HttpUtility.HtmlDecode(snippetMatches[i].Groups[1].Value);
+
+                results.Add((title, url, snippet));
             }
-        };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse DuckDuckGo results, returning empty list");
+        }
+
+        return results;
     }
 
     private async Task<MCPToolResult> ExecuteCodeInterpreterAsync(Dictionary<string, object> parameters)
@@ -300,18 +361,61 @@ public class MCPToolService : IMCPToolService
     {
         var fileId = parameters["file_id"].ToString();
 
-        await Task.Delay(50);
-
-        return new MCPToolResult
+        if (_fileUploadService == null)
         {
-            Success = true,
-            Result = new
+            return new MCPToolResult
             {
-                file_id = fileId,
-                content = "File reading not yet fully implemented. Connect to FileUploadService.",
-                file_type = "text/plain"
+                Success = false,
+                Error = "File upload service not available"
+            };
+        }
+
+        try
+        {
+            if (!Guid.TryParse(fileId, out var fileGuid))
+            {
+                return new MCPToolResult
+                {
+                    Success = false,
+                    Error = "Invalid file ID format"
+                };
             }
-        };
+
+            var fileResult = await _fileUploadService.GetFileAsync(fileGuid);
+
+            if (fileResult == null)
+            {
+                return new MCPToolResult
+                {
+                    Success = false,
+                    Error = $"File not found: {fileId}"
+                };
+            }
+
+            using var reader = new StreamReader(fileResult.Value.Stream);
+            var content = await reader.ReadToEndAsync();
+
+            return new MCPToolResult
+            {
+                Success = true,
+                Result = new
+                {
+                    file_id = fileId,
+                    content = content,
+                    content_type = fileResult.Value.ContentType,
+                    size_bytes = content.Length
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "File reading failed for file: {FileId}", fileId);
+            return new MCPToolResult
+            {
+                Success = false,
+                Error = $"File reading failed: {ex.Message}"
+            };
+        }
     }
 
     private async Task<MCPToolResult> ExecuteKnowledgeSearchAsync(Dictionary<string, object> parameters)
@@ -321,25 +425,56 @@ public class MCPToolService : IMCPToolService
             ? Convert.ToInt32(parameters["limit"])
             : 5;
 
-        await Task.Delay(100);
-
-        return new MCPToolResult
+        if (_knowledgeService == null)
         {
-            Success = true,
-            Result = new
+            return new MCPToolResult
             {
-                query,
-                results = new[]
+                Success = false,
+                Error = "Knowledge service not available"
+            };
+        }
+
+        try
+        {
+            // NOTE: We need userId from context - for now use a placeholder
+            // In production, pass userId through parameters or context
+            var userId = Guid.Empty; // TODO: Get from authenticated user context
+
+            var items = await _knowledgeService.SearchAsync(query, userId, limit);
+
+            return new MCPToolResult
+            {
+                Success = true,
+                Result = new
                 {
-                    new { title = "Knowledge Item 1", content = "Relevant knowledge from your base", relevance = 0.95 }
+                    query,
+                    results = items.Select(item => new
+                    {
+                        id = item.Id,
+                        title = item.Title,
+                        content = item.Content,
+                        tags = item.Tags,
+                        created_at = item.CreatedAt,
+                        relevance = 0.85 // Placeholder - actual relevance would come from vector similarity score
+                    }).ToArray()
+                },
+                Metadata = new Dictionary<string, object>
+                {
+                    ["search_type"] = "semantic",
+                    ["vector_similarity"] = true,
+                    ["result_count"] = items.Count
                 }
-            },
-            Metadata = new Dictionary<string, object>
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Knowledge search failed for query: {Query}", query);
+            return new MCPToolResult
             {
-                ["search_type"] = "semantic",
-                ["vector_similarity"] = true
-            }
-        };
+                Success = false,
+                Error = $"Knowledge search failed: {ex.Message}"
+            };
+        }
     }
 
     private async Task<MCPToolResult> ExecuteDatasetGeneratorAsync(Dictionary<string, object> parameters)
