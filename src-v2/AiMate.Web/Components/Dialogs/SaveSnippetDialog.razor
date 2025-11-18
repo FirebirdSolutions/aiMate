@@ -1,0 +1,109 @@
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudText Typo="Typo.body1">Save this code as a reusable snippet:</MudText>
+
+            <MudTextField @bind-Value="@_name"
+                         Label="Snippet Name"
+                         Variant="Variant.Outlined"
+                         Required="true"
+                         AutoFocus="true"
+                         HelperText="Give your snippet a memorable name"
+                         MaxLength="100" />
+
+            <MudTextField @bind-Value="@_description"
+                         Label="Description (Optional)"
+                         Variant="Variant.Outlined"
+                         Lines="3"
+                         HelperText="What does this code do?"
+                         MaxLength="500" />
+
+            <MudTextField @bind-Value="@_tags"
+                         Label="Tags (Optional)"
+                         Variant="Variant.Outlined"
+                         HelperText="Comma-separated (e.g., algorithm, sorting, utility)"
+                         Placeholder="algorithm, helper, utility"
+                         MaxLength="200" />
+
+            <MudPaper Class="pa-3" Elevation="0" Style="background-color: var(--mud-palette-background-grey);">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-1" />
+                    Code preview ({_codeLines} lines):
+                </MudText>
+                <MudText Typo="Typo.body2" Style="font-family: monospace; max-height: 100px; overflow-y: auto; margin-top: 8px;">
+                    @_codePreview
+                </MudText>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                  Variant="Variant.Filled"
+                  OnClick="Save"
+                  Disabled="@(string.IsNullOrWhiteSpace(_name))"
+                  StartIcon="@Icons.Material.Filled.Save">
+            Save Snippet
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public string Code { get; set; } = string.Empty;
+
+    private string _name = string.Empty;
+    private string _description = string.Empty;
+    private string _tags = string.Empty;
+    private string _codePreview = string.Empty;
+    private int _codeLines = 0;
+
+    protected override void OnInitialized()
+    {
+        // Generate code preview
+        var lines = Code.Split('\n');
+        _codeLines = lines.Length;
+        _codePreview = lines.Length > 5
+            ? string.Join("\n", lines.Take(5)) + "\n..."
+            : Code;
+
+        // Try to extract a name from the code (first non-comment, non-empty line)
+        foreach (var line in lines)
+        {
+            var trimmed = line.Trim();
+            if (!string.IsNullOrEmpty(trimmed) && !trimmed.StartsWith("//"))
+            {
+                // Take first 50 chars as default name
+                _name = trimmed.Length > 50 ? trimmed.Substring(0, 50) + "..." : trimmed;
+                break;
+            }
+        }
+
+        if (string.IsNullOrEmpty(_name))
+        {
+            _name = "Untitled Snippet";
+        }
+    }
+
+    private void Save()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            Snackbar.Add("Name is required", Severity.Warning);
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok((_name, _description, _tags)));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

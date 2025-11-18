@@ -48,6 +48,11 @@ public class User
     public List<ApiKey> ApiKeys { get; set; } = new();
 
     /// <summary>
+    /// User's code snippets/artifacts
+    /// </summary>
+    public List<CodeSnippet> CodeSnippets { get; set; } = new();
+
+    /// <summary>
     /// API keys for BYOK tier (encrypted)
     /// </summary>
     public Dictionary<string, string> EncryptedApiKeys { get; set; } = new();

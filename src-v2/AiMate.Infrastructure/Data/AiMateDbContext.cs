@@ -22,6 +22,7 @@ public class AiMateDbContext : DbContext
     public DbSet<KnowledgeItem> KnowledgeItems => Set<KnowledgeItem>();
     public DbSet<WorkspaceFile> WorkspaceFiles => Set<WorkspaceFile>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+    public DbSet<CodeSnippet> CodeSnippets => Set<CodeSnippet>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +54,11 @@ public class AiMateDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasMany(e => e.ApiKeys)
+                .WithOne(e => e.User)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.CodeSnippets)
                 .WithOne(e => e.User)
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -161,6 +167,17 @@ public class AiMateDbContext : DbContext
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => new { e.UserId, e.IsRevoked });
+        });
+
+        // CodeSnippet configuration
+        modelBuilder.Entity<CodeSnippet>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.WorkspaceId);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => new { e.UserId, e.Language });
+            entity.HasIndex(e => new { e.IsPublic, e.Language });
         });
     }
 }

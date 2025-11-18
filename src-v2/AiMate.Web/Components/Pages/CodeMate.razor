@@ -1,66 +1,90 @@
 @page "/codemate"
 @using AiMate.Core.Interfaces
+@using AiMate.Core.Entities
 @inject ICodeExecutionService CodeExecution
+@inject ICodeSnippetService SnippetService
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <PageTitle>CodeMate - Live C# Development</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-2">
-        <MudIcon Icon="@Icons.Material.Filled.Code" Class="mr-2" />
-        CodeMate - Live C# Development
-    </MudText>
-
-    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-        Write and execute C# code in real-time. Perfect for testing snippets, algorithms, and building aiMate plugins.
-    </MudText>
+<MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">
+                <MudIcon Icon="@Icons.Material.Filled.Code" Class="mr-2" />
+                CodeMate - Live C# Development
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Professional C# editor with VS Code experience. Save as artifacts for reuse.
+            </MudText>
+        </div>
+        <div class="d-flex gap-2">
+            <MudChip Size="Size.Small" Color="Color.Primary">C# 12</MudChip>
+            <MudChip Size="Size.Small" Color="Color.Info">.NET 9</MudChip>
+            <MudChip Size="Size.Small" Color="Color.Success">Monaco Editor</MudChip>
+        </div>
+    </div>
 
     <MudGrid>
-        <MudItem xs="12" lg="6">
+        <MudItem xs="12" lg="@(_showSnippets ? 9 : 12)">
             <MudPaper Class="pa-4" Elevation="2">
                 <div class="d-flex justify-space-between align-center mb-3">
                     <MudText Typo="Typo.h6">Code Editor</MudText>
-                    <MudChip Size="Size.Small" Color="Color.Primary">C# 12 + .NET 9</MudChip>
+                    <div class="d-flex gap-2">
+                        <MudButton Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  StartIcon="@Icons.Material.Filled.PlayArrow"
+                                  OnClick="@RunCode"
+                                  Disabled="@_isExecuting"
+                                  Size="Size.Small">
+                            @(_isExecuting ? "Running..." : "Run")
+                        </MudButton>
+
+                        <MudButton Variant="Variant.Outlined"
+                                  StartIcon="@Icons.Material.Filled.Save"
+                                  OnClick="@OpenSaveDialog"
+                                  Size="Size.Small"
+                                  Disabled="@_isExecuting">
+                            Save Snippet
+                        </MudButton>
+
+                        <MudButton Variant="Variant.Outlined"
+                                  StartIcon="@Icons.Material.Filled.Folder"
+                                  OnClick="@ToggleSnippets"
+                                  Size="Size.Small">
+                            @(_showSnippets ? "Hide" : "My Snippets")
+                        </MudButton>
+
+                        <MudButton Variant="Variant.Outlined"
+                                  StartIcon="@Icons.Material.Filled.FormatAlignLeft"
+                                  OnClick="@FormatCode"
+                                  Size="Size.Small"
+                                  Disabled="@_isExecuting">
+                            Format
+                        </MudButton>
+
+                        <MudButton Variant="Variant.Outlined"
+                                  StartIcon="@Icons.Material.Filled.Clear"
+                                  OnClick="@ClearCode"
+                                  Size="Size.Small"
+                                  Disabled="@_isExecuting">
+                            Clear
+                        </MudButton>
+                    </div>
                 </div>
 
-                <MudTextField @bind-Value="@_code"
-                             Label="C# Code"
-                             Variant="Variant.Outlined"
-                             Lines="20"
-                             Immediate="false"
-                             Class="code-editor mb-3" />
+                @* Monaco Editor Container *@
+                <div id="monaco-editor-container" style="height: 600px; border: 1px solid var(--mud-palette-divider); border-radius: 4px;"></div>
 
-                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-3">
-                    Available namespaces: System, System.Linq, System.Collections.Generic, System.Text, System.Text.Json, System.Net.Http
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+                    💡 Press Ctrl+S to quick-save snippet | Available: System, System.Linq, System.Collections.Generic, System.Text, System.Text.Json
                 </MudText>
-
-                <div class="d-flex gap-2">
-                    <MudButton Variant="Variant.Filled"
-                              Color="Color.Primary"
-                              StartIcon="@Icons.Material.Filled.PlayArrow"
-                              OnClick="@RunCode"
-                              Disabled="@_isExecuting">
-                        @(_isExecuting ? "Running..." : "Run Code")
-                    </MudButton>
-
-                    <MudButton Variant="Variant.Outlined"
-                              StartIcon="@Icons.Material.Filled.Clear"
-                              OnClick="@ClearCode"
-                              Disabled="@_isExecuting">
-                        Clear
-                    </MudButton>
-
-                    <MudButton Variant="Variant.Outlined"
-                              StartIcon="@Icons.Material.Filled.ContentCopy"
-                              OnClick="@LoadExample">
-                        Load Example
-                    </MudButton>
-                </div>
             </MudPaper>
-        </MudItem>
 
-        <MudItem xs="12" lg="6">
-            <MudPaper Class="pa-4" Elevation="2" Style="min-height: 600px;">
+            @* Output Section *@
+            <MudPaper Class="pa-4 mt-4" Elevation="2">
                 <MudText Typo="Typo.h6" Class="mb-3">
                     Output
                     @if (_result != null)
@@ -68,7 +92,7 @@
                         <MudChip Size="Size.Small"
                                 Color="@(_result.Success ? Color.Success : Color.Error)"
                                 Class="ml-2">
-                            @(_result.Success ? "Success" : "Failed")
+                            @(_result.Success ? "✓ Success" : "✗ Failed")
                         </MudChip>
                     }
                 </MudText>
@@ -78,7 +102,7 @@
                     @if (_result.Success)
                     {
                         <MudAlert Severity="Severity.Success" Class="mb-3" Dense="true">
-                            ✓ Executed in @_result.ExecutionTime.TotalMilliseconds ms
+                            Executed in @_result.ExecutionTime.TotalMilliseconds ms
                         </MudAlert>
 
                         @if (!string.IsNullOrEmpty(_result.Output))
@@ -87,7 +111,7 @@
                                 <MudIcon Icon="@Icons.Material.Filled.Terminal" Size="Size.Small" Class="mr-1" />
                                 Console Output:
                             </MudText>
-                            <MudPaper Class="pa-3 mb-3" Elevation="0" Style="background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Courier New', monospace; overflow-x: auto;">
+                            <MudPaper Class="pa-3 mb-3" Elevation="0" Style="background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', monospace; max-height: 300px; overflow-y: auto;">
                                 <pre style="margin: 0; white-space: pre-wrap;">@_result.Output</pre>
                             </MudPaper>
                         }
@@ -98,32 +122,25 @@
                                 <MudIcon Icon="@Icons.Material.Filled.KeyboardReturn" Size="Size.Small" Class="mr-1" />
                                 Return Value:
                             </MudText>
-                            <MudPaper Class="pa-3" Elevation="0" Style="background: #1e1e1e; color: #4ec9b0; font-family: 'Consolas', 'Courier New', monospace;">
+                            <MudPaper Class="pa-3" Elevation="0" Style="background: #1e1e1e; color: #4ec9b0; font-family: 'Consolas', monospace;">
                                 <pre style="margin: 0;">@_result.ReturnValue</pre>
                             </MudPaper>
-                        }
-
-                        @if (string.IsNullOrEmpty(_result.Output) && _result.ReturnValue == null)
-                        {
-                            <MudText Color="Color.Secondary">
-                                Code executed successfully with no output or return value.
-                            </MudText>
                         }
                     }
                     else
                     {
                         <MudAlert Severity="Severity.Error" Class="mb-3">
-                            ✗ Compilation/Execution Failed
+                            Compilation/Execution Failed
                         </MudAlert>
 
-                        <MudPaper Class="pa-3 mb-3" Elevation="0" Style="background: #3c1414; color: #f48771; font-family: 'Consolas', 'Courier New', monospace; overflow-x: auto;">
+                        <MudPaper Class="pa-3 mb-3" Elevation="0" Style="background: #3c1414; color: #f48771; font-family: 'Consolas', monospace; max-height: 300px; overflow-y: auto;">
                             <pre style="margin: 0; white-space: pre-wrap;">@_result.Errors</pre>
                         </MudPaper>
 
                         @if (_result.Diagnostics.Any())
                         {
                             <MudText Typo="Typo.subtitle2" Class="mb-2">Diagnostics:</MudText>
-                            @foreach (var diag in _result.Diagnostics.Take(5))
+                            @foreach (var diag in _result.Diagnostics.Take(10))
                             {
                                 <MudChip Size="Size.Small"
                                         Color="@(diag.Severity == DiagnosticSeverity.Error ? Color.Error : Color.Warning)"
@@ -131,59 +148,101 @@
                                     Line @diag.Line: @diag.Message
                                 </MudChip>
                             }
-                            @if (_result.Diagnostics.Count > 5)
-                            {
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                    ... and @(_result.Diagnostics.Count - 5) more
-                                </MudText>
-                            }
                         }
                     }
                 }
                 else
                 {
-                    <div class="d-flex flex-column align-center justify-center" style="height: 500px;">
+                    <div style="padding: 40px; text-align: center;">
                         <MudIcon Icon="@Icons.Material.Filled.Code" Size="Size.Large" Color="Color.Secondary" Class="mb-3" />
-                        <MudText Typo="Typo.body1" Color="Color.Secondary" Align="Align.Center">
-                            Write C# code and click "Run Code" to see output here
-                        </MudText>
-                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
-                            Try the example to get started!
+                        <MudText Typo="Typo.body1" Color="Color.Secondary">
+                            Write C# code and click "Run" to see output
                         </MudText>
                     </div>
                 }
             </MudPaper>
         </MudItem>
-    </MudGrid>
 
-    <MudPaper Class="pa-4 mt-4" Elevation="1">
-        <MudText Typo="Typo.h6" Class="mb-2">
-            <MudIcon Icon="@Icons.Material.Filled.Lightbulb" Class="mr-1" />
-            Tips
-        </MudText>
-        <MudList Dense="true">
-            <MudListItem Icon="@Icons.Material.Filled.Check">
-                Use <code>Console.WriteLine()</code> for output
-            </MudListItem>
-            <MudListItem Icon="@Icons.Material.Filled.Check">
-                Add <code>return</code> statement to see return values
-            </MudListItem>
-            <MudListItem Icon="@Icons.Material.Filled.Check">
-                Use System.Linq for LINQ queries (e.g., <code>Enumerable.Range(1, 10).Sum()</code>)
-            </MudListItem>
-            <MudListItem Icon="@Icons.Material.Filled.Check">
-                Perfect for testing algorithms before using them in plugins
-            </MudListItem>
-            <MudListItem Icon="@Icons.Material.Filled.Security">
-                Code runs in a sandboxed environment (no file system access, 30s timeout)
-            </MudListItem>
-        </MudList>
-    </MudPaper>
+        @* Snippets Sidebar *@
+        @if (_showSnippets)
+        {
+            <MudItem xs="12" lg="3">
+                <MudPaper Class="pa-4" Elevation="2" Style="height: 100%; max-height: 800px; overflow-y: auto;">
+                    <div class="d-flex justify-space-between align-center mb-3">
+                        <MudText Typo="Typo.h6">My Snippets</MudText>
+                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                      Size="Size.Small"
+                                      OnClick="@LoadSnippets" />
+                    </div>
+
+                    <MudTextField @bind-Value="@_searchQuery"
+                                 Placeholder="Search snippets..."
+                                 Variant="Variant.Outlined"
+                                 Adornment="Adornment.Start"
+                                 AdornmentIcon="@Icons.Material.Filled.Search"
+                                 Immediate="true"
+                                 OnKeyUp="@SearchSnippets"
+                                 Margin="Margin.Dense"
+                                 Class="mb-3" />
+
+                    @if (_isLoadingSnippets)
+                    {
+                        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                    }
+                    else if (!_snippets.Any())
+                    {
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center" Class="mt-4">
+                            No snippets yet. Save your first one!
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudList Dense="true">
+                            @foreach (var snippet in _snippets)
+                            {
+                                <MudListItem OnClick="@(() => LoadSnippet(snippet))"
+                                            Class="snippet-list-item">
+                                    <div class="d-flex justify-space-between align-center">
+                                        <div style="flex: 1; min-width: 0;">
+                                            <MudText Typo="Typo.body2" Style="font-weight: 500;">
+                                                @snippet.Name
+                                            </MudText>
+                                            @if (!string.IsNullOrEmpty(snippet.Description))
+                                            {
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                    @snippet.Description
+                                                </MudText>
+                                            }
+                                            <div class="d-flex gap-2 mt-1">
+                                                <MudChip Size="Size.Small" Variant="Variant.Text">
+                                                    <MudIcon Icon="@Icons.Material.Filled.PlayArrow" Size="Size.Small" /> @snippet.Runs
+                                                </MudChip>
+                                                <MudChip Size="Size.Small" Variant="Variant.Text">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" /> @snippet.Views
+                                                </MudChip>
+                                            </div>
+                                        </div>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                      Size="Size.Small"
+                                                      Color="Color.Error"
+                                                      OnClick="@((e) => { e.StopPropagation(); DeleteSnippet(snippet.Id); })"
+                                                      OnClick:stopPropagation="true" />
+                                    </div>
+                                </MudListItem>
+                                <MudDivider />
+                            }
+                        </MudList>
+                    }
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
 </MudContainer>
 
 @code {
-    private string _code = @"// Welcome to CodeMate! 🚀
-// Write C# code here and click ""Run Code""
+    private string _editorId = "monaco-editor-container";
+    private string _currentCode = @"// Welcome to CodeMate! 🚀
+// Write C# code here with full VS Code experience
 
 // Example: Calculate factorial
 int Factorial(int n)
@@ -198,6 +257,34 @@ return result;";
 
     private CodeExecutionResult? _result;
     private bool _isExecuting = false;
+    private bool _showSnippets = false;
+    private bool _isLoadingSnippets = false;
+    private List<CodeSnippet> _snippets = new();
+    private string _searchQuery = "";
+    private Guid _currentUserId = Guid.Parse("00000000-0000-0000-0000-000000000001"); // TODO: Get from auth
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // Initialize Monaco Editor
+                await JS.InvokeVoidAsync("monacoEditor.init");
+                await JS.InvokeVoidAsync("monacoEditor.create", _editorId, _currentCode, "csharp");
+
+                // Setup Ctrl+S to save
+                await JS.InvokeVoidAsync("monacoEditor.onSave", _editorId,
+                    DotNetObjectReference.Create(this));
+
+                await LoadSnippets();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Monaco Editor initialization failed: {ex.Message}", Severity.Warning);
+            }
+        }
+    }
 
     private async Task RunCode()
     {
@@ -207,25 +294,39 @@ return result;";
 
         try
         {
-            _result = await CodeExecution.ExecuteCSharpAsync(_code, TimeSpan.FromSeconds(30));
+            var code = await JS.InvokeAsync<string>("monacoEditor.getValue", _editorId);
+
+            _result = await CodeExecution.ExecuteCSharpAsync(code, TimeSpan.FromSeconds(30));
 
             if (_result.Success)
             {
                 Snackbar.Add($"✓ Executed in {_result.ExecutionTime.TotalMilliseconds:F2}ms", Severity.Success);
+
+                // Clear diagnostics on success
+                await JS.InvokeVoidAsync("monacoEditor.clearDiagnostics", _editorId);
             }
             else
             {
-                Snackbar.Add("✗ Compilation failed. Check output for details.", Severity.Error);
+                Snackbar.Add("✗ Compilation failed", Severity.Error);
+
+                // Show diagnostics in editor
+                if (_result.Diagnostics.Any())
+                {
+                    var diagnostics = _result.Diagnostics.Select(d => new
+                    {
+                        line = d.Line,
+                        column = d.Column,
+                        message = d.Message,
+                        severity = d.Severity.ToString()
+                    }).ToArray();
+
+                    await JS.InvokeVoidAsync("monacoEditor.setDiagnostics", _editorId, diagnostics);
+                }
             }
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Error: {ex.Message}", Severity.Error);
-            _result = new CodeExecutionResult
-            {
-                Success = false,
-                Errors = $"Unexpected error: {ex.Message}"
-            };
         }
         finally
         {
@@ -234,27 +335,178 @@ return result;";
         }
     }
 
-    private void ClearCode()
+    private async Task FormatCode()
     {
-        _code = "// Your C# code here\n";
-        _result = null;
-        Snackbar.Add("Code cleared", Severity.Info);
+        try
+        {
+            await JS.InvokeVoidAsync("monacoEditor.format", _editorId);
+            Snackbar.Add("Code formatted", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Format failed: {ex.Message}", Severity.Warning);
+        }
     }
 
-    private void LoadExample()
+    private async Task ClearCode()
     {
-        _code = @"// Example: LINQ Query
-var numbers = Enumerable.Range(1, 100);
-
-var evenNumbers = numbers.Where(n => n % 2 == 0);
-var sum = evenNumbers.Sum();
-
-Console.WriteLine(""Even numbers from 1-100:"");
-Console.WriteLine(string.Join("", "", evenNumbers.Take(10)) + ""..."");
-Console.WriteLine($""\nSum of all even numbers: {sum}"");
-
-return sum;";
+        await JS.InvokeVoidAsync("monacoEditor.setValue", _editorId, "// Your C# code here\n");
         _result = null;
-        Snackbar.Add("Example loaded!", Severity.Info);
+        await JS.InvokeVoidAsync("monacoEditor.clearDiagnostics", _editorId);
+        Snackbar.Add("Editor cleared", Severity.Info);
+    }
+
+    private async Task OpenSaveDialog()
+    {
+        var code = await JS.InvokeAsync<string>("monacoEditor.getValue", _editorId);
+
+        var parameters = new DialogParameters
+        {
+            ["Code"] = code
+        };
+
+        var dialog = DialogService.Show<SaveSnippetDialog>("Save Code Snippet", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is (string name, string description, string tags))
+        {
+            await SaveSnippet(name, description, tags, code);
+        }
+    }
+
+    private async Task SaveSnippet(string name, string description, string tags, string code)
+    {
+        try
+        {
+            var snippet = await SnippetService.SaveSnippetAsync(
+                _currentUserId,
+                name,
+                code,
+                description,
+                "csharp",
+                tags
+            );
+
+            Snackbar.Add($"✓ Snippet '{name}' saved!", Severity.Success);
+            await LoadSnippets();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to save: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadSnippets()
+    {
+        _isLoadingSnippets = true;
+        StateHasChanged();
+
+        try
+        {
+            _snippets = await SnippetService.GetUserSnippetsAsync(_currentUserId, language: "csharp");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load snippets: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingSnippets = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SearchSnippets()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            await LoadSnippets();
+            return;
+        }
+
+        try
+        {
+            _snippets = await SnippetService.SearchSnippetsAsync(_currentUserId, _searchQuery);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Search failed: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task LoadSnippet(CodeSnippet snippet)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("monacoEditor.setValue", _editorId, snippet.Code);
+            await JS.InvokeVoidAsync("monacoEditor.clearDiagnostics", _editorId);
+            _result = null;
+
+            // Increment run count
+            await SnippetService.IncrementRunCountAsync(snippet.Id);
+
+            Snackbar.Add($"Loaded '{snippet.Name}'", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load snippet: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task DeleteSnippet(Guid snippetId)
+    {
+        var snippet = _snippets.FirstOrDefault(s => s.Id == snippetId);
+        if (snippet == null) return;
+
+        var confirmed = await DialogService.ShowMessageBox(
+            "Delete Snippet?",
+            $"Are you sure you want to delete '{snippet.Name}'? This cannot be undone.",
+            yesText: "Delete",
+            cancelText: "Cancel"
+        );
+
+        if (confirmed == true)
+        {
+            try
+            {
+                await SnippetService.DeleteSnippetAsync(snippetId, _currentUserId);
+                Snackbar.Add($"Deleted '{snippet.Name}'", Severity.Success);
+                await LoadSnippets();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Failed to delete: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private void ToggleSnippets()
+    {
+        _showSnippets = !_showSnippets;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("monacoEditor.dispose", _editorId);
+        }
+        catch { /* Editor may not be initialized */ }
     }
 }
+
+<style>
+    .snippet-list-item {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .snippet-list-item:hover {
+        background-color: var(--mud-palette-action-default-hover);
+    }
+
+    #monaco-editor-container {
+        width: 100%;
+    }
+</style>

@@ -115,6 +115,7 @@ builder.Services.AddScoped<AiMate.Core.Services.IDatasetGeneratorService, AiMate
 builder.Services.AddScoped<AiMate.Core.Services.IMCPToolService, AiMate.Infrastructure.Services.MCPToolService>();
 builder.Services.AddScoped<AiMate.Core.Services.IApiKeyService, AiMate.Infrastructure.Services.ApiKeyService>();
 builder.Services.AddScoped<AiMate.Core.Interfaces.ICodeExecutionService, AiMate.Infrastructure.Services.RoslynCodeExecutionService>();
+builder.Services.AddScoped<AiMate.Core.Interfaces.ICodeSnippetService, AiMate.Infrastructure.Services.CodeSnippetService>();
 
 // Register Plugin System (Singleton for plugin lifecycle management)
 builder.Services.AddSingleton<AiMate.Core.Services.IPluginManager, AiMate.Infrastructure.Services.PluginManager>();
