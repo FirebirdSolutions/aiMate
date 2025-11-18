@@ -3,6 +3,7 @@ using AiMate.Core.Entities;
 using AiMate.Core.Plugins;
 using AiMate.Core.Services;
 using Microsoft.Extensions.Logging;
+using ConversationContext = AiMate.Core.Plugins.ConversationContext;
 
 namespace AiMate.Infrastructure.Services;
 
@@ -165,7 +166,7 @@ public class PluginManager : IPluginManager
 
     #region Message Interception
 
-    public async Task<MessageInterceptResult> OnBeforeSendAsync(Message message, ConversationContext context)
+    public async Task<MessageInterceptResult> OnBeforeSendAsync(Message message, Core.Plugins.ConversationContext context)
     {
         var result = new MessageInterceptResult { ModifiedMessage = message };
 
