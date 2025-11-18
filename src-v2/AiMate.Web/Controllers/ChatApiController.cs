@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using AiMate.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -43,43 +45,30 @@ public class ChatApiController : ControllerBase
         {
             _logger.LogInformation("Chat completion request for user {UserId}", userId);
 
-            // IMPLEMENTATION NEEDED: Map OpenAI-compatible request to LiteLLM service
-            // 1. Convert ChatCompletionRequest to AiMate.Shared.Models.ChatCompletionRequest
-            // 2. Call: var response = await _liteLLMService.GetChatCompletionAsync(mappedRequest);
-            // 3. Map response back to OpenAI-compatible format
-            // Currently returns placeholder until API key validation is enabled
-
-            return Ok(new
+            // Map to LiteLLM request format
+            var liteLLMRequest = new Shared.Models.ChatCompletionRequest
             {
-                id = Guid.NewGuid().ToString(),
-                @object = "chat.completion",
-                created = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-                model = request.Model,
-                choices = new[]
+                Model = request.Model,
+                Messages = request.Messages.Select(m => new Shared.Models.ChatMessage
                 {
-                    new
-                    {
-                        index = 0,
-                        message = new
-                        {
-                            role = "assistant",
-                            content = "API integration coming soon! This is a placeholder response."
-                        },
-                        finish_reason = "stop"
-                    }
-                },
-                usage = new
-                {
-                    prompt_tokens = 10,
-                    completion_tokens = 20,
-                    total_tokens = 30
-                }
-            });
+                    Role = m.Role,
+                    Content = m.Content
+                }).ToList(),
+                Temperature = request.Temperature,
+                MaxTokens = request.MaxTokens,
+                Stream = false
+            };
+
+            // Get completion from LiteLLM
+            var response = await _liteLLMService.GetChatCompletionAsync(liteLLMRequest);
+
+            // Return OpenAI-compatible response (already in correct format)
+            return Ok(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Chat completion failed");
-            return StatusCode(500, new { error = "Internal server error" });
+            return StatusCode(500, new { error = "Internal server error", message = ex.Message });
         }
     }
 
@@ -87,23 +76,60 @@ public class ChatApiController : ControllerBase
     /// Stream chat completion (OpenAI-compatible)
     /// </summary>
     [HttpPost("completions/stream")]
-    public async Task<IActionResult> CreateCompletionStream([FromBody] ChatCompletionRequest request)
+    public async Task CreateCompletionStream([FromBody] ChatCompletionRequest request)
     {
         var apiKey = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
         var userId = await _apiKeyService.ValidateApiKeyAsync(apiKey);
 
         if (userId == null)
         {
-            return Unauthorized(new { error = "Invalid API key" });
+            Response.StatusCode = 401;
+            await Response.WriteAsJsonAsync(new { error = "Invalid API key" });
+            return;
         }
 
-        // IMPLEMENTATION NEEDED: SSE streaming for OpenAI-compatible API
-        // 1. Set Response.ContentType = "text/event-stream"
-        // 2. Map request to AiMate.Shared.Models.ChatCompletionRequest
-        // 3. Use: await foreach (var chunk in _liteLLMService.StreamChatCompletionAsync(mappedRequest))
-        // 4. Write SSE format: "data: {json}\n\n" for each chunk
-        // 5. Send "data: [DONE]\n\n" when complete
-        return StatusCode(501, new { error = "Streaming not yet implemented" });
+        try
+        {
+            _logger.LogInformation("Chat completion stream request for user {UserId}", userId);
+
+            // Set up SSE response
+            Response.ContentType = "text/event-stream";
+            Response.Headers.Add("Cache-Control", "no-cache");
+            Response.Headers.Add("Connection", "keep-alive");
+
+            // Map to LiteLLM request format
+            var liteLLMRequest = new Shared.Models.ChatCompletionRequest
+            {
+                Model = request.Model,
+                Messages = request.Messages.Select(m => new Shared.Models.ChatMessage
+                {
+                    Role = m.Role,
+                    Content = m.Content
+                }).ToList(),
+                Temperature = request.Temperature,
+                MaxTokens = request.MaxTokens,
+                Stream = true
+            };
+
+            // Stream response chunks
+            await foreach (var chunk in _liteLLMService.StreamChatCompletionAsync(liteLLMRequest))
+            {
+                var json = JsonSerializer.Serialize(chunk);
+                await Response.WriteAsync($"data: {json}\n\n", Encoding.UTF8);
+                await Response.Body.FlushAsync();
+            }
+
+            // Send completion marker
+            await Response.WriteAsync("data: [DONE]\n\n", Encoding.UTF8);
+            await Response.Body.FlushAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Chat completion stream failed");
+            var errorJson = JsonSerializer.Serialize(new { error = "Internal server error", message = ex.Message });
+            await Response.WriteAsync($"data: {errorJson}\n\n", Encoding.UTF8);
+            await Response.Body.FlushAsync();
+        }
     }
 }
 
