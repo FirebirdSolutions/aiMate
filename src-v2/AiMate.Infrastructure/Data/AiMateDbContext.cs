@@ -21,6 +21,7 @@ public class AiMateDbContext : DbContext
     public DbSet<ToolCall> ToolCalls => Set<ToolCall>();
     public DbSet<KnowledgeItem> KnowledgeItems => Set<KnowledgeItem>();
     public DbSet<WorkspaceFile> WorkspaceFiles => Set<WorkspaceFile>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +48,11 @@ public class AiMateDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasMany(e => e.KnowledgeItems)
+                .WithOne(e => e.User)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.ApiKeys)
                 .WithOne(e => e.User)
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -146,6 +152,15 @@ public class AiMateDbContext : DbContext
             // Vector column for file content embeddings
             entity.Property(e => e.Embedding)
                 .HasColumnType("vector(1536)");
+        });
+
+        // ApiKey configuration
+        modelBuilder.Entity<ApiKey>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => new { e.UserId, e.IsRevoked });
         });
     }
 }

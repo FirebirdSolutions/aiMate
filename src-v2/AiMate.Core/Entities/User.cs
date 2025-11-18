@@ -43,6 +43,11 @@ public class User
     public List<KnowledgeItem> KnowledgeItems { get; set; } = new();
 
     /// <summary>
+    /// User's API keys for Developer tier access
+    /// </summary>
+    public List<ApiKey> ApiKeys { get; set; } = new();
+
+    /// <summary>
     /// API keys for BYOK tier (encrypted)
     /// </summary>
     public Dictionary<string, string> EncryptedApiKeys { get; set; } = new();
