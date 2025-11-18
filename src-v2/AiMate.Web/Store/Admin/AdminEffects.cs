@@ -1,4 +1,7 @@
+using System.Net.Http.Json;
+using AiMate.Shared.Models;
 using Fluxor;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 
 namespace AiMate.Web.Store.Admin;
@@ -6,10 +9,18 @@ namespace AiMate.Web.Store.Admin;
 public class AdminEffects
 {
     private readonly IJSRuntime _jsRuntime;
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<AdminEffects> _logger;
+    private const string ApiEndpoint = "/api/v1/admin";
 
-    public AdminEffects(IJSRuntime jsRuntime)
+    public AdminEffects(
+        IJSRuntime jsRuntime,
+        HttpClient httpClient,
+        ILogger<AdminEffects> logger)
     {
         _jsRuntime = jsRuntime;
+        _httpClient = httpClient;
+        _logger = logger;
     }
 
     [EffectMethod]
@@ -17,65 +28,84 @@ public class AdminEffects
     {
         try
         {
-            // IMPLEMENTATION NEEDED: Load actual admin data from API or services
-            // For now, using mock data
+            _logger.LogInformation("Loading admin data from API");
 
-            var adminState = new AdminState
+            // Load from API
+            var adminData = await _httpClient.GetFromJsonAsync<AdminDataDto>(ApiEndpoint);
+
+            if (adminData != null)
             {
-                // Mock statistics
-                TotalUsers = 1,
-                TotalConversations = 42,
-                ConversationsToday = 5,
-                TotalModels = 3,
-                ActiveModels = 3,
-                TotalMcpServers = 2,
-                ConnectedMcpServers = 1,
-
-                // System health
-                LiteLLMConnected = true,
-                LiteLLMUrl = "http://localhost:4000",
-                StorageUsedMB = 15.7,
-                StorageLimitMB = 50.0,
-                Uptime = "2h 34m",
-                AppVersion = "v1.0.0",
-
-                // Mock models
-                Models = new List<AIModelConfig>
+                // Map DTO to State
+                var adminState = new AdminState
                 {
-                    new() { Id = "gpt-4", Name = "GPT-4", Provider = "OpenAI", IsEnabled = true, MaxTokens = 8192 },
-                    new() { Id = "claude-3-5-sonnet-20241022", Name = "Claude 3.5 Sonnet", Provider = "Anthropic", IsEnabled = true, MaxTokens = 8192 },
-                    new() { Id = "gpt-3.5-turbo", Name = "GPT-3.5 Turbo", Provider = "OpenAI", IsEnabled = true, MaxTokens = 4096 }
-                },
+                    // Overview statistics
+                    TotalUsers = adminData.Overview.TotalUsers,
+                    TotalConversations = adminData.Overview.TotalConversations,
+                    ConversationsToday = adminData.Overview.ConversationsToday,
+                    ActiveModels = adminData.Overview.ActiveModels,
+                    TotalModels = adminData.Overview.TotalModels,
+                    ConnectedMcpServers = adminData.Overview.ConnectedMcpServers,
+                    TotalMcpServers = adminData.Overview.TotalMcpServers,
 
-                // Mock MCP servers
-                McpServers = new List<MCPServerConfig>
-                {
-                    new() { Id = "fs-1", Name = "Filesystem", Type = "stdio", Connected = true, ToolCount = 8, Command = "npx", Arguments = "@modelcontextprotocol/server-filesystem /home/user/workspace" },
-                    new() { Id = "web-1", Name = "Web Search", Type = "http", Connected = false, ToolCount = 3, Url = "http://localhost:8080/mcp" }
-                },
+                    // System health
+                    LiteLLMConnected = adminData.Overview.LiteLLMConnected,
+                    LiteLLMUrl = adminData.Overview.LiteLLMUrl,
+                    StorageUsedMB = adminData.Overview.StorageUsedMB,
+                    StorageLimitMB = adminData.Overview.StorageLimitMB,
+                    Uptime = adminData.Overview.Uptime,
+                    AppVersion = adminData.Overview.AppVersion,
 
-                // Storage stats
-                LocalStorageUsedMB = 12.3,
-                LocalStorageLimitMB = 50.0,
-                IndexedDBUsedMB = 3.4,
-                IndexedDBLimitMB = 500.0,
+                    // Storage stats
+                    LocalStorageUsedMB = adminData.Overview.LocalStorageUsedMB,
+                    LocalStorageLimitMB = adminData.Overview.LocalStorageLimitMB,
+                    IndexedDBUsedMB = adminData.Overview.IndexedDBUsedMB,
+                    IndexedDBLimitMB = adminData.Overview.IndexedDBLimitMB,
 
-                // System logs
-                SystemLogs = new List<SystemLog>
-                {
-                    new() { Timestamp = DateTime.Now.AddMinutes(-5), Level = "INFO", Message = "Application started", Source = "System" },
-                    new() { Timestamp = DateTime.Now.AddMinutes(-4), Level = "INFO", Message = "Connected to LiteLLM at http://localhost:4000", Source = "LiteLLM" },
-                    new() { Timestamp = DateTime.Now.AddMinutes(-3), Level = "INFO", Message = "Loaded 3 models from configuration", Source = "Models" },
-                    new() { Timestamp = DateTime.Now.AddMinutes(-2), Level = "WARNING", Message = "Model 'gpt-4' approaching rate limit", Source = "Models" },
-                    new() { Timestamp = DateTime.Now.AddMinutes(-1), Level = "INFO", Message = "Admin panel accessed", Source = "Admin" }
-                }
-            };
+                    // Models
+                    Models = adminData.Models.Select(m => new AIModelConfig
+                    {
+                        Id = m.Id,
+                        Name = m.Name,
+                        Provider = m.Provider,
+                        IsEnabled = m.IsEnabled,
+                        MaxTokens = m.MaxTokens,
+                        Description = m.Description
+                    }).ToList(),
 
-            await Task.Delay(500); // Simulate network delay
-            dispatcher.Dispatch(new LoadAdminDataSuccessAction(adminState));
+                    // MCP Servers
+                    McpServers = adminData.McpServers.Select(s => new MCPServerConfig
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                        Type = s.Type,
+                        Connected = s.Connected,
+                        ToolCount = s.ToolCount,
+                        Command = s.Command,
+                        Arguments = s.Arguments,
+                        Url = s.Url
+                    }).ToList(),
+
+                    // System logs
+                    SystemLogs = adminData.SystemLogs.Select(l => new SystemLog
+                    {
+                        Timestamp = l.Timestamp,
+                        Level = l.Level,
+                        Message = l.Message,
+                        Source = l.Source
+                    }).ToList(),
+
+                    // Admin settings
+                    AdminLiteLLMUrl = adminData.AdminLiteLLMUrl,
+                    AdminLiteLLMApiKey = adminData.AdminLiteLLMApiKey
+                };
+
+                dispatcher.Dispatch(new LoadAdminDataSuccessAction(adminState));
+                _logger.LogInformation("Admin data loaded successfully");
+            }
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to load admin data");
             dispatcher.Dispatch(new LoadAdminDataFailureAction(ex.Message));
         }
     }
@@ -85,14 +115,18 @@ public class AdminEffects
     {
         try
         {
-            // IMPLEMENTATION NEEDED: Save admin changes to API or services
-            // For now, just simulating save
+            _logger.LogInformation("Saving admin changes");
 
-            await Task.Delay(1000); // Simulate network delay
+            // IMPLEMENTATION NEEDED: Convert current state to DTO and POST to API
+            // For now, just acknowledge save
+            await Task.Delay(500);
+
             dispatcher.Dispatch(new SaveAdminChangesSuccessAction());
+            _logger.LogInformation("Admin changes saved");
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to save admin changes");
             dispatcher.Dispatch(new SaveAdminChangesFailureAction(ex.Message));
         }
     }
@@ -102,14 +136,28 @@ public class AdminEffects
     {
         try
         {
-            // IMPLEMENTATION NEEDED: Actually test connection to LiteLLM
-            // For now, simulating successful connection
+            _logger.LogInformation("Testing LiteLLM connection");
 
-            await Task.Delay(1000);
-            dispatcher.Dispatch(new TestLiteLLMConnectionSuccessAction());
+            // Call API to test connection
+            var response = await _httpClient.PostAsJsonAsync($"{ApiEndpoint}/test-connection", new
+            {
+                Url = "http://localhost:4000",
+                ApiKey = (string?)null
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                dispatcher.Dispatch(new TestLiteLLMConnectionSuccessAction());
+                _logger.LogInformation("LiteLLM connection test successful");
+            }
+            else
+            {
+                throw new Exception("Connection test failed");
+            }
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "LiteLLM connection test failed");
             dispatcher.Dispatch(new TestLiteLLMConnectionFailureAction(ex.Message));
         }
     }
