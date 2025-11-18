@@ -27,6 +27,21 @@ public class WorkspaceFile
     public string? ExtractedText { get; set; }
 
     /// <summary>
+    /// FilePath
+    /// </summary>
+    public string? FilePath { get; set; }
+
+    /// <summary>
+    /// Extracted mimetype
+    /// </summary>
+    public string? MimeType { get; set; }
+
+    /// <summary>
+    /// File Size
+    /// </summary>
+    public long? FileSize { get; set; }
+
+    /// <summary>
     /// Vector embedding of content
     /// </summary>
     public float[]? Embedding { get; set; }
