@@ -43,7 +43,7 @@ public class FeedbackApiController : ControllerBase
                 Value = t.Value,
                 Color = t.Color,
                 Sentiment = t.Sentiment
-            }).ToList() ?? new List<FeedbackTag>();
+            }).ToList() ?? [];
 
             var feedback = await _feedbackService.CreateOrUpdateFeedbackAsync(
                 messageId,
@@ -349,7 +349,7 @@ public class CreateTagTemplateRequest
     public string Label { get; set; } = string.Empty;
     public string? Description { get; set; }
     public bool IsRequired { get; set; }
-    public List<TagOptionDto> Options { get; set; } = new();
+    public List<TagOptionDto> Options { get; set; } = [];
 }
 
 public class TagOptionDto

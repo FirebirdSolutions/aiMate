@@ -18,8 +18,8 @@ public class MCPToolService : IMCPToolService
     private readonly IFileUploadService? _fileUploadService;
     private readonly IKnowledgeGraphService? _knowledgeService;
     private readonly IDatasetGeneratorService? _datasetGenerator;
-    private readonly Dictionary<string, MCPTool> _registeredTools = new();
-    private readonly Dictionary<string, Func<Dictionary<string, object>, Task<MCPToolResult>>> _toolExecutors = new();
+    private readonly Dictionary<string, MCPTool> _registeredTools = [];
+    private readonly Dictionary<string, Func<Dictionary<string, object>, Task<MCPToolResult>>> _toolExecutors = [];
 
     public MCPToolService(
         ILogger<MCPToolService> logger,
@@ -54,7 +54,7 @@ public class MCPToolService : IMCPToolService
         Guid workspaceId,
         CancellationToken cancellationToken = default)
     {
-        if (!_toolExecutors.ContainsKey(toolName))
+        if (!_toolExecutors.TryGetValue(toolName, out Func<Dictionary<string, object>, Task<MCPToolResult>>? value))
         {
             return new MCPToolResult
             {
@@ -68,7 +68,7 @@ public class MCPToolService : IMCPToolService
             _logger.LogInformation("Executing tool: {ToolName} with parameters: {Parameters}",
                 toolName, JsonSerializer.Serialize(parameters));
 
-            var result = await _toolExecutors[toolName](parameters);
+            var result = await value(parameters);
 
             _logger.LogInformation("Tool execution completed: {ToolName}, Success: {Success}",
                 toolName, result.Success);
@@ -245,8 +245,8 @@ public class MCPToolService : IMCPToolService
     private async Task<MCPToolResult> ExecuteWebSearchAsync(Dictionary<string, object> parameters)
     {
         var query = parameters["query"].ToString();
-        var maxResults = parameters.ContainsKey("max_results")
-            ? Convert.ToInt32(parameters["max_results"])
+        var maxResults = parameters.TryGetValue("max_results", out object? value)
+            ? Convert.ToInt32(value)
             : 5;
 
         try
@@ -335,8 +335,8 @@ public class MCPToolService : IMCPToolService
         // 3. E2B.dev API (https://e2b.dev) - Managed code execution sandbox
         // 4. Pyodide (WebAssembly Python) - Browser-based, limited packages
         var code = parameters["code"].ToString();
-        var timeout = parameters.ContainsKey("timeout")
-            ? Convert.ToInt32(parameters["timeout"])
+        var timeout = parameters.TryGetValue("timeout", out object? value)
+            ? Convert.ToInt32(value)
             : 30;
 
         await Task.Delay(100); // Simulate execution
@@ -402,7 +402,7 @@ public class MCPToolService : IMCPToolService
                 Result = new
                 {
                     file_id = fileId,
-                    content = content,
+                    content,
                     content_type = fileResult.Value.ContentType,
                     size_bytes = content.Length
                 }
@@ -422,8 +422,8 @@ public class MCPToolService : IMCPToolService
     private async Task<MCPToolResult> ExecuteKnowledgeSearchAsync(Dictionary<string, object> parameters)
     {
         var query = parameters["query"].ToString();
-        var limit = parameters.ContainsKey("limit")
-            ? Convert.ToInt32(parameters["limit"])
+        var limit = parameters.TryGetValue("limit", out object? value)
+            ? Convert.ToInt32(value)
             : 5;
 
         if (_knowledgeService == null)
@@ -494,11 +494,11 @@ public class MCPToolService : IMCPToolService
         try
         {
             var personality = parameters["personality"].ToString() ?? "Guardian";
-            var numExamples = parameters.ContainsKey("num_examples")
-                ? Convert.ToInt32(parameters["num_examples"])
+            var numExamples = parameters.TryGetValue("num_examples", out object? value1)
+                ? Convert.ToInt32(value1)
                 : 100;
-            var exportFormat = parameters.ContainsKey("export_format")
-                ? parameters["export_format"].ToString()
+            var exportFormat = parameters.TryGetValue("export_format", out object? value)
+                ? value.ToString()
                 : "jsonl";
 
             _logger.LogInformation(
@@ -521,10 +521,11 @@ public class MCPToolService : IMCPToolService
             }
             else
             {
-                exportedData = JsonSerializer.Serialize(dataset, new JsonSerializerOptions
+                JsonSerializerOptions jsonSerializerOptions = new()
                 {
                     WriteIndented = true
-                });
+                };
+                exportedData = JsonSerializer.Serialize(dataset, jsonSerializerOptions);
             }
 
             return new MCPToolResult
@@ -532,7 +533,7 @@ public class MCPToolService : IMCPToolService
                 Success = true,
                 Result = new
                 {
-                    personality = personality,
+                    personality,
                     total_examples = dataset.TotalExamples,
                     generated_at = dataset.GeneratedAt,
                     scenario_distribution = dataset.ScenarioDistribution,

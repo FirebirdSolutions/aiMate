@@ -13,10 +13,10 @@ namespace AiMate.Infrastructure.Services;
 public class PluginManager : IPluginManager
 {
     private readonly ILogger<PluginManager> _logger;
-    private readonly Dictionary<string, IPlugin> _loadedPlugins = new();
-    private readonly List<IMessageInterceptor> _messageInterceptors = new();
-    private readonly List<IUIExtension> _uiExtensions = new();
-    private readonly List<IToolProvider> _toolProviders = new();
+    private readonly Dictionary<string, IPlugin> _loadedPlugins = [];
+    private readonly List<IMessageInterceptor> _messageInterceptors = [];
+    private readonly List<IUIExtension> _uiExtensions = [];
+    private readonly List<IToolProvider> _toolProviders = [];
 
     public event EventHandler<PluginEventArgs>? PluginLoaded;
     public event EventHandler<PluginEventArgs>? PluginUnloaded;
@@ -45,7 +45,7 @@ public class PluginManager : IPluginManager
                     }
                     catch (ReflectionTypeLoadException)
                     {
-                        return Array.Empty<Type>();
+                        return [];
                     }
                 })
                 .Where(t => typeof(IPlugin).IsAssignableFrom(t)

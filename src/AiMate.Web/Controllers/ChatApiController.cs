@@ -33,7 +33,7 @@ public class ChatApiController : ControllerBase
     public async Task<IActionResult> CreateCompletion([FromBody] ChatCompletionRequest request)
     {
         // Validate API key from Authorization header
-        var apiKey = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+        var apiKey = Request.Headers.Authorization.ToString().Replace("Bearer ", "");
         var userId = await _apiKeyService.ValidateApiKeyAsync(apiKey);
 
         if (userId == null)
@@ -49,11 +49,11 @@ public class ChatApiController : ControllerBase
             var liteLLMRequest = new Shared.Models.ChatCompletionRequest
             {
                 Model = request.Model,
-                Messages = request.Messages.Select(m => new Shared.Models.ChatMessage
+                Messages = [.. request.Messages.Select(m => new Shared.Models.ChatMessage
                 {
                     Role = m.Role,
                     Content = m.Content
-                }).ToList(),
+                })],
                 Temperature = request.Temperature,
                 MaxTokens = request.MaxTokens,
                 Stream = false
@@ -94,18 +94,18 @@ public class ChatApiController : ControllerBase
 
             // Set up SSE response
             Response.ContentType = "text/event-stream";
-            Response.Headers.Add("Cache-Control", "no-cache");
-            Response.Headers.Add("Connection", "keep-alive");
+            Response.Headers.Append("Cache-Control", "no-cache");
+            Response.Headers.Append("Connection", "keep-alive");
 
             // Map to LiteLLM request format
             var liteLLMRequest = new Shared.Models.ChatCompletionRequest
             {
                 Model = request.Model,
-                Messages = request.Messages.Select(m => new Shared.Models.ChatMessage
+                Messages = [.. request.Messages.Select(m => new Shared.Models.ChatMessage
                 {
                     Role = m.Role,
                     Content = m.Content
-                }).ToList(),
+                })],
                 Temperature = request.Temperature,
                 MaxTokens = request.MaxTokens,
                 Stream = true
@@ -139,7 +139,7 @@ public class ChatApiController : ControllerBase
 public class ChatCompletionRequest
 {
     public string Model { get; set; } = "gpt-4";
-    public List<ChatMessage> Messages { get; set; } = new();
+    public List<ChatMessage> Messages { get; set; } = [];
     public double Temperature { get; set; } = 0.7;
     public int MaxTokens { get; set; } = 1000;
     public bool Stream { get; set; } = false;

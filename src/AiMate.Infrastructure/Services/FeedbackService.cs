@@ -150,7 +150,7 @@ public class FeedbackService : IFeedbackService
         Guid feedbackId,
         CancellationToken cancellationToken = default)
     {
-        var feedback = await _context.MessageFeedbacks.FindAsync(new object[] { feedbackId }, cancellationToken);
+        var feedback = await _context.MessageFeedbacks.FindAsync([feedbackId], cancellationToken);
         if (feedback == null)
         {
             return false;
@@ -215,12 +215,7 @@ public class FeedbackService : IFeedbackService
         int? displayOrder = null,
         CancellationToken cancellationToken = default)
     {
-        var template = await _context.FeedbackTagTemplates.FindAsync(new object[] { templateId }, cancellationToken);
-        if (template == null)
-        {
-            throw new KeyNotFoundException($"Tag template {templateId} not found");
-        }
-
+        var template = await _context.FeedbackTagTemplates.FindAsync([templateId], cancellationToken) ?? throw new KeyNotFoundException($"Tag template {templateId} not found");
         if (category != null) template.Category = category;
         if (label != null) template.Label = label;
         if (description != null) template.Description = description;
@@ -239,7 +234,7 @@ public class FeedbackService : IFeedbackService
         Guid templateId,
         CancellationToken cancellationToken = default)
     {
-        var template = await _context.FeedbackTagTemplates.FindAsync(new object[] { templateId }, cancellationToken);
+        var template = await _context.FeedbackTagTemplates.FindAsync([templateId], cancellationToken);
         if (template == null)
         {
             return false;
@@ -261,13 +256,7 @@ public class FeedbackService : IFeedbackService
     {
         var template = await _context.FeedbackTagTemplates
             .Include(t => t.Options)
-            .FirstOrDefaultAsync(t => t.Id == templateId, cancellationToken);
-
-        if (template == null)
-        {
-            throw new KeyNotFoundException($"Tag template {templateId} not found");
-        }
-
+            .FirstOrDefaultAsync(t => t.Id == templateId, cancellationToken) ?? throw new KeyNotFoundException($"Tag template {templateId} not found");
         var maxOrder = template.Options.Count > 0
             ? template.Options.Max(o => o.DisplayOrder)
             : 0;
@@ -292,7 +281,7 @@ public class FeedbackService : IFeedbackService
         Guid optionId,
         CancellationToken cancellationToken = default)
     {
-        var option = await _context.FeedbackTagOptions.FindAsync(new object[] { optionId }, cancellationToken);
+        var option = await _context.FeedbackTagOptions.FindAsync([optionId], cancellationToken);
         if (option == null)
         {
             return false;
@@ -333,8 +322,8 @@ public class FeedbackService : IFeedbackService
                 ModelId = modelId,
                 TotalFeedbacks = 0,
                 AverageRating = 0,
-                RatingDistribution = new Dictionary<int, int>(),
-                TagCounts = new Dictionary<string, int>()
+                RatingDistribution = [],
+                TagCounts = []
             };
         }
 
