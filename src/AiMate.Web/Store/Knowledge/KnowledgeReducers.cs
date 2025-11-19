@@ -129,8 +129,9 @@ public static class KnowledgeReducers
         var article = articles.FirstOrDefault(a => a.Id == action.ArticleId);
         if (article != null)
         {
-            var index = articles.IndexOf(article);
-            articles[index] = article with { ViewCount = article.ViewCount + 1, LastViewedAt = DateTime.UtcNow };
+            // Manually update properties since KnowledgeArticleDto is a class, not a record
+            article.ViewCount = article.ViewCount + 1;
+            article.LastViewedAt = DateTime.UtcNow;
         }
         return state with { Articles = articles };
     }
@@ -142,8 +143,8 @@ public static class KnowledgeReducers
         var article = articles.FirstOrDefault(a => a.Id == action.ArticleId);
         if (article != null)
         {
-            var index = articles.IndexOf(article);
-            articles[index] = article with { ReferenceCount = article.ReferenceCount + 1 };
+            // Manually update properties since KnowledgeArticleDto is a class, not a record
+            article.ReferenceCount = article.ReferenceCount + 1;
         }
         return state with { Articles = articles };
     }
@@ -155,8 +156,8 @@ public static class KnowledgeReducers
         var article = articles.FirstOrDefault(a => a.Id == action.ArticleId);
         if (article != null)
         {
-            var index = articles.IndexOf(article);
-            articles[index] = article with { UpvoteCount = article.UpvoteCount + 1 };
+            // Manually update properties since KnowledgeArticleDto is a class, not a record
+            article.UpvoteCount = article.UpvoteCount + 1;
         }
         return state with { Articles = articles };
     }
@@ -168,8 +169,8 @@ public static class KnowledgeReducers
         var article = articles.FirstOrDefault(a => a.Id == action.ArticleId);
         if (article != null)
         {
-            var index = articles.IndexOf(article);
-            articles[index] = article with { IsFeatured = !article.IsFeatured };
+            // Manually update properties since KnowledgeArticleDto is a class, not a record
+            article.IsFeatured = !article.IsFeatured;
         }
         return state with { Articles = articles };
     }

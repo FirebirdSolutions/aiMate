@@ -3,6 +3,7 @@
 @using AiMate.Core.Services
 @inject IPermissionService PermissionService
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <MudDialog>
     <TitleContent>
@@ -434,11 +435,13 @@
 
     private async Task HandleDelete()
     {
-        var confirmed = await Snackbar.ShowConfirmation(
+        var confirmed = await DialogService.ShowMessageBox(
             "Delete this connection?",
-            "This will also remove all associated models.");
+            "This will also remove all associated models.",
+            yesText: "Delete",
+            cancelText: "Cancel");
 
-        if (confirmed)
+        if (confirmed == true)
         {
             MudDialog.Close(DialogResult.Ok(new { Action = "Delete", Connection }));
         }

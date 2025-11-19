@@ -1,0 +1,35 @@
+@inject IDialogService DialogService
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="_inputValue"
+                     Label="@Label"
+                     Placeholder="@Placeholder"
+                     Variant="Variant.Outlined"
+                     FullWidth="true"
+                     AutoFocus="true" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@string.IsNullOrWhiteSpace(_inputValue)">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string Title { get; set; } = "Input";
+
+    [Parameter]
+    public string Label { get; set; } = "Enter value";
+
+    [Parameter]
+    public string Placeholder { get; set; } = "";
+
+    private string _inputValue = string.Empty;
+
+    void Submit() => MudDialog.Close(DialogResult.Ok(_inputValue));
+    void Cancel() => MudDialog.Cancel();
+}
