@@ -1,6 +1,7 @@
 @page "/workspaces"
 @using Fluxor
 @using AiMate.Web.Store.Workspace
+@using AiMate.Core
 @inherits Fluxor.Blazor.Web.Components.FluxorComponent
 @inject IState<WorkspaceState> WorkspaceState
 @inject IDispatcher Dispatcher
@@ -52,7 +53,7 @@
                             <CardHeaderActions>
                                 @if (isActive)
                                 {
-                                    <MudChip Size="Size.Small" Color="Color.Success">Active</MudChip>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Success">Active</MudChip>
                                 }
                             </CardHeaderActions>
                         </MudCardHeader>
@@ -64,7 +65,7 @@
                                 </MudText>
                             }
                             <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                Personality: @(workspace.DefaultPersonality ?? "Default")
+                                Personality: @(workspace.DefaultPersonality)
                             </MudText>
                         </MudCardContent>
                         <MudCardActions>

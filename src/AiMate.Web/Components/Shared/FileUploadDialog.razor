@@ -24,7 +24,7 @@
 
         @if (_selectedFiles.Any())
         {
-            <MudList Dense="true" Class="mt-4">
+            <MudList T="string" Dense="true" Class="mt-4">
                 @foreach (var file in _selectedFiles)
                 {
                     <MudListItem>

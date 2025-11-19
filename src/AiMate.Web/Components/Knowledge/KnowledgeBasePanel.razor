@@ -231,7 +231,7 @@
                         </MudText>
                         @if (KnowledgeState.Value.Analytics.MostViewed.Any())
                         {
-                            <MudList Dense="true">
+                            <MudList T="object" Dense="true">
                                 @foreach (var article in KnowledgeState.Value.Analytics.MostViewed)
                                 {
                                     <MudListItem OnClick="@(() => OpenArticle(article))">
@@ -264,7 +264,7 @@
                         </MudText>
                         @if (KnowledgeState.Value.Analytics.MostReferenced.Any())
                         {
-                            <MudList Dense="true">
+                            <MudList T="object" Dense="true">
                                 @foreach (var article in KnowledgeState.Value.Analytics.MostReferenced)
                                 {
                                     <MudListItem OnClick="@(() => OpenArticle(article))">
@@ -322,7 +322,7 @@
                         </MudText>
                         @if (KnowledgeState.Value.Analytics.TypeCounts.Any())
                         {
-                            <MudList Dense="true">
+                            <MudList T="object" Dense="true">
                                 @foreach (var type in KnowledgeState.Value.Analytics.TypeCounts.OrderByDescending(t => t.Value))
                                 {
                                     <MudListItem>
@@ -549,7 +549,7 @@
                     builder.AddAttribute(1, "Elevation", 1);
                     builder.AddAttribute(2, "ChildContent", (RenderFragment)(paperBuilder =>
                     {
-                        paperBuilder.OpenComponent<MudList>(0);
+                        paperBuilder.OpenComponent<MudList<string>>(0);
                         paperBuilder.AddAttribute(1, "Clickable", true);
                         paperBuilder.AddAttribute(2, "Dense", true);
                         paperBuilder.AddAttribute(3, "ChildContent", (RenderFragment)(listBuilder =>
@@ -583,7 +583,7 @@
                 contentBuilder.OpenElement(0, "div");
                 contentBuilder.AddAttribute(1, "class", "d-flex justify-space-between align-center mb-2");
 
-                contentBuilder.OpenComponent<MudChip>(2);
+                contentBuilder.OpenComponent<MudChip<string>>(2);
                 contentBuilder.AddAttribute(3, "T", typeof(string));
                 contentBuilder.AddAttribute(4, "Size", Size.Small);
                 contentBuilder.AddAttribute(5, "Color", GetTypeColor(article.Type));
@@ -642,7 +642,7 @@
                     int tagIndex = 28;
                     foreach (var tag in article.Tags.Take(3))
                     {
-                        contentBuilder.OpenComponent<MudChip>(tagIndex++);
+                        contentBuilder.OpenComponent<MudChip<string>>(tagIndex++);
                         contentBuilder.AddAttribute(tagIndex++, "T", typeof(string));
                         contentBuilder.AddAttribute(tagIndex++, "Size", Size.Small);
                         contentBuilder.AddAttribute(tagIndex++, "Variant", Variant.Outlined);
@@ -705,7 +705,7 @@
 
     private void RenderArticleListItem(RenderTreeBuilder builder, KnowledgeArticleDto article, int index)
     {
-        builder.OpenComponent<MudListItem>(index * 100);
+        builder.OpenComponent<MudListItem<string>>(index * 100);
         builder.AddAttribute(index * 100 + 1, "OnClick", EventCallback.Factory.Create(this, () => OpenArticle(article)));
         builder.AddAttribute(index * 100 + 2, "ChildContent", (RenderFragment)(itemBuilder =>
         {
@@ -754,7 +754,7 @@
             itemBuilder.CloseElement();
 
             // Right side - Type chip
-            itemBuilder.OpenComponent<MudChip>(21);
+            itemBuilder.OpenComponent<MudChip<string>>(21);
             itemBuilder.AddAttribute(22, "T", typeof(string));
             itemBuilder.AddAttribute(23, "Size", Size.Small);
             itemBuilder.AddAttribute(24, "Color", GetTypeColor(article.Type));

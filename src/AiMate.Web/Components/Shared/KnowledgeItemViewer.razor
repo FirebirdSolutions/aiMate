@@ -21,7 +21,7 @@
                     <div class="d-flex flex-wrap gap-2 mb-4">
                         @foreach (var tag in SelectedItem.Tags)
                         {
-                            <MudChip Size="Size.Medium" Color="Color.Primary">@tag</MudChip>
+                            <MudChip T="string" Size="Size.Medium" Color="Color.Primary">@tag</MudChip>
                         }
                     </div>
                 }
@@ -61,10 +61,10 @@
                 }
                 else
                 {
-                    <MudList>
+                    <MudList T="string">
                         @foreach (var relatedItem in KnowledgeState.Value.RelatedItems.Take(5))
                         {
-                            <MudListItem OnClick="@(() => HandleSelectRelatedItem(relatedItem.Id))">
+                            <MudListItem T="string" OnClick="@(() => HandleSelectRelatedItem(relatedItem.Id))">
                                 <div class="d-flex flex-column">
                                     <MudText Typo="Typo.body2">@relatedItem.Title</MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">

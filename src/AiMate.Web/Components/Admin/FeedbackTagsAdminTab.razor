@@ -53,11 +53,11 @@
                                     <MudText Typo="Typo.h6">@template.Label</MudText>
                                     @if (template.IsRequired)
                                     {
-                                        <MudChip Size="Size.Small" Color="Color.Error">Required</MudChip>
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Error">Required</MudChip>
                                     }
                                     @if (!template.IsActive)
                                     {
-                                        <MudChip Size="Size.Small" Color="Color.Default">Inactive</MudChip>
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Default">Inactive</MudChip>
                                     }
                                 </div>
                             </CardHeaderContent>
@@ -86,10 +86,10 @@
 
                             <!-- Options -->
                             <MudText Typo="Typo.caption" Class="mb-1">Options:</MudText>
-                            <MudChipSet ReadOnly="true">
+                            <MudChipSet T="string" ReadOnly="true">
                                 @foreach (var option in template.Options.OrderBy(o => o.DisplayOrder))
                                 {
-                                    <MudChip
+                                    <MudChip T="string"
                                         Text="@option.Value"
                                         Style="@($"background-color: {option.Color}; color: white;")"
                                         Icon="@GetIcon(option.Icon)">
@@ -160,12 +160,12 @@
                 Lines="2"
                 HelperText="Optional description of what this tag measures" />
 
-            <MudSwitch
+            <MudSwitch T="bool"
                 @bind-Checked="editingTemplate.IsRequired"
                 Label="Required"
                 Color="Color.Primary" />
 
-            <MudSwitch
+            <MudSwitch T="bool"
                 @bind-Checked="editingTemplate.IsActive"
                 Label="Active"
                 Color="Color.Primary" />

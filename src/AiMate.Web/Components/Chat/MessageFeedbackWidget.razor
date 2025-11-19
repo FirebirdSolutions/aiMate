@@ -72,10 +72,10 @@
                         {
                             <div class="mb-2">
                                 <MudText Typo="Typo.caption">@template.Label</MudText>
-                                <MudChipSet @bind-SelectedChip="selectedChips[template.Category]" Filter="true">
+                                <MudChipSet T="string" @bind-SelectedChip="selectedChips[template.Category]" Filter="true">
                                     @foreach (var option in template.Options.OrderBy(o => o.DisplayOrder))
                                     {
-                                        <MudChip
+                                        <MudChip T="string"
                                             Text="@option.Value"
                                             Color="@GetSentimentColor(option.Sentiment)"
                                             Icon="@GetOptionIcon(option.Icon)"
@@ -94,7 +94,7 @@
                 {
                     <div>
                         <MudText Typo="Typo.caption">Selected tags:</MudText>
-                        <MudChipSet>
+                        <MudChipSet T="string">
                             @foreach (var tag in selectedTags)
                             {
                                 <MudChip
@@ -156,7 +156,7 @@
     private int selectedRating = 5;
     private string? textFeedback;
     private List<FeedbackTagDto> selectedTags = new();
-    private Dictionary<string, MudChip> selectedChips = new();
+    private Dictionary<string, MudChip<string>> selectedChips = new();
 
     private int? CurrentRating =>
         FeedbackState.Value.FeedbackByMessageId.TryGetValue(MessageId, out var feedback)

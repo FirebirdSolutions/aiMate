@@ -347,4 +347,14 @@ public class PluginManager : IPluginManager
 
     public IPlugin? GetPlugin(string pluginId) =>
         _loadedPlugins.TryGetValue(pluginId, out var plugin) ? plugin : null;
+
+    Task<MessageInterceptResult> IPluginManager.OnBeforeSendAsync(Message message, Core.Services.ConversationContext context)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<MessageInterceptResult> IPluginManager.OnAfterReceiveAsync(Message message, Core.Services.ConversationContext context)
+    {
+        throw new NotImplementedException();
+    }
 }

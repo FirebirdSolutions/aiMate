@@ -47,7 +47,7 @@
                     {
                         var isSelected = KnowledgeState.Value.SelectedTags.Contains(tag);
 
-                        <MudChip Size="Size.Small"
+                        <MudChip T="string" Size="Size.Small"
                                 Color="@(isSelected ? Color.Primary : Color.Default)"
                                 Variant="@(isSelected ? Variant.Filled : Variant.Outlined)"
                                 OnClick="@(() => Dispatcher.Dispatch(new ToggleTagFilterAction(tag)))"
@@ -117,11 +117,11 @@
                                         <div class="d-flex flex-wrap gap-1">
                                             @foreach (var tag in item.Tags.Take(3))
                                             {
-                                                <MudChip Size="Size.Small" Color="Color.Default">@tag</MudChip>
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Default">@tag</MudChip>
                                             }
                                             @if (item.Tags.Count > 3)
                                             {
-                                                <MudChip Size="Size.Small" Color="Color.Secondary">+@(item.Tags.Count - 3)</MudChip>
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">+@(item.Tags.Count - 3)</MudChip>
                                             }
                                         </div>
                                     }

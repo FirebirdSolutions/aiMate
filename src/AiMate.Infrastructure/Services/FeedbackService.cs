@@ -352,7 +352,7 @@ public class FeedbackService : IFeedbackService
                 .SelectMany(f => f.Tags)
                 .GroupBy(t => $"{t.Key}:{t.Value}")
                 .ToDictionary(g => g.Key, g => g.Count()),
-            AverageResponseTimeMs = feedbacks
+            AverageResponseTimeMs = (long?)feedbacks
                 .Where(f => f.ResponseTimeMs.HasValue)
                 .Select(f => f.ResponseTimeMs!.Value)
                 .DefaultIfEmpty()
