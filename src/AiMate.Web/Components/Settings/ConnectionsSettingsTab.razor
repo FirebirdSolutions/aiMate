@@ -320,7 +320,7 @@
 
     private void HandleTestConnection(string id)
     {
-        Dispatcher.Dispatch(new TestConnectionAction(id));
+        Dispatcher.Dispatch(new AiMate.Web.Store.Connection.TestConnectionAction(id));
     }
 
     private async Task HandleDeleteConnection(string id)
@@ -371,7 +371,7 @@
 
     private void HandleTestLiteLLMConnection()
     {
-        Dispatcher.Dispatch(new Store.Settings.TestConnectionAction());
+        Dispatcher.Dispatch(new AiMate.Web.Store.Settings.TestConnectionAction());
         _connectionTestResult = "Testing connection...";
         _connectionTestSuccess = true;
     }

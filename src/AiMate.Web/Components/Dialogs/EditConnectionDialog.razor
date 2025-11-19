@@ -190,7 +190,7 @@
                 <MudTextField T="string" @bind-Value="@_newTag"
                             Variant="Variant.Outlined"
                             Placeholder="Add tag..."
-                            OnKeyPress="@HandleTagKeyPress"
+                            OnKeyDown="@HandleTagKeyPress"
                             Class="flex-grow-1" />
                 <MudIconButton Icon="@Icons.Material.Filled.Add"
                              Color="Color.Primary"
