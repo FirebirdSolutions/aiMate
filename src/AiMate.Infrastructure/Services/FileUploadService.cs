@@ -89,7 +89,7 @@ public class FileUploadService : IFileUploadService
         }
 
         var stream = new FileStream(workspaceFile.FilePath, FileMode.Open, FileAccess.Read);
-        return (stream, workspaceFile.MimeType);
+        return (stream, workspaceFile.MimeType ?? "application/octet-stream");
     }
 
     public async Task DeleteFileAsync(

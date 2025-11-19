@@ -421,7 +421,7 @@ public class MCPToolService : IMCPToolService
 
     private async Task<MCPToolResult> ExecuteKnowledgeSearchAsync(Dictionary<string, object> parameters)
     {
-        var query = parameters["query"].ToString();
+        var query = parameters["query"].ToString() ?? string.Empty;
         var limit = parameters.ContainsKey("limit")
             ? Convert.ToInt32(parameters["limit"])
             : 5;
