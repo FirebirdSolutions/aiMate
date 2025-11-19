@@ -77,7 +77,7 @@
 @code {
     private async Task HandleAddMcpServer()
     {
-        var parameters = new DialogParameters<AddMcpServerDialog>();
+        var parameters = new DialogParameters();
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
 
         var dialog = await DialogService.ShowAsync<AddMcpServerDialog>("Add MCP Server", parameters, options);
@@ -91,9 +91,9 @@
 
     private async Task HandleEditMcpServer(MCPServerConfig server)
     {
-        var parameters = new DialogParameters<AddMcpServerDialog>
+        var parameters = new DialogParameters
         {
-            { x => x.Server, server }
+            { "Server", server }
         };
         var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Small, FullWidth = true };
 

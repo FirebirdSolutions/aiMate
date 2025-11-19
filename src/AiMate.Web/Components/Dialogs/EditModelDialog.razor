@@ -4,6 +4,7 @@
 @using AiMate.Core.Services
 @inject IPermissionService PermissionService
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <MudDialog>
     <DialogContent>
@@ -293,11 +294,13 @@
 
     private async Task HandleDelete()
     {
-        var confirmed = await Snackbar.ShowConfirmation(
+        var confirmed = await DialogService.ShowMessageBox(
             "Delete this model?",
-            "This action cannot be undone.");
+            "This action cannot be undone.",
+            yesText: "Delete",
+            cancelText: "Cancel");
 
-        if (confirmed)
+        if (confirmed == true)
         {
             MudDialog.Close(DialogResult.Ok(new { Action = "Delete", Model }));
         }

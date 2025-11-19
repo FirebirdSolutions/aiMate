@@ -186,8 +186,9 @@ public static class NotesReducers
 
         if (note != null)
         {
-            var index = notes.IndexOf(note);
-            notes[index] = note with { IsPinned = !note.IsPinned, UpdatedAt = DateTime.UtcNow };
+            // Manually update properties since NoteDto is a class, not a record
+            note.IsPinned = !note.IsPinned;
+            note.UpdatedAt = DateTime.UtcNow;
         }
 
         return state with { Notes = notes };
@@ -201,8 +202,9 @@ public static class NotesReducers
 
         if (note != null)
         {
-            var index = notes.IndexOf(note);
-            notes[index] = note with { IsFavorite = !note.IsFavorite, UpdatedAt = DateTime.UtcNow };
+            // Manually update properties since NoteDto is a class, not a record
+            note.IsFavorite = !note.IsFavorite;
+            note.UpdatedAt = DateTime.UtcNow;
         }
 
         return state with { Notes = notes };
@@ -216,8 +218,9 @@ public static class NotesReducers
 
         if (note != null)
         {
-            var index = notes.IndexOf(note);
-            notes[index] = note with { IsArchived = action.Archive, UpdatedAt = DateTime.UtcNow };
+            // Manually update properties since NoteDto is a class, not a record
+            note.IsArchived = action.Archive;
+            note.UpdatedAt = DateTime.UtcNow;
         }
 
         return state with { Notes = notes };
