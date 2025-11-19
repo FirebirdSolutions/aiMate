@@ -12,7 +12,7 @@
         <MudSelect T="string" @bind-Value="@_defaultPersonality"
                   Label="Default Personality"
                   Variant="Variant.Outlined"
-                  OnValueChanged="@((string value) => Dispatcher.Dispatch(new UpdateDefaultPersonalityAction(value)))">
+                  ValueChanged="@((string value) => Dispatcher.Dispatch(new UpdateDefaultPersonalityAction(value)))">
             <MudSelectItem T="string" Value="@(PersonalityMode.KiwiMate.ToString())">Kiwi Mate (Casual & Friendly)</MudSelectItem>
             <MudSelectItem T="string" Value="@(PersonalityMode.KiwiProfessional.ToString())">Kiwi Professional</MudSelectItem>
             <MudSelectItem T="string" Value="@(PersonalityMode.KiwiDev.ToString())">Kiwi Dev (Technical)</MudSelectItem>
@@ -26,7 +26,7 @@
         <MudSelect T="string" @bind-Value="@_defaultModel"
                   Label="Default Model"
                   Variant="Variant.Outlined"
-                  OnValueChanged="@((string value) => Dispatcher.Dispatch(new UpdateDefaultModelAction(value)))">
+                  ValueChanged="@((string value) => Dispatcher.Dispatch(new UpdateDefaultModelAction(value)))">
             <MudSelectItem T="string" Value="@("gpt-4")">GPT-4</MudSelectItem>
             <MudSelectItem T="string" Value="@("gpt-3.5-turbo")">GPT-3.5 Turbo</MudSelectItem>
             <MudSelectItem T="string" Value="@("claude-3-5-sonnet-20241022")">Claude 3.5 Sonnet</MudSelectItem>

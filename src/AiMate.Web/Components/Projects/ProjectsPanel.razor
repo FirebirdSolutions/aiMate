@@ -58,7 +58,7 @@
                     <MudChip T="string"
                             Size="Size.Small"
                             Color="@(string.IsNullOrEmpty(_selectedStatus) ? Color.Default : Color.Primary)"
-                            OnClose="@(() => _selectedStatus = null)">
+                            OnClick="@(() => _selectedStatus = null)">
                         Status: @(_selectedStatus ?? "All")
                     </MudChip>
                 </ActivatorContent>
@@ -78,7 +78,7 @@
                     <MudChip T="string"
                             Size="Size.Small"
                             Color="@(string.IsNullOrEmpty(_selectedPriority) ? Color.Default : GetPriorityColor(_selectedPriority))"
-                            OnClose="@(() => _selectedPriority = null)">
+                            OnClick="@(() => _selectedPriority = null)">
                         Priority: @(_selectedPriority ?? "All")
                     </MudChip>
                 </ActivatorContent>
@@ -188,12 +188,12 @@
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                              Size="Size.Small"
                                              OnClick="@(() => EditProject(project))"
-                                             OnClick:stopPropagation="true" />
+                                             @onclick:stopPropagation="true" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                              Size="Size.Small"
                                              Color="Color.Error"
                                              OnClick="@(() => DeleteProject(project))"
-                                             OnClick:stopPropagation="true" />
+                                             @onclick:stopPropagation="true" />
                             </MudCardActions>
                         </MudCard>
                     </MudItem>
@@ -210,7 +210,7 @@
         @if (FilteredProjects.Any())
         {
             <MudPaper Elevation="1">
-                <MudList T="string" Clickable="true" Dense="true">
+                <MudList T="string"  Dense="true">
                     @foreach (var project in FilteredProjects)
                     {
                         <MudListItem T="string" OnClick="@(() => OpenProject(project))">
@@ -251,7 +251,7 @@
                                     <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                  Size="Size.Small"
                                                  OnClick="@(() => EditProject(project))"
-                                                 OnClick:stopPropagation="true" />
+                                                 @onclick:stopPropagation="true" />
                                 </div>
                             </div>
                         </MudListItem>
@@ -337,12 +337,12 @@
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                      Size="Size.Small"
                                      OnClick="@(() => EditProject(context))"
-                                     OnClick:stopPropagation="true" />
+                                     @onclick:stopPropagation="true" />
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                      Size="Size.Small"
                                      Color="Color.Error"
                                      OnClick="@(() => DeleteProject(context))"
-                                     OnClick:stopPropagation="true" />
+                                     @onclick:stopPropagation="true" />
                     </MudTd>
                 </RowTemplate>
             </MudTable>

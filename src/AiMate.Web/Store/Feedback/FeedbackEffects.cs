@@ -94,7 +94,7 @@ public class FeedbackEffects
     }
 
     [EffectMethod]
-    public async Task HandleQuickRateMessageAction(QuickRateMessageAction action, IDispatcher dispatcher)
+    public Task HandleQuickRateMessageAction(QuickRateMessageAction action, IDispatcher dispatcher)
     {
         // Quick rating with no tags or text feedback
         dispatcher.Dispatch(new SubmitFeedbackAction(
@@ -106,6 +106,7 @@ public class FeedbackEffects
             action.ModelId,
             null
         ));
+        return Task.CompletedTask;
     }
 
     [EffectMethod]

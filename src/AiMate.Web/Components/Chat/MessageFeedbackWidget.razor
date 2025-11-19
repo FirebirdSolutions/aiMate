@@ -72,7 +72,7 @@
                         {
                             <div class="mb-2">
                                 <MudText Typo="Typo.caption">@template.Label</MudText>
-                                <MudChipSet T="string" @bind-SelectedValue="selectedChips[template.Category]" SelectionMode="SelectionMode.SingleSelection">
+                                <MudChipSet T="string" SelectionMode="SelectionMode.None">
                                     @foreach (var option in template.Options.OrderBy(o => o.DisplayOrder))
                                     {
                                         <MudChip T="string"
@@ -100,7 +100,7 @@
                                 <MudChip T="string"
                                     Text="@tag.Value"
                                     Color="@GetSentimentColor(tag.Sentiment)"
-                                    OnClose="@((MudChip<string> chip) => RemoveTag(tag.Key))">
+                                    OnClick="@(() => RemoveTag(tag.Key))">
                                     @tag.Key: @tag.Value
                                 </MudChip>
                             }
@@ -156,7 +156,6 @@
     private int selectedRating = 5;
     private string? textFeedback;
     private List<FeedbackTagDto> selectedTags = new();
-    private Dictionary<string, MudChip<string>> selectedChips = new();
 
     private int? CurrentRating =>
         FeedbackState.Value.FeedbackByMessageId.TryGetValue(MessageId, out var feedback)

@@ -11,7 +11,7 @@
         <MudSelect T="string" @bind-Value="@_theme"
                   Label="Theme"
                   Variant="Variant.Outlined"
-                  OnValueChanged="@((string value) => Dispatcher.Dispatch(new UpdateThemeAction(value)))">
+                  ValueChanged="@((string value) => Dispatcher.Dispatch(new UpdateThemeAction(value)))">
             <MudSelectItem T="string" Value="@("dark")">Dark (Kiwi Night)</MudSelectItem>
             <MudSelectItem T="string" Value="@("light")">Light</MudSelectItem>
             <MudSelectItem T="string" Value="@("auto")">Auto (System)</MudSelectItem>
@@ -22,7 +22,7 @@
         <MudSelect T="string" @bind-Value="@_codeTheme"
                   Label="Code Theme"
                   Variant="Variant.Outlined"
-                  OnValueChanged="@((string value) => Dispatcher.Dispatch(new UpdateCodeThemeAction(value)))">
+                  ValueChanged="@((string value) => Dispatcher.Dispatch(new UpdateCodeThemeAction(value)))">
             <MudSelectItem T="string" Value="@("dracula")">Dracula</MudSelectItem>
             <MudSelectItem T="string" Value="@("monokai")">Monokai</MudSelectItem>
             <MudSelectItem T="string" Value="@("github")">GitHub</MudSelectItem>

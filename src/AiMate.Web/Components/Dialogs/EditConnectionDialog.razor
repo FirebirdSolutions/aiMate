@@ -51,12 +51,8 @@
                         Required="true"
                         Placeholder="https://api.openai.com/v1"
                         Adornment="Adornment.Start"
-                        AdornmentIcon="@Icons.Material.Filled.Link">
-                <MudIconButton Icon="@Icons.Material.Filled.Refresh"
-                             Size="Size.Small"
-                             OnClick="@(() => Connection.Url = string.Empty)"
-                             aria-label="clear url" />
-            </MudTextField>
+                        AdornmentIcon="@Icons.Material.Filled.Link"
+                        Clearable="true" />
 
             @* Provider Type *@
             <MudSelect T="string" @bind-Value="@Connection.ProviderType"
@@ -177,11 +173,11 @@
             @* Tags *@
             <MudDivider />
             <MudText Typo="Typo.subtitle2">Tags</MudText>
-            <MudChipSet T="string" MultiSelection="false" Filter="false">
+            <MudChipSet T="string" SelectionMode="SelectionMode.None">
                 @foreach (var (tag, index) in Connection.Tags.Select((t, i) => (t, i)))
                 {
                     <MudChip T="string" Text="@tag"
-                           OnClose="@(() => RemoveTag(index))"
+                           CloseIconClicked="@(() => RemoveTag(index))"
                            CloseIcon="@Icons.Material.Filled.Close" />
                 }
             </MudChipSet>
@@ -245,7 +241,7 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
                         Select groups that can access this connection
                     </MudText>
-                    <MudSelect T="string" Label="Groups" MultiSelection="true"
+                    <MudSelect T="string" Label="Groups" 
                              SelectedValues="@Connection.AllowedGroups"
                              SelectedValuesChanged="@((IEnumerable<string> values) => Connection.AllowedGroups = values.ToList())"
                              Variant="Variant.Outlined">
