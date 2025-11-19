@@ -339,8 +339,9 @@
 
         Snackbar.Add($"BYOK {(enabled ? "enabled" : "disabled")} for {tier} tier", Severity.Success);
 
-        // TODO: Persist this setting to database/configuration
-        // Dispatcher.Dispatch(new UpdateBYOKSettingAction(tier, enabled));
+        // IMPLEMENTATION NEEDED: Persist to database via AdminState store
+        // Example: Dispatcher.Dispatch(new UpdateBYOKSettingAction(tier, enabled));
+        // Store in AdminSettings table with key-value pairs
     }
 
     private Color GetLogColor(string level) => level.ToUpper() switch
