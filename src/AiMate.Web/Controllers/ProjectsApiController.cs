@@ -55,20 +55,16 @@ public class ProjectsController : ControllerBase
         var project = _projects.FirstOrDefault(p => p.Id == id);
         if (project == null) return NotFound();
 
-        var updated = project with
-        {
-            Name = request.Name ?? project.Name,
-            Description = request.Description ?? project.Description,
-            Status = request.Status ?? project.Status,
-            Priority = request.Priority ?? project.Priority,
-            Budget = request.Budget ?? project.Budget,
-            ProgressPercent = request.ProgressPercent ?? project.ProgressPercent,
-            UpdatedAt = DateTime.UtcNow
-        };
+        // Update properties manually since ProjectDto is a class, not a record
+        project.Name = request.Name ?? project.Name;
+        project.Description = request.Description ?? project.Description;
+        project.Status = request.Status ?? project.Status;
+        project.Priority = request.Priority ?? project.Priority;
+        project.Budget = request.Budget ?? project.Budget;
+        project.ProgressPercent = request.ProgressPercent ?? project.ProgressPercent;
+        project.UpdatedAt = DateTime.UtcNow;
 
-        var index = _projects.IndexOf(project);
-        _projects[index] = updated;
-        return Ok(updated);
+        return Ok(project);
     }
 
     [HttpDelete("{id}")]
@@ -111,7 +107,7 @@ public class ProjectsController : ControllerBase
                 Priority = "High",
                 Budget = 15000,
                 ProgressPercent = 100,
-                CompletedDate = DateTime.UtcNow.AddDays(-5),
+                // CompletedDate is not a property of ProjectDto
                 Tags = new List<string> { "security", "api", "byok" }
             }
         });
