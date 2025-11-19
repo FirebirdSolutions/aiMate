@@ -7,16 +7,15 @@
         <MudText Typo="Typo.h6">Upload Files</MudText>
     </TitleContent>
     <DialogContent>
-        <MudFileUpload T="IBrowserFile"
-                      FilesChanged="@((IReadOnlyList<IBrowserFile> files) => HandleFilesChanged(files))"
+        <MudFileUpload T="IReadOnlyList<IBrowserFile>"
+                      FilesChanged="@OnFilesChanged"
                       Accept=".txt,.md,.pdf,.png,.jpg,.jpeg,.doc,.docx"
                       MaximumFileCount="5">
             <ActivatorContent>
                 <MudButton HtmlTag="label"
                           Variant="Variant.Filled"
                           Color="Color.Primary"
-                          StartIcon="@Icons.Material.Filled.CloudUpload"
-                          for="@context.Id">
+                          StartIcon="@Icons.Material.Filled.CloudUpload">
                     Choose Files
                 </MudButton>
             </ActivatorContent>
@@ -83,9 +82,12 @@
     private List<IBrowserFile> _selectedFiles = new();
     private bool _isUploading = false;
 
-    private void HandleFilesChanged(IReadOnlyList<IBrowserFile> files)
+    private void OnFilesChanged(IReadOnlyList<IBrowserFile>? files)
     {
-        _selectedFiles = files.ToList();
+        if (files != null)
+        {
+            _selectedFiles = files.ToList();
+        }
     }
 
     private void RemoveFile(IBrowserFile file)

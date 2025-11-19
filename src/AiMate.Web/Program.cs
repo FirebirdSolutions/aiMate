@@ -24,7 +24,9 @@ builder.Services.AddRazorComponents()
 // API Controllers for Developer tier
 builder.Services.AddControllers();
 
-// Swagger/OpenAPI for API documentation
+// Swagger/OpenAPI for API documentation (requires Swashbuckle.AspNetCore package)
+// Commented out until package is added to avoid build errors
+/*
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -65,6 +67,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+*/
 
 // CORS for API access
 builder.Services.AddCors(options =>
@@ -149,12 +152,15 @@ if (!app.Environment.IsDevelopment())
 }
 
 // Enable Swagger in all environments (production needs API docs too)
+// Commented out until Swashbuckle.AspNetCore package is added
+/*
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "aiMate API v1");
     c.RoutePrefix = "api/docs"; // Access at /api/docs
 });
+*/
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -163,7 +169,7 @@ app.UseAntiforgery();
 // CORS for API
 app.UseCors("ApiCorsPolicy");
 
-app.MapRazorComponents<App>()
+app.MapRazorComponents<AiMate.Web.App>()
     .AddInteractiveServerRenderMode();
 
 // Map API controllers

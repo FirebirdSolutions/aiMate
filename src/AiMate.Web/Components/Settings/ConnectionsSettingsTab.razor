@@ -3,6 +3,7 @@
 @using AiMate.Web.Store.Connection
 @using AiMate.Shared.Models
 @using AiMate.Core.Enums
+@using AiMate.Web.Components.Dialogs
 @inherits Fluxor.Blazor.Web.Components.FluxorComponent
 @inject IState<SettingsState> SettingsState
 @inject IState<ConnectionState> ConnectionState
@@ -211,7 +212,7 @@
         <MudButton Variant="Variant.Filled"
                   Color="Color.Primary"
                   StartIcon="@Icons.Material.Filled.Cable"
-                  OnClick="@HandleTestConnection">
+                  OnClick="@HandleTestLiteLLMConnection">
             Test Connection
         </MudButton>
 
@@ -319,7 +320,7 @@
 
     private void HandleTestConnection(string id)
     {
-        Dispatcher.Dispatch(new Store.Connection.TestConnectionAction(id));
+        Dispatcher.Dispatch(new AiMate.Web.Store.Connection.TestConnectionAction(id));
     }
 
     private async Task HandleDeleteConnection(string id)
@@ -368,9 +369,9 @@
 
     // Legacy LiteLLM Connection Test Handler
 
-    private void HandleTestConnection()
+    private void HandleTestLiteLLMConnection()
     {
-        Dispatcher.Dispatch(new Store.Settings.TestConnectionAction());
+        Dispatcher.Dispatch(new AiMate.Web.Store.Settings.TestConnectionAction());
         _connectionTestResult = "Testing connection...";
         _connectionTestSuccess = true;
     }
