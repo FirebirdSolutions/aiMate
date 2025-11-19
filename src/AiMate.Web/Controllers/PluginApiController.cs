@@ -76,7 +76,7 @@ public class PluginApiController : ControllerBase
             var plugin = _pluginManager.GetPlugin(id);
             if (plugin == null)
             {
-                return NotFound(new { error = "Plugin not found", pluginId = id }));
+                return NotFound(new { error = "Plugin not found", pluginId = id });
             }
 
             var pluginInfo = new PluginInfo
@@ -116,7 +116,7 @@ public class PluginApiController : ControllerBase
             var plugin = _pluginManager.GetPlugin(id);
             if (plugin == null)
             {
-                return NotFound(new { error = "Plugin not found", pluginId = id }));
+                return NotFound(new { error = "Plugin not found", pluginId = id });
             }
 
             // Toggle the plugin state
@@ -145,7 +145,7 @@ public class PluginApiController : ControllerBase
             var plugin = _pluginManager.GetPlugin(id);
             if (plugin == null)
             {
-                return Task.FromResult<IActionResult>(NotFound(new { error = "Plugin not found", pluginId = id }));
+                return Task.FromResult<IActionResult>(NotFound(new { error = "Plugin not found", pluginId = id });
             }
 
             if (plugin is not IUIExtension uiExtension)
@@ -181,7 +181,7 @@ public class PluginApiController : ControllerBase
             var plugin = _pluginManager.GetPlugin(id);
             if (plugin == null)
             {
-                return Task.FromResult<IActionResult>(NotFound(new { error = "Plugin not found", pluginId = id }));
+                return Task.FromResult<IActionResult>(NotFound(new { error = "Plugin not found", pluginId = id });
             }
 
             // IMPLEMENTATION NEEDED: Add settings persistence to plugin system
