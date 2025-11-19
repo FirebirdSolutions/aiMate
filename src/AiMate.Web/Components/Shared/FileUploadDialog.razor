@@ -11,6 +11,8 @@
                       FilesChanged="@((IReadOnlyList<IBrowserFile> files) => HandleFilesChanged(files))"
                       Accept=".txt,.md,.pdf,.png,.jpg,.jpeg,.doc,.docx"
                       MaximumFileCount="5">
+            @* ReSharper disable once Razor.RenderTemplateNotResolved *@
+            @* ButtonTemplate is a valid MudBlazor RenderFragment - warning is false positive *@
             <ButtonTemplate Context="fileContext">
                 <MudButton HtmlTag="label"
                           Variant="Variant.Filled"
