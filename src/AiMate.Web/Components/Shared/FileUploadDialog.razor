@@ -8,7 +8,7 @@
     </TitleContent>
     <DialogContent>
         <MudFileUpload T="IBrowserFile"
-                      FilesChanged="@((IReadOnlyList<IBrowserFile> files) => HandleFilesChanged(files))"
+                      FilesChanged="@HandleFilesChanged"
                       Accept=".txt,.md,.pdf,.png,.jpg,.jpeg,.doc,.docx"
                       MaximumFileCount="5">
             <ActivatorContent>
@@ -16,7 +16,7 @@
                           Variant="Variant.Filled"
                           Color="Color.Primary"
                           StartIcon="@Icons.Material.Filled.CloudUpload"
-                          for="@context.Id">
+                          for="@context">
                     Choose Files
                 </MudButton>
             </ActivatorContent>

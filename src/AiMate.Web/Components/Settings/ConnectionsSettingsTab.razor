@@ -212,7 +212,7 @@
         <MudButton Variant="Variant.Filled"
                   Color="Color.Primary"
                   StartIcon="@Icons.Material.Filled.Cable"
-                  OnClick="@HandleTestConnection">
+                  OnClick="@HandleTestLiteLLMConnection">
             Test Connection
         </MudButton>
 
@@ -320,7 +320,7 @@
 
     private void HandleTestConnection(string id)
     {
-        Dispatcher.Dispatch(new Store.Connection.TestConnectionAction(id));
+        Dispatcher.Dispatch(new TestConnectionAction(id));
     }
 
     private async Task HandleDeleteConnection(string id)
@@ -369,7 +369,7 @@
 
     // Legacy LiteLLM Connection Test Handler
 
-    private void HandleTestConnection()
+    private void HandleTestLiteLLMConnection()
     {
         Dispatcher.Dispatch(new Store.Settings.TestConnectionAction());
         _connectionTestResult = "Testing connection...";

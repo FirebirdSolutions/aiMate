@@ -49,8 +49,8 @@ public class PluginApiController : ControllerBase
                     Category = p.Category,
                     IsEnabled = p.IsEnabled,
                     HasSettings = p is IUIExtension uiExt && uiExt.GetSettingsUI() != null,
-                    ActionCount = p is IUIExtension ui ? ui.GetMessageActions(new Core.Entities.Message()).Count() : 0,
-                    ToolCount = p is IToolProvider tp ? tp.GetAvailableTools().Count() : 0
+                    ActionCount = p is IUIExtension ui ? ui.GetMessageActions(new Core.Entities.Message { Content = "" }).Count() : 0,
+                    ToolCount = p is IToolProvider tp ? tp.GetTools().Count() : 0
                 })
                 .ToList();
 
