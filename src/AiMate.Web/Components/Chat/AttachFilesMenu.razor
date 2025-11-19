@@ -231,11 +231,12 @@
         Snackbar.Add("Code snippet editor would open here", Severity.Info);
     }
 
-    private async Task HandleRecordAudio()
+    private Task HandleRecordAudio()
     {
         // IMPLEMENTATION NEEDED: Use MediaRecorder API via JS interop
         // Example: await JSRuntime.InvokeVoidAsync("startAudioRecording");
         Snackbar.Add("Audio recording would start here", Severity.Info);
+        return Task.CompletedTask;
     }
 
     public class AttachedFile
