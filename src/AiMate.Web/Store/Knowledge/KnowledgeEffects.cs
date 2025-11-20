@@ -1,4 +1,5 @@
 using AiMate.Shared.Models;
+using AiMate.Web.Store.Auth;
 using Fluxor;
 using System.Net.Http.Json;
 
@@ -7,10 +8,14 @@ namespace AiMate.Web.Store.Knowledge;
 public class KnowledgeEffects
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IState<AuthState> _authState;
 
-    public KnowledgeEffects(IHttpClientFactory httpClientFactory)
+    public KnowledgeEffects(
+        IHttpClientFactory httpClientFactory,
+        IState<AuthState> authState)
     {
         _httpClientFactory = httpClientFactory;
+        _authState = authState;
     }
 
     // ========================================================================
@@ -23,7 +28,15 @@ public class KnowledgeEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
+
+            // Get authenticated user
+            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
+            {
+                dispatcher.Dispatch(new LoadArticlesFailureAction("User not authenticated"));
+                return;
+            }
+
+            var userId = _authState.Value.CurrentUser.Id.ToString();
             var articles = await httpClient.GetFromJsonAsync<List<KnowledgeArticleDto>>(
                 $"/api/v1/knowledge?userId={userId}");
 
@@ -52,7 +65,15 @@ public class KnowledgeEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
+
+            // Get authenticated user
+            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
+            {
+                dispatcher.Dispatch(new LoadAnalyticsFailureAction("User not authenticated"));
+                return;
+            }
+
+            var userId = _authState.Value.CurrentUser.Id.ToString();
             var analytics = await httpClient.GetFromJsonAsync<KnowledgeAnalyticsDto>(
                 $"/api/v1/knowledge/analytics?userId={userId}");
 

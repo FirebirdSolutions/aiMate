@@ -1,4 +1,5 @@
 using AiMate.Shared.Models;
+using AiMate.Web.Store.Auth;
 using Fluxor;
 using System.Net.Http.Json;
 
@@ -7,10 +8,14 @@ namespace AiMate.Web.Store.Notes;
 public class NotesEffects
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IState<AuthState> _authState;
 
-    public NotesEffects(IHttpClientFactory httpClientFactory)
+    public NotesEffects(
+        IHttpClientFactory httpClientFactory,
+        IState<AuthState> authState)
     {
         _httpClientFactory = httpClientFactory;
+        _authState = authState;
     }
 
     // ========================================================================
@@ -23,7 +28,15 @@ public class NotesEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
+
+            // Get authenticated user
+            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
+            {
+                dispatcher.Dispatch(new LoadNotesFailureAction("User not authenticated"));
+                return;
+            }
+
+            var userId = _authState.Value.CurrentUser.Id.ToString();
             var notes = await httpClient.GetFromJsonAsync<List<NoteDto>>($"/api/v1/notes?userId={userId}");
 
             if (notes != null)

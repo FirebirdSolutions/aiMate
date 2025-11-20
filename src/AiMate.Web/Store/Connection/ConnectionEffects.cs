@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using AiMate.Shared.Models;
+using AiMate.Web.Store.Auth;
 using Fluxor;
 using Microsoft.Extensions.Logging;
 
@@ -8,11 +9,16 @@ namespace AiMate.Web.Store.Connection;
 public class ConnectionEffects
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IState<AuthState> _authState;
     private readonly ILogger<ConnectionEffects> _logger;
 
-    public ConnectionEffects(IHttpClientFactory httpClientFactory, ILogger<ConnectionEffects> logger)
+    public ConnectionEffects(
+        IHttpClientFactory httpClientFactory,
+        IState<AuthState> authState,
+        ILogger<ConnectionEffects> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _authState = authState;
         _logger = logger;
     }
 
@@ -31,9 +37,16 @@ public class ConnectionEffects
                 return;
             }
 
-            // IMPLEMENTATION NEEDED: Inject IState<AuthState> to get userId and tier from authenticated user
-            var userId = "user-1";
-            var tier = "Free";
+            // Get authenticated user
+            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
+            {
+                _logger.LogWarning("User not authenticated, cannot load connections");
+                dispatcher.Dispatch(new LoadConnectionsFailureAction("User not authenticated"));
+                return;
+            }
+
+            var userId = _authState.Value.CurrentUser.Id.ToString();
+            var tier = _authState.Value.CurrentUser.Tier.ToString();
 
             var connections = await httpClient.GetFromJsonAsync<List<ProviderConnectionDto>>(
                 $"/api/v1/connections?userId={userId}&tierStr={tier}");
@@ -72,7 +85,8 @@ public class ConnectionEffects
                 return;
             }
 
-            var tier = "Free"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Tier
+            // Get user tier from auth state, default to Free if not authenticated
+            var tier = _authState.Value.CurrentUser?.Tier.ToString() ?? "Free";
 
             var response = await httpClient.GetFromJsonAsync<ConnectionLimitsResponse>(
                 $"/api/v1/connections/limits?tierStr={tier}");
@@ -110,8 +124,16 @@ public class ConnectionEffects
                 return;
             }
 
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
-            var tier = "Free";
+            // Get authenticated user
+            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
+            {
+                _logger.LogWarning("User not authenticated, cannot create connection");
+                dispatcher.Dispatch(new CreateConnectionFailureAction("User not authenticated"));
+                return;
+            }
+
+            var userId = _authState.Value.CurrentUser.Id.ToString();
+            var tier = _authState.Value.CurrentUser.Tier.ToString();
 
             var response = await httpClient.PostAsJsonAsync(
                 $"/api/v1/connections?userId={userId}&tierStr={tier}",
@@ -154,8 +176,16 @@ public class ConnectionEffects
                 return;
             }
 
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
-            var tier = "Free";
+            // Get authenticated user
+            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
+            {
+                _logger.LogWarning("User not authenticated, cannot update connection");
+                dispatcher.Dispatch(new UpdateConnectionFailureAction("User not authenticated"));
+                return;
+            }
+
+            var userId = _authState.Value.CurrentUser.Id.ToString();
+            var tier = _authState.Value.CurrentUser.Tier.ToString();
 
             var response = await httpClient.PutAsJsonAsync(
                 $"/api/v1/connections/{action.Id}?userId={userId}&tierStr={tier}",
@@ -198,8 +228,16 @@ public class ConnectionEffects
                 return;
             }
 
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
-            var tier = "Free";
+            // Get authenticated user
+            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
+            {
+                _logger.LogWarning("User not authenticated, cannot delete connection");
+                dispatcher.Dispatch(new DeleteConnectionFailureAction("User not authenticated"));
+                return;
+            }
+
+            var userId = _authState.Value.CurrentUser.Id.ToString();
+            var tier = _authState.Value.CurrentUser.Tier.ToString();
 
             var response = await httpClient.DeleteAsync(
                 $"/api/v1/connections/{action.Id}?userId={userId}&tierStr={tier}");
@@ -237,7 +275,15 @@ public class ConnectionEffects
                 return;
             }
 
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
+            // Get authenticated user
+            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
+            {
+                _logger.LogWarning("User not authenticated, cannot test connection");
+                dispatcher.Dispatch(new TestConnectionFailureAction("User not authenticated"));
+                return;
+            }
+
+            var userId = _authState.Value.CurrentUser.Id.ToString();
 
             var response = await httpClient.PostAsync(
                 $"/api/v1/connections/{action.Id}/test?userId={userId}", null);
