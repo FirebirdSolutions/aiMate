@@ -115,7 +115,20 @@ public class AuthService : IAuthService
             }, out var validatedToken);
 
             var jwtToken = (JwtSecurityToken)validatedToken;
-            var userId = Guid.Parse(jwtToken.Claims.First(x => x.Type == ClaimTypes.NameIdentifier).Value);
+
+            // Try different claim type formats (ClaimTypes.NameIdentifier vs JwtRegisteredClaimNames.Sub vs "nameid")
+            var userIdClaim = jwtToken.Claims.FirstOrDefault(x =>
+                x.Type == ClaimTypes.NameIdentifier ||
+                x.Type == JwtRegisteredClaimNames.Sub ||
+                x.Type == "nameid");
+
+            if (userIdClaim == null)
+            {
+                _logger.LogWarning("Token validation failed: No user ID claim found");
+                return null;
+            }
+
+            var userId = Guid.Parse(userIdClaim.Value);
 
             var user = await _context.Users.FindAsync(new object[] { userId }, cancellationToken);
 
