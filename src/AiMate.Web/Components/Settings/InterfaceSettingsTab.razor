@@ -6,11 +6,12 @@
 
 <MudText Typo="Typo.h6" Class="mb-4">Interface Settings</MudText>
 
-<MudGrid>
+<MudGrid Spacing="2">
     <MudItem xs="12" md="6">
         <MudSelect T="string" Value="@_theme"
                   Label="Theme"
                   Variant="Variant.Outlined"
+                  Margin="Margin.Dense"
                   ValueChanged="@((string value) => { _theme = value; Dispatcher.Dispatch(new UpdateThemeAction(value)); })">
             <MudSelectItem T="string" Value="@("dark")">Dark (Kiwi Night)</MudSelectItem>
             <MudSelectItem T="string" Value="@("light")">Light</MudSelectItem>
@@ -22,6 +23,7 @@
         <MudSelect T="string" Value="@_codeTheme"
                   Label="Code Theme"
                   Variant="Variant.Outlined"
+                  Margin="Margin.Dense"
                   ValueChanged="@((string value) => { _codeTheme = value; Dispatcher.Dispatch(new UpdateCodeThemeAction(value)); })">
             <MudSelectItem T="string" Value="@("dracula")">Dracula</MudSelectItem>
             <MudSelectItem T="string" Value="@("monokai")">Monokai</MudSelectItem>

@@ -5,7 +5,7 @@
 <MudDialog>
     <DialogContent>
         <MudForm @ref="_form">
-            <MudGrid>
+            <MudGrid Spacing="2">
                 <!-- Project Key and Name -->
                 <MudItem xs="12" sm="4">
                     <MudTextField T="string"
@@ -15,7 +15,8 @@
                                  Required="true"
                                  RequiredError="Project key is required"
                                  HelperText="Unique identifier for the project"
-                                 Variant="Variant.Outlined" />
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12" sm="8">
@@ -24,7 +25,8 @@
                                  Label="Project Name"
                                  Required="true"
                                  RequiredError="Project name is required"
-                                 Variant="Variant.Outlined" />
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense" />
                 </MudItem>
 
                 <!-- Description -->
@@ -33,7 +35,8 @@
                                  @bind-Value="_project.Description"
                                  Label="Description"
                                  Lines="3"
-                                 Variant="Variant.Outlined" />
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense" />
                 </MudItem>
 
                 <!-- Status and Priority -->
@@ -42,7 +45,8 @@
                               @bind-Value="_project.Status"
                               Label="Status"
                               Required="true"
-                              Variant="Variant.Outlined">
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense">
                         <MudSelectItem T="string" Value="@("Planning")">
                             <div class="d-flex align-center gap-2">
                                 <MudIcon Icon="@Icons.Material.Filled.Lightbulb" Size="Size.Small" Color="Color.Info" />
@@ -81,7 +85,8 @@
                               @bind-Value="_project.Priority"
                               Label="Priority"
                               Required="true"
-                              Variant="Variant.Outlined">
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense">
                         <MudSelectItem T="string" Value="@("Critical")">
                             <div class="d-flex align-center gap-2">
                                 <MudIcon Icon="@Icons.Material.Filled.Flag" Size="Size.Small" Color="Color.Error" />
@@ -131,6 +136,7 @@
                                   @bind-Date="_project.StartDate"
                                   Label="Start Date"
                                   Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
                                   Editable="true" />
                 </MudItem>
 
@@ -139,6 +145,7 @@
                                   @bind-Date="_project.DueDate"
                                   Label="Due Date"
                                   Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
                                   Editable="true"
                                   MinDate="_project.StartDate" />
                 </MudItem>
@@ -150,6 +157,7 @@
                                     Label="Budget"
                                     Format="C2"
                                     Variant="Variant.Outlined"
+                                    Margin="Margin.Dense"
                                     Adornment="Adornment.Start"
                                     AdornmentIcon="@Icons.Material.Filled.AttachMoney" />
                 </MudItem>
@@ -159,6 +167,7 @@
                                  @bind-Value="_project.Owner"
                                  Label="Owner"
                                  Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
                                  Adornment="Adornment.Start"
                                  AdornmentIcon="@Icons.Material.Filled.Person" />
                 </MudItem>
@@ -171,6 +180,7 @@
                                  Label="Team Members"
                                  HelperText="Enter team members separated by commas"
                                  Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
                                  Adornment="Adornment.Start"
                                  AdornmentIcon="@Icons.Material.Filled.Group" />
                 </MudItem>
@@ -183,6 +193,7 @@
                                  Label="Tags"
                                  HelperText="Enter tags separated by commas"
                                  Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
                                  Adornment="Adornment.Start"
                                  AdornmentIcon="@Icons.Material.Filled.LocalOffer" />
                 </MudItem>
@@ -193,7 +204,8 @@
                                  @bind-Value="_project.Notes"
                                  Label="Notes"
                                  Lines="4"
-                                 Variant="Variant.Outlined" />
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense" />
                 </MudItem>
 
                 @if (!string.IsNullOrEmpty(_errorMessage))

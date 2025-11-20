@@ -78,7 +78,7 @@
         }
         else
         {
-            <MudGrid>
+            <MudGrid Spacing="2">
                 @foreach (var connection in ConnectionState.Value.Connections)
                 {
                     <MudItem xs="12" md="6">
@@ -152,11 +152,12 @@
         Configure your LiteLLM gateway for local model access
     </MudText>
 
-<MudGrid>
+<MudGrid Spacing="2">
     <MudItem xs="12">
         <MudTextField T="string" Value="@_liteLLMUrl"
                      Label="LiteLLM URL"
                      Variant="Variant.Outlined"
+                     Margin="Margin.Dense"
                      Placeholder="http://localhost:4000"
                      ValueChanged="@((string value) => { _liteLLMUrl = value; Dispatcher.Dispatch(new UpdateLiteLLMUrlAction(value)); })" />
         <MudText Typo="Typo.caption" Color="Color.Secondary">
@@ -168,6 +169,7 @@
         <MudTextField T="string" Value="@_apiKey"
                      Label="API Key (optional)"
                      Variant="Variant.Outlined"
+                     Margin="Margin.Dense"
                      InputType="InputType.Password"
                      Placeholder="sk-..."
                      ValueChanged="@((string value) => { _apiKey = value; Dispatcher.Dispatch(new UpdateApiKeyAction(value)); })" />
@@ -180,6 +182,7 @@
         <MudNumericField T="int" Value="@_requestTimeout"
                         Label="Request Timeout (seconds)"
                         Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
                         Min="30"
                         Max="300"
                         ValueChanged="@((int value) => { _requestTimeout = value; Dispatcher.Dispatch(new UpdateRequestTimeoutAction(value)); })" />
@@ -189,6 +192,7 @@
         <MudNumericField T="int" Value="@_maxRetries"
                         Label="Max Retries"
                         Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
                         Min="0"
                         Max="10"
                         ValueChanged="@((int value) => { _maxRetries = value; Dispatcher.Dispatch(new UpdateMaxRetriesAction(value)); })" />

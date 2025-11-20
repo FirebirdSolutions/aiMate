@@ -11,14 +11,15 @@
             <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" Class="mb-4">
                 <!-- Basic Info Tab -->
                 <MudTabPanel Text="Basic Info" Icon="@Icons.Material.Filled.Info">
-                    <MudGrid Class="mt-4">
+                    <MudGrid Class="mt-4" Spacing="2">
                         <MudItem xs="12">
                             <MudTextField T="string"
                                          @bind-Value="_article.Title"
                                          Label="Title"
                                          Required="true"
                                          RequiredError="Title is required"
-                                         Variant="Variant.Outlined" />
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense" />
                         </MudItem>
 
                         <MudItem xs="12">
@@ -27,7 +28,8 @@
                                          Label="Summary"
                                          Lines="2"
                                          HelperText="Brief description of the article"
-                                         Variant="Variant.Outlined" />
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense" />
                         </MudItem>
 
                         <MudItem xs="12" sm="6">
@@ -35,7 +37,8 @@
                                       @bind-Value="_article.Type"
                                       Label="Type"
                                       Required="true"
-                                      Variant="Variant.Outlined">
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense">
                                 <MudSelectItem T="string" Value="@("Article")">Article</MudSelectItem>
                                 <MudSelectItem T="string" Value="@("Guide")">Guide</MudSelectItem>
                                 <MudSelectItem T="string" Value="@("Reference")">Reference</MudSelectItem>
@@ -48,7 +51,8 @@
                             <MudSelect T="string"
                                       @bind-Value="_article.ContentType"
                                       Label="Content Type"
-                                      Variant="Variant.Outlined">
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense">
                                 <MudSelectItem T="string" Value="@("Markdown")">Markdown</MudSelectItem>
                                 <MudSelectItem T="string" Value="@("HTML")">HTML</MudSelectItem>
                                 <MudSelectItem T="string" Value="@("Text")">Plain Text</MudSelectItem>
@@ -63,6 +67,7 @@
                                          Required="true"
                                          RequiredError="Content is required"
                                          Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
                                          HelperText="@(_article.ContentType == "Markdown" ? "Supports Markdown formatting" : "")" />
                         </MudItem>
                     </MudGrid>
@@ -70,13 +75,14 @@
 
                 <!-- Organization Tab -->
                 <MudTabPanel Text="Organization" Icon="@Icons.Material.Filled.FolderOpen">
-                    <MudGrid Class="mt-4">
+                    <MudGrid Class="mt-4" Spacing="2">
                         <MudItem xs="12" sm="6">
                             <MudAutocomplete T="string"
                                            @bind-Value="_article.Collection"
                                            Label="Collection"
                                            SearchFunc="SearchCollections"
                                            Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
                                            CoerceText="true"
                                            CoerceValue="false"
                                            Clearable="true"
@@ -89,6 +95,7 @@
                                            Label="Category"
                                            SearchFunc="SearchCategories"
                                            Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
                                            CoerceText="true"
                                            CoerceValue="false"
                                            Clearable="true" />
@@ -112,6 +119,7 @@
                                            Label="Add Tags"
                                            SearchFunc="SearchTags"
                                            Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
                                            CoerceText="false"
                                            CoerceValue="false"
                                            Clearable="true"
@@ -124,19 +132,21 @@
                                          @bind-Value="_article.Source"
                                          Label="Source"
                                          HelperText="Original source or reference URL"
-                                         Variant="Variant.Outlined" />
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense" />
                         </MudItem>
                     </MudGrid>
                 </MudTabPanel>
 
                 <!-- Settings Tab -->
                 <MudTabPanel Text="Settings" Icon="@Icons.Material.Filled.Settings">
-                    <MudGrid Class="mt-4">
+                    <MudGrid Class="mt-4" Spacing="2">
                         <MudItem xs="12" sm="6">
                             <MudSelect T="string"
                                       @bind-Value="_article.Visibility"
                                       Label="Visibility"
-                                      Variant="Variant.Outlined">
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense">
                                 <MudSelectItem T="string" Value="@("Private")">
                                     <div class="d-flex align-center gap-2">
                                         <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" />
@@ -207,7 +217,7 @@
                         {
                             <MudItem xs="12">
                                 <MudText Typo="Typo.h6" Class="mb-3">Statistics</MudText>
-                                <MudGrid>
+                                <MudGrid Spacing="2">
                                     <MudItem xs="12" sm="4">
                                         <MudPaper Elevation="0" Class="pa-3">
                                             <div class="d-flex align-center gap-2">

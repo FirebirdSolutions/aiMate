@@ -6,7 +6,7 @@
 
 <MudText Typo="Typo.h6" Class="mb-4">Usage & Cost Tracking</MudText>
 
-<MudGrid>
+<MudGrid Spacing="2">
     <MudItem xs="12">
         <MudSwitch T="bool" Value="@_trackUsage"
                   Label="Track Usage"
@@ -45,6 +45,7 @@
         <MudNumericField T="int" Value="@_monthlyBudget"
                         Label="Monthly Budget (NZD)"
                         Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
                         Min="0"
                         Max="1000"
                         Step="10"
@@ -64,7 +65,7 @@
 
     <MudItem xs="12">
         <MudPaper Class="pa-4" Elevation="0">
-            <MudGrid>
+            <MudGrid Spacing="2">
                 <MudItem xs="12" md="4">
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Tokens Used</MudText>
                     <MudText Typo="Typo.h5">147,532</MudText>

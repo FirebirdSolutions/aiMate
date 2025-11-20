@@ -35,7 +35,7 @@
     else if (PluginState.Value.LoadedPlugins.Any())
     {
         @* Plugin Statistics *@
-        <MudGrid>
+        <MudGrid Spacing="2">
             <MudItem xs="12" sm="6" md="3">
                 <MudPaper Class="pa-4" Elevation="2">
                     <MudStack Spacing="1">
@@ -135,7 +135,7 @@
         @* Plugin Categories Summary *@
         <MudText Typo="Typo.subtitle1" Class="mt-4">Plugins by Category</MudText>
         <MudDivider />
-        <MudGrid>
+        <MudGrid Spacing="2">
             @foreach (var category in PluginState.Value.LoadedPlugins.GroupBy(p => p.Category))
             {
                 <MudItem xs="12" md="6">

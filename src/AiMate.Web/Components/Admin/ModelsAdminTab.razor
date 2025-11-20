@@ -26,7 +26,7 @@
 
     @if (AdminState.Value.Models.Any())
     {
-        <MudTable T="AIModelConfig" Items="@AdminState.Value.Models" Hover="true">
+        <MudTable T="AIModelConfig" Items="@AdminState.Value.Models" Hover="true" Dense="true">
             <HeaderContent>
                 <MudTh>Model</MudTh>
                 <MudTh>Provider</MudTh>

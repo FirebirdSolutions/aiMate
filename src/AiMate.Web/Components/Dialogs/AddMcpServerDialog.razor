@@ -6,11 +6,13 @@
             <MudTextField T="string" @bind-Value="@_name"
                          Label="Server Name"
                          Variant="Variant.Outlined"
+                         Margin="Margin.Dense"
                          Required="true" />
 
             <MudSelect T="string" @bind-Value="@_type"
                       Label="Server Type"
                       Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
                       Required="true">
                 <MudSelectItem T="string" Value="@("stdio")">Stdio (Local Process)</MudSelectItem>
                 <MudSelectItem T="string" Value="@("sse")">SSE (Server-Sent Events)</MudSelectItem>
@@ -22,12 +24,14 @@
                 <MudTextField T="string" @bind-Value="@_command"
                              Label="Command"
                              Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
                              HelperText="e.g., npx, node, python"
                              Required="true" />
 
                 <MudTextField T="string" @bind-Value="@_arguments"
                              Label="Arguments"
                              Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
                              Lines="3"
                              HelperText="Command arguments, one per line" />
             }
@@ -36,6 +40,7 @@
                 <MudTextField T="string" @bind-Value="@_url"
                              Label="Server URL"
                              Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
                              HelperText="e.g., http://localhost:8080/mcp"
                              Required="true" />
             }

@@ -7,11 +7,12 @@
 
 <MudText Typo="Typo.h6" Class="mb-4">Personalisation Settings</MudText>
 
-<MudGrid>
+<MudGrid Spacing="2">
     <MudItem xs="12" md="6">
         <MudSelect T="string" Value="@_defaultPersonality"
                   Label="Default Personality"
                   Variant="Variant.Outlined"
+                  Margin="Margin.Dense"
                   ValueChanged="@((string value) => { _defaultPersonality = value; Dispatcher.Dispatch(new UpdateDefaultPersonalityAction(value)); })">
             <MudSelectItem T="string" Value="@(PersonalityMode.KiwiMate.ToString())">Kiwi Mate (Casual & Friendly)</MudSelectItem>
             <MudSelectItem T="string" Value="@(PersonalityMode.KiwiProfessional.ToString())">Kiwi Professional</MudSelectItem>
@@ -26,6 +27,7 @@
         <MudSelect T="string" Value="@_defaultModel"
                   Label="Default Model"
                   Variant="Variant.Outlined"
+                  Margin="Margin.Dense"
                   ValueChanged="@((string value) => { _defaultModel = value; Dispatcher.Dispatch(new UpdateDefaultModelAction(value)); })">
             <MudSelectItem T="string" Value="@("gpt-4")">GPT-4</MudSelectItem>
             <MudSelectItem T="string" Value="@("gpt-3.5-turbo")">GPT-3.5 Turbo</MudSelectItem>
@@ -53,6 +55,7 @@
         <MudNumericField T="int" Value="@_maxTokens"
                         Label="Max Tokens"
                         Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
                         Min="100"
                         Max="8000"
                         Step="100"
@@ -63,6 +66,7 @@
         <MudTextField T="string" Value="@_systemPromptOverride"
                      Label="System Prompt Override (Advanced)"
                      Variant="Variant.Outlined"
+                     Margin="Margin.Dense"
                      Lines="5"
                      Placeholder="Optional: Override the default system prompt"
                      ValueChanged="@((string value) => { _systemPromptOverride = value; Dispatcher.Dispatch(new UpdateSystemPromptOverrideAction(value)); })" />

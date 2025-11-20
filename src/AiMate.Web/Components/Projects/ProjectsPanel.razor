@@ -44,6 +44,7 @@
                      Placeholder="Search projects by name, key, or description..."
                      Adornment="Adornment.Start"
                      AdornmentIcon="@Icons.Material.Filled.Search"
+                     Margin="Margin.Dense"
                      Immediate="true"
                      DebounceInterval="300"
                      Class="mb-3" />
@@ -118,7 +119,7 @@
     {
         @if (FilteredProjects.Any())
         {
-            <MudGrid>
+            <MudGrid Spacing="2">
                 @foreach (var project in FilteredProjects)
                 {
                     <MudItem xs="12" sm="6" md="4" lg="3">

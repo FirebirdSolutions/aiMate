@@ -6,7 +6,7 @@
 
 <MudText Typo="Typo.h6" Class="mb-4">Account Settings</MudText>
 
-<MudGrid>
+<MudGrid Spacing="2">
     <MudItem xs="12">
         <MudText Typo="Typo.subtitle1" Class="mb-2">Profile Information</MudText>
     </MudItem>
@@ -15,6 +15,7 @@
         <MudTextField T="string" Value="@_username"
                      Label="Username"
                      Variant="Variant.Outlined"
+                     Margin="Margin.Dense"
                      Placeholder="johndoe"
                      ValueChanged="@((string value) => { _username = value; Dispatcher.Dispatch(new UpdateUsernameAction(value)); })" />
     </MudItem>
@@ -23,6 +24,7 @@
         <MudTextField T="string" Value="@_email"
                      Label="Email"
                      Variant="Variant.Outlined"
+                     Margin="Margin.Dense"
                      InputType="InputType.Email"
                      Placeholder="john.doe@example.com"
                      ValueChanged="@((string value) => { _email = value; Dispatcher.Dispatch(new UpdateEmailAction(value)); })" />
@@ -32,6 +34,7 @@
         <MudTextField T="string" Value="@_avatarUrl"
                      Label="Avatar URL"
                      Variant="Variant.Outlined"
+                     Margin="Margin.Dense"
                      Placeholder="https://example.com/avatar.jpg"
                      ValueChanged="@((string value) => { _avatarUrl = value; Dispatcher.Dispatch(new UpdateAvatarUrlAction(value)); })" />
     </MudItem>
