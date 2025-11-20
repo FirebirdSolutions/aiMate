@@ -76,7 +76,7 @@ public class PluginApiController : ControllerBase
             var plugin = _pluginManager.GetPlugin(id);
             if (plugin == null)
             {
-                return NotFound(new { error = "Plugin not found", pluginId = id });
+                return Task.FromResult<IActionResult>(NotFound(new { error = "Plugin not found", pluginId = id }));
             }
 
             var pluginInfo = new PluginInfo
@@ -94,7 +94,7 @@ public class PluginApiController : ControllerBase
                 ToolCount = plugin is IToolProvider tp ? tp.GetTools().Count() : 0
             };
 
-            return Ok(pluginInfo);
+            return Task.FromResult<IActionResult>(Ok(pluginInfo));
         }
         catch (Exception ex)
         {
@@ -128,7 +128,7 @@ public class PluginApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to toggle plugin {PluginId}", id);
-            return StatusCode(500, new { error = "Failed to toggle plugin", details = ex.Message }));
+            return StatusCode(500, new { error = "Failed to toggle plugin", details = ex.Message });
         }
     }
 
@@ -215,7 +215,7 @@ public class PluginApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to reload plugins");
-            return StatusCode(500, new { error = "Failed to reload plugins", details = ex.Message }));
+            return StatusCode(500, new { error = "Failed to reload plugins", details = ex.Message });
         }
     }
 
@@ -249,7 +249,7 @@ public class PluginApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get message actions");
-            return StatusCode(500, new { error = "Failed to get message actions", details = ex.Message }));
+            return StatusCode(500, new { error = "Failed to get message actions", details = ex.Message });
         }
     }
 
@@ -270,7 +270,7 @@ public class PluginApiController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch plugin tools");
-            return StatusCode(500, new { error = "Failed to fetch tools", details = ex.Message }));
+            return StatusCode(500, new { error = "Failed to fetch tools", details = ex.Message });
         }
     }
 }
