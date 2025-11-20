@@ -47,7 +47,7 @@ else
         Dispatcher.Dispatch(new CheckAuthAction());
 
         // Subscribe to auth state changes
-        AuthState.StateChanged += OnAuthStateChanged;
+        //AuthState.StateChanged += OnAuthStateChanged;
     }
 
     private void OnAuthStateChanged(object? sender, AuthState state)
@@ -68,7 +68,7 @@ else
 
     public void Dispose()
     {
-        AuthState.StateChanged -= OnAuthStateChanged;
+        //AuthState.StateChanged -= OnAuthStateChanged;
     }
 
     private MudTheme _theme = new()
