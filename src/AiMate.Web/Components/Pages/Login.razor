@@ -2,6 +2,7 @@
 @using Fluxor
 @using AiMate.Web.Store.Auth
 @inherits Fluxor.Blazor.Web.Components.FluxorComponent
+@implements IDisposable
 @inject IState<AuthState> AuthState
 @inject IDispatcher Dispatcher
 @inject NavigationManager Navigation
@@ -140,19 +141,27 @@
         // Redirect if already authenticated
         if (AuthState.Value.IsAuthenticated)
         {
-            Navigation.NavigateTo("/");
+            Navigation.NavigateTo("/", forceLoad: true);
         }
+
+        // Subscribe to auth state changes
+        AuthState.StateChanged += OnAuthStateChanged;
     }
 
-    protected override void OnParametersSet()
+    private void OnAuthStateChanged(object? sender, AuthState state)
     {
-        base.OnParametersSet();
-
         // Redirect on successful login/register
-        if (AuthState.Value.IsAuthenticated)
+        if (state.IsAuthenticated)
         {
-            Navigation.NavigateTo("/");
+            Navigation.NavigateTo("/", forceLoad: true);
         }
+
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        AuthState.StateChanged -= OnAuthStateChanged;
     }
 
     private async Task HandleLogin()
