@@ -185,17 +185,15 @@
                             </MudCardContent>
 
                             <MudCardActions>
-                                <div @onclick:stopPropagation="true">
+                                <span @onclick="@(() => EditProject(project))" @onclick:stopPropagation="true">
                                     <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                 Size="Size.Small"
-                                                 OnClick="@(() => EditProject(project))" />
-                                </div>
-                                <div @onclick:stopPropagation="true">
+                                                 Size="Size.Small" />
+                                </span>
+                                <span @onclick="@(() => DeleteProject(project))" @onclick:stopPropagation="true">
                                     <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                  Size="Size.Small"
-                                                 Color="Color.Error"
-                                                 OnClick="@(() => DeleteProject(project))" />
-                                </div>
+                                                 Color="Color.Error" />
+                                </span>
                             </MudCardActions>
                         </MudCard>
                     </MudItem>
@@ -250,11 +248,10 @@
                                     <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(project.Status)">
                                         @project.Status
                                     </MudChip>
-                                    <div @onclick:stopPropagation="true" style="display: inline-block;">
+                                    <span @onclick="@(() => EditProject(project))" @onclick:stopPropagation="true">
                                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                     Size="Size.Small"
-                                                     OnClick="@(() => EditProject(project))" />
-                                    </div>
+                                                     Size="Size.Small" />
+                                    </span>
                                 </div>
                             </div>
                         </MudListItem>
@@ -337,17 +334,15 @@
                         }
                     </MudTd>
                     <MudTd DataLabel="Actions">
-                        <div @onclick:stopPropagation="true" style="display: inline-block;">
+                        <span @onclick="@(() => EditProject(context))" @onclick:stopPropagation="true">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                         Size="Size.Small"
-                                         OnClick="@(() => EditProject(context))" />
-                        </div>
-                        <div @onclick:stopPropagation="true" style="display: inline-block;">
+                                         Size="Size.Small" />
+                        </span>
+                        <span @onclick="@(() => DeleteProject(context))" @onclick:stopPropagation="true">
                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                          Size="Size.Small"
-                                         Color="Color.Error"
-                                         OnClick="@(() => DeleteProject(context))" />
-                        </div>
+                                         Color="Color.Error" />
+                        </span>
                     </MudTd>
                 </RowTemplate>
             </MudTable>
