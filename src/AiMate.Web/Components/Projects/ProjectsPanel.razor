@@ -187,12 +187,12 @@
                             <MudCardActions>
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                              Size="Size.Small"
-                                             @onclick="@(() => EditProject(project))"
+                                             OnClick="@(() => EditProject(project))"
                                              @onclick:stopPropagation="true" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                              Size="Size.Small"
                                              Color="Color.Error"
-                                             @onclick="@(() => DeleteProject(project))"
+                                             OnClick="@(() => DeleteProject(project))"
                                              @onclick:stopPropagation="true" />
                             </MudCardActions>
                         </MudCard>
@@ -250,7 +250,7 @@
                                     </MudChip>
                                     <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                  Size="Size.Small"
-                                                 @onclick="@(() => EditProject(project))"
+                                                 OnClick="@(() => EditProject(project))"
                                                  @onclick:stopPropagation="true" />
                                 </div>
                             </div>
@@ -336,12 +336,12 @@
                     <MudTd DataLabel="Actions">
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                      Size="Size.Small"
-                                     @onclick="@(() => EditProject(context))"
+                                     OnClick="@(() => EditProject(context))"
                                      @onclick:stopPropagation="true" />
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                      Size="Size.Small"
                                      Color="Color.Error"
-                                     @onclick="@(() => DeleteProject(context))"
+                                     OnClick="@(() => DeleteProject(context))"
                                      @onclick:stopPropagation="true" />
                     </MudTd>
                 </RowTemplate>
