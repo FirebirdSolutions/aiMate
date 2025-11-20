@@ -1,4 +1,5 @@
 using AiMate.Shared.Models;
+using AiMate.Web.Store.Auth;
 using Fluxor;
 using System.Net.Http.Json;
 
@@ -7,10 +8,14 @@ namespace AiMate.Web.Store.Knowledge;
 public class KnowledgeEffects
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IState<AuthState> _authState;
 
-    public KnowledgeEffects(IHttpClientFactory httpClientFactory)
+    public KnowledgeEffects(
+        IHttpClientFactory httpClientFactory,
+        IState<AuthState> authState)
     {
         _httpClientFactory = httpClientFactory;
+        _authState = authState;
     }
 
     // ========================================================================
@@ -24,9 +29,9 @@ public class KnowledgeEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Hardcoded userId until authentication is implemented
-            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id
-            var userId = "user-1";
+            // Get current user ID from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to load articles");
 
             var articles = await httpClient.GetFromJsonAsync<List<KnowledgeArticleDto>>(
                 $"/api/v1/knowledge?userId={userId}");
@@ -57,9 +62,9 @@ public class KnowledgeEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Hardcoded userId until authentication is implemented
-            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id
-            var userId = "user-1";
+            // Get current user ID from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to load analytics");
 
             var analytics = await httpClient.GetFromJsonAsync<KnowledgeAnalyticsDto>(
                 $"/api/v1/knowledge/analytics?userId={userId}");

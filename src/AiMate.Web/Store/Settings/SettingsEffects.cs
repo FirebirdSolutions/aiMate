@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using AiMate.Shared.Models;
+using AiMate.Web.Store.Auth;
 using Fluxor;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
@@ -11,6 +12,7 @@ public class SettingsEffects
 {
     private readonly IJSRuntime _jsRuntime;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IState<AuthState> _authState;
     private readonly ILogger<SettingsEffects> _logger;
     private const string StorageKey = "aiMate_settings";
     private const string ApiEndpoint = "/api/v1/settings";
@@ -18,10 +20,12 @@ public class SettingsEffects
     public SettingsEffects(
         IJSRuntime jsRuntime,
         IHttpClientFactory httpClientFactory,
+        IState<AuthState> authState,
         ILogger<SettingsEffects> logger)
     {
         _jsRuntime = jsRuntime;
         _httpClientFactory = httpClientFactory;
+        _authState = authState;
         _logger = logger;
     }
 
@@ -35,9 +39,9 @@ public class SettingsEffects
             // Try loading from API first if available
             try
             {
-                // Hardcoded userId until authentication is implemented
-                // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id
-                var userId = "user-1";
+                // Get current user ID from auth state
+                var userId = _authState.Value.CurrentUser?.Id.ToString()
+                    ?? throw new UnauthorizedAccessException("User must be authenticated to load settings");
 
                 var settingsDto = await httpClient.GetFromJsonAsync<UserSettingsDto>($"{ApiEndpoint}?userId={userId}");
 

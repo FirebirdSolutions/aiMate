@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using AiMate.Shared.Models;
+using AiMate.Web.Store.Auth;
 using Fluxor;
 using Microsoft.Extensions.Logging;
 
@@ -8,11 +9,16 @@ namespace AiMate.Web.Store.Connection;
 public class ConnectionEffects
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IState<AuthState> _authState;
     private readonly ILogger<ConnectionEffects> _logger;
 
-    public ConnectionEffects(IHttpClientFactory httpClientFactory, ILogger<ConnectionEffects> logger)
+    public ConnectionEffects(
+        IHttpClientFactory httpClientFactory,
+        IState<AuthState> authState,
+        ILogger<ConnectionEffects> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _authState = authState;
         _logger = logger;
     }
 
@@ -23,10 +29,10 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Hardcoded userId/tier until authentication is implemented
-            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id and .Tier
-            var userId = "user-1";
-            var tier = "Free";
+            // Get current user ID and tier from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to load connections");
+            var tier = _authState.Value.CurrentUser?.Tier.ToString() ?? "Free";
 
             var connections = await httpClient.GetFromJsonAsync<List<ProviderConnectionDto>>(
                 $"/api/v1/connections?userId={userId}&tierStr={tier}");
@@ -51,9 +57,8 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Hardcoded tier until authentication is implemented
-            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Tier
-            var tier = "Free";
+            // Get current user tier from auth state
+            var tier = _authState.Value.CurrentUser?.Tier.ToString() ?? "Free";
 
             var response = await httpClient.GetFromJsonAsync<ConnectionLimitsResponse>(
                 $"/api/v1/connections/limits?tierStr={tier}");
@@ -90,10 +95,10 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Hardcoded userId/tier until authentication is implemented
-            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id and .Tier
-            var userId = "user-1";
-            var tier = "Free";
+            // Get current user ID and tier from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to create connection");
+            var tier = _authState.Value.CurrentUser?.Tier.ToString() ?? "Free";
 
             var response = await httpClient.PostAsJsonAsync(
                 $"/api/v1/connections?userId={userId}&tierStr={tier}",
@@ -127,10 +132,10 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Hardcoded userId/tier until authentication is implemented
-            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id and .Tier
-            var userId = "user-1";
-            var tier = "Free";
+            // Get current user ID and tier from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to update connection");
+            var tier = _authState.Value.CurrentUser?.Tier.ToString() ?? "Free";
 
             var response = await httpClient.PutAsJsonAsync(
                 $"/api/v1/connections/{action.Id}?userId={userId}&tierStr={tier}",
@@ -164,10 +169,10 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Hardcoded userId/tier until authentication is implemented
-            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id and .Tier
-            var userId = "user-1";
-            var tier = "Free";
+            // Get current user ID and tier from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to delete connection");
+            var tier = _authState.Value.CurrentUser?.Tier.ToString() ?? "Free";
 
             var response = await httpClient.DeleteAsync(
                 $"/api/v1/connections/{action.Id}?userId={userId}&tierStr={tier}");
@@ -196,9 +201,9 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Hardcoded userId until authentication is implemented
-            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id
-            var userId = "user-1";
+            // Get current user ID from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to test connection");
 
             var response = await httpClient.PostAsync(
                 $"/api/v1/connections/{action.Id}/test?userId={userId}", null);
