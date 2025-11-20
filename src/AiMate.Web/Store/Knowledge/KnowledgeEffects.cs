@@ -6,11 +6,11 @@ namespace AiMate.Web.Store.Knowledge;
 
 public class KnowledgeEffects
 {
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public KnowledgeEffects(HttpClient httpClient)
+    public KnowledgeEffects(IHttpClientFactory httpClientFactory)
     {
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
     }
 
     // ========================================================================
@@ -22,8 +22,13 @@ public class KnowledgeEffects
     {
         try
         {
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
-            var articles = await _httpClient.GetFromJsonAsync<List<KnowledgeArticleDto>>(
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
+            // Hardcoded userId until authentication is implemented
+            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id
+            var userId = "user-1";
+
+            var articles = await httpClient.GetFromJsonAsync<List<KnowledgeArticleDto>>(
                 $"/api/v1/knowledge?userId={userId}");
 
             if (articles != null)
@@ -50,8 +55,13 @@ public class KnowledgeEffects
     {
         try
         {
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
-            var analytics = await _httpClient.GetFromJsonAsync<KnowledgeAnalyticsDto>(
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
+            // Hardcoded userId until authentication is implemented
+            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id
+            var userId = "user-1";
+
+            var analytics = await httpClient.GetFromJsonAsync<KnowledgeAnalyticsDto>(
                 $"/api/v1/knowledge/analytics?userId={userId}");
 
             if (analytics != null)
@@ -78,6 +88,8 @@ public class KnowledgeEffects
     {
         try
         {
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var request = new CreateKnowledgeArticleRequest
             {
                 Title = action.Article.Title,
@@ -91,7 +103,7 @@ public class KnowledgeEffects
                 Source = action.Article.Source
             };
 
-            var response = await _httpClient.PostAsJsonAsync("/api/v1/knowledge", request);
+            var response = await httpClient.PostAsJsonAsync("/api/v1/knowledge", request);
 
             if (response.IsSuccessStatusCode)
             {
@@ -126,6 +138,8 @@ public class KnowledgeEffects
     {
         try
         {
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var request = new UpdateKnowledgeArticleRequest
             {
                 Title = action.UpdatedArticle.Title,
@@ -142,7 +156,7 @@ public class KnowledgeEffects
                 IsVerified = action.UpdatedArticle.IsVerified
             };
 
-            var response = await _httpClient.PutAsJsonAsync(
+            var response = await httpClient.PutAsJsonAsync(
                 $"/api/v1/knowledge/{action.ArticleId}", request);
 
             if (response.IsSuccessStatusCode)
@@ -178,7 +192,9 @@ public class KnowledgeEffects
     {
         try
         {
-            var response = await _httpClient.DeleteAsync($"/api/v1/knowledge/{action.ArticleId}");
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
+            var response = await httpClient.DeleteAsync($"/api/v1/knowledge/{action.ArticleId}");
 
             if (response.IsSuccessStatusCode)
             {

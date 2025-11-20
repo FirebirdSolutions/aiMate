@@ -7,12 +7,12 @@ namespace AiMate.Web.Store.Connection;
 
 public class ConnectionEffects
 {
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<ConnectionEffects> _logger;
 
-    public ConnectionEffects(HttpClient httpClient, ILogger<ConnectionEffects> logger)
+    public ConnectionEffects(IHttpClientFactory httpClientFactory, ILogger<ConnectionEffects> logger)
     {
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
@@ -21,19 +21,14 @@ public class ConnectionEffects
     {
         try
         {
-            // Check if HttpClient has BaseAddress configured
-            if (_httpClient.BaseAddress == null)
-            {
-                _logger.LogWarning("Connections API not available, loading empty state");
-                dispatcher.Dispatch(new LoadConnectionsSuccessAction(new List<ProviderConnectionDto>()));
-                return;
-            }
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // IMPLEMENTATION NEEDED: Inject IState<AuthState> to get userId and tier from authenticated user
+            // Hardcoded userId/tier until authentication is implemented
+            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id and .Tier
             var userId = "user-1";
             var tier = "Free";
 
-            var connections = await _httpClient.GetFromJsonAsync<List<ProviderConnectionDto>>(
+            var connections = await httpClient.GetFromJsonAsync<List<ProviderConnectionDto>>(
                 $"/api/v1/connections?userId={userId}&tierStr={tier}");
 
             if (connections != null)
@@ -44,7 +39,8 @@ public class ConnectionEffects
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load connections");
-            dispatcher.Dispatch(new LoadConnectionsFailureAction(ex.Message));
+            // Fall back to empty list if API call fails
+            dispatcher.Dispatch(new LoadConnectionsSuccessAction(new List<ProviderConnectionDto>()));
         }
     }
 
@@ -53,24 +49,13 @@ public class ConnectionEffects
     {
         try
         {
-            // Check if HttpClient has BaseAddress configured
-            if (_httpClient.BaseAddress == null)
-            {
-                _logger.LogWarning("Connections API not available, using default limits");
-                // Provide default limits for Free tier
-                dispatcher.Dispatch(new LoadConnectionLimitsSuccessAction(
-                    maxConnections: 3,
-                    byokEnabled: false,
-                    canAddOwnKeys: false,
-                    canAddCustomEndpoints: false,
-                    canShareConnections: false
-                ));
-                return;
-            }
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            var tier = "Free"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Tier
+            // Hardcoded tier until authentication is implemented
+            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Tier
+            var tier = "Free";
 
-            var response = await _httpClient.GetFromJsonAsync<ConnectionLimitsResponse>(
+            var response = await httpClient.GetFromJsonAsync<ConnectionLimitsResponse>(
                 $"/api/v1/connections/limits?tierStr={tier}");
 
             if (response != null)
@@ -87,6 +72,14 @@ public class ConnectionEffects
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load connection limits");
+            // Provide default Free tier limits on API failure
+            dispatcher.Dispatch(new LoadConnectionLimitsSuccessAction(
+                maxConnections: 3,
+                byokEnabled: false,
+                canAddOwnKeys: false,
+                canAddCustomEndpoints: false,
+                canShareConnections: false
+            ));
         }
     }
 
@@ -95,19 +88,14 @@ public class ConnectionEffects
     {
         try
         {
-            // Check if HttpClient has BaseAddress configured
-            if (_httpClient.BaseAddress == null)
-            {
-                var errorMsg = "API not available - connection creation requires backend implementation";
-                _logger.LogWarning(errorMsg);
-                dispatcher.Dispatch(new CreateConnectionFailureAction(errorMsg));
-                return;
-            }
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
+            // Hardcoded userId/tier until authentication is implemented
+            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id and .Tier
+            var userId = "user-1";
             var tier = "Free";
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 $"/api/v1/connections?userId={userId}&tierStr={tier}",
                 action.Connection);
 
@@ -137,19 +125,14 @@ public class ConnectionEffects
     {
         try
         {
-            // Check if HttpClient has BaseAddress configured
-            if (_httpClient.BaseAddress == null)
-            {
-                var errorMsg = "API not available - connection update requires backend implementation";
-                _logger.LogWarning(errorMsg);
-                dispatcher.Dispatch(new UpdateConnectionFailureAction(errorMsg));
-                return;
-            }
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
+            // Hardcoded userId/tier until authentication is implemented
+            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id and .Tier
+            var userId = "user-1";
             var tier = "Free";
 
-            var response = await _httpClient.PutAsJsonAsync(
+            var response = await httpClient.PutAsJsonAsync(
                 $"/api/v1/connections/{action.Id}?userId={userId}&tierStr={tier}",
                 action.Connection);
 
@@ -179,19 +162,14 @@ public class ConnectionEffects
     {
         try
         {
-            // Check if HttpClient has BaseAddress configured
-            if (_httpClient.BaseAddress == null)
-            {
-                var errorMsg = "API not available - connection deletion requires backend implementation";
-                _logger.LogWarning(errorMsg);
-                dispatcher.Dispatch(new DeleteConnectionFailureAction(errorMsg));
-                return;
-            }
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
+            // Hardcoded userId/tier until authentication is implemented
+            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id and .Tier
+            var userId = "user-1";
             var tier = "Free";
 
-            var response = await _httpClient.DeleteAsync(
+            var response = await httpClient.DeleteAsync(
                 $"/api/v1/connections/{action.Id}?userId={userId}&tierStr={tier}");
 
             if (response.IsSuccessStatusCode)
@@ -216,18 +194,13 @@ public class ConnectionEffects
     {
         try
         {
-            // Check if HttpClient has BaseAddress configured
-            if (_httpClient.BaseAddress == null)
-            {
-                var errorMsg = "API not available - connection testing requires backend implementation";
-                _logger.LogWarning(errorMsg);
-                dispatcher.Dispatch(new TestConnectionFailureAction(errorMsg));
-                return;
-            }
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            var userId = "user-1"; // IMPLEMENTATION NEEDED: Get from IState<AuthState>.Value.CurrentUser?.Id
+            // Hardcoded userId until authentication is implemented
+            // When auth is ready: inject IState<AuthState> and use authState.Value.CurrentUser.Id
+            var userId = "user-1";
 
-            var response = await _httpClient.PostAsync(
+            var response = await httpClient.PostAsync(
                 $"/api/v1/connections/{action.Id}/test?userId={userId}", null);
 
             if (response.IsSuccessStatusCode)
