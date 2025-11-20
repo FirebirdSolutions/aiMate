@@ -6,17 +6,20 @@
             <MudTextField T="string" @bind-Value="@_modelId"
                          Label="Model ID"
                          Variant="Variant.Outlined"
+                         Margin="Margin.Dense"
                          HelperText="e.g., gpt-4, claude-3-opus"
                          Required="true" />
 
             <MudTextField T="string" @bind-Value="@_name"
                          Label="Display Name"
                          Variant="Variant.Outlined"
+                         Margin="Margin.Dense"
                          Required="true" />
 
             <MudSelect T="string" @bind-Value="@_provider"
                       Label="Provider"
                       Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
                       Required="true">
                 <MudSelectItem T="string" Value="@("OpenAI")">OpenAI</MudSelectItem>
                 <MudSelectItem T="string" Value="@("Anthropic")">Anthropic</MudSelectItem>
@@ -28,12 +31,14 @@
             <MudNumericField T="int" @bind-Value="@_maxTokens"
                             Label="Max Tokens"
                             Variant="Variant.Outlined"
+                            Margin="Margin.Dense"
                             Min="100"
                             Max="100000" />
 
             <MudTextField T="string" @bind-Value="@_description"
                          Label="Description (Optional)"
                          Variant="Variant.Outlined"
+                         Margin="Margin.Dense"
                          Lines="2" />
 
             <MudSwitch T="bool" @bind-Value="@_isEnabled"

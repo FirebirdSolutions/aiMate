@@ -24,7 +24,7 @@
 
     @if (AdminState.Value.McpServers.Any())
     {
-        <MudTable T="MCPServerConfig" Items="@AdminState.Value.McpServers" Hover="true" Striped="true">
+        <MudTable T="MCPServerConfig" Items="@AdminState.Value.McpServers" Hover="true" Striped="true" Dense="true">
             <HeaderContent>
                 <MudTh>Name</MudTh>
                 <MudTh>Type</MudTh>

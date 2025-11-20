@@ -15,13 +15,14 @@
         </MudAlert>
     }
 
-    <MudGrid>
+    <MudGrid Spacing="2">
         <!-- Search and Filters -->
         <MudItem xs="12" md="3">
             <MudPaper Class="pa-4 mb-4">
                 <MudTextField @bind-Value="@_searchQuery"
                              Label="Search Knowledge"
                              Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
                              Adornment="Adornment.End"
                              AdornmentIcon="@Icons.Material.Filled.Search"
                              OnKeyUp="@HandleSearchKeyUp"
@@ -92,7 +93,7 @@
             }
             else if (DisplayedItems.Any())
             {
-                <MudGrid>
+                <MudGrid Spacing="2">
                     @foreach (var item in DisplayedItems)
                     {
                         var isSelected = item.Id == KnowledgeState.Value.SelectedItemId;

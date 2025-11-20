@@ -26,6 +26,7 @@
             <MudTextField T="string" @bind-Value="@Connection.Name"
                         Label="Connection Name"
                         Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
                         Required="true"
                         HelperText="Friendly name for this connection" />
 
@@ -48,6 +49,7 @@
             <MudTextField T="string" @bind-Value="@Connection.Url"
                         Label="URL"
                         Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
                         Required="true"
                         Placeholder="https://api.openai.com/v1"
                         Adornment="Adornment.Start"
@@ -58,6 +60,7 @@
             <MudSelect T="string" @bind-Value="@Connection.ProviderType"
                      Label="Provider Type"
                      Variant="Variant.Outlined"
+                     Margin="Margin.Dense"
                      AnchorOrigin="Origin.BottomCenter">
                 <MudSelectItem T="string" Value="@("OpenAI")">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
@@ -98,6 +101,7 @@
             <MudSelect T="string" @bind-Value="@Connection.Auth"
                      Label="Auth Type"
                      Variant="Variant.Outlined"
+                     Margin="Margin.Dense"
                      AnchorOrigin="Origin.BottomCenter">
                 <MudSelectItem T="string" Value="@("None")">None</MudSelectItem>
                 <MudSelectItem T="string" Value="@("Bearer")">Bearer Token</MudSelectItem>
@@ -110,6 +114,7 @@
                 <MudTextField T="string" @bind-Value="@Connection.AuthToken"
                             Label="@GetAuthLabel()"
                             Variant="Variant.Outlined"
+                            Margin="Margin.Dense"
                             InputType="InputType.Password"
                             Placeholder="Enter your authentication token"
                             Adornment="Adornment.End"
@@ -127,6 +132,7 @@
                         <MudTextField T="string" @bind-Value="@Connection.Headers"
                                     Label="Custom Headers (JSON)"
                                     Variant="Variant.Outlined"
+                                    Margin="Margin.Dense"
                                     Lines="3"
                                     Placeholder='{"X-Custom-Header": "value"}'
                                     HelperText="Additional HTTP headers in JSON format" />
@@ -134,6 +140,7 @@
                         <MudTextField T="string" @bind-Value="@Connection.PrefixId"
                                     Label="Prefix ID (optional)"
                                     Variant="Variant.Outlined"
+                                    Margin="Margin.Dense"
                                     Placeholder="my-org"
                                     HelperText="Prefix for model IDs"
                                     Class="mt-3" />
@@ -154,6 +161,7 @@
                     <MudTextField T="string" Value="@modelId"
                                 ValueChanged="@((string val) => UpdateModelId(index, val))"
                                 Variant="Variant.Outlined"
+                                Margin="Margin.Dense"
                                 Placeholder="gpt-4, claude-3-opus, etc."
                                 Class="flex-grow-1" />
                     <MudIconButton Icon="@Icons.Material.Filled.Close"
@@ -185,6 +193,7 @@
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                 <MudTextField T="string" @bind-Value="@_newTag"
                             Variant="Variant.Outlined"
+                            Margin="Margin.Dense"
                             Placeholder="Add tag..."
                             OnKeyDown="@HandleTagKeyPress"
                             Class="flex-grow-1" />
@@ -202,6 +211,7 @@
                 <MudSelect T="string" @bind-Value="@Connection.Visibility"
                          Label="Visibility"
                          Variant="Variant.Outlined"
+                         Margin="Margin.Dense"
                          AnchorOrigin="Origin.BottomCenter"
                          HelperText="@GetVisibilityHelperText()">
                     <MudSelectItem T="string" Value="@("Private")">
@@ -241,10 +251,11 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
                         Select groups that can access this connection
                     </MudText>
-                    <MudSelect T="string" Label="Groups" 
+                    <MudSelect T="string" Label="Groups"
                              SelectedValues="@Connection.AllowedGroups"
                              SelectedValuesChanged="@((IEnumerable<string> values) => Connection.AllowedGroups = values.ToList())"
-                             Variant="Variant.Outlined">
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Dense">
                         <MudSelectItem T="string" Value="@("engineering")">Engineering</MudSelectItem>
                         <MudSelectItem T="string" Value="@("marketing")">Marketing</MudSelectItem>
                         <MudSelectItem T="string" Value="@("sales")">Sales</MudSelectItem>

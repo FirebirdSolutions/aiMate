@@ -14,12 +14,14 @@
                     <MudTextField T="string" @bind-Value="@Model.Name"
                                 Label="Model Name"
                                 Variant="Variant.Outlined"
+                                Margin="Margin.Dense"
                                 Required="true"
                                 Class="mb-4" />
 
                     <MudTextField T="string" @bind-Value="@Model.ModelId"
                                 Label="Model ID"
                                 Variant="Variant.Outlined"
+                                Margin="Margin.Dense"
                                 Required="true"
                                 HelperText="e.g., gpt-4, claude-3-opus"
                                 Class="mb-4" />
@@ -27,12 +29,14 @@
                     <MudTextField T="string" @bind-Value="@Model.Description"
                                 Label="Description"
                                 Variant="Variant.Outlined"
+                                Margin="Margin.Dense"
                                 Lines="2"
                                 Class="mb-4" />
 
                     <MudSelect T="string" @bind-Value="@Model.Connection"
                              Label="Connection"
                              Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
                              AnchorOrigin="Origin.BottomCenter"
                              Class="mb-4">
                         <MudSelectItem T="string" Value="@("OpenAI")">OpenAI</MudSelectItem>
@@ -46,6 +50,7 @@
                         <MudTextField T="string" @bind-Value="@Model.ApiKey"
                                     Label="API Key"
                                     Variant="Variant.Outlined"
+                                    Margin="Margin.Dense"
                                     InputType="InputType.Password"
                                     Placeholder="Enter your API key"
                                     HelperText="Your key is encrypted and stored securely"
@@ -57,6 +62,7 @@
                         <MudTextField T="string" @bind-Value="@Model.CustomEndpoint"
                                     Label="Custom Endpoint (optional)"
                                     Variant="Variant.Outlined"
+                                    Margin="Margin.Dense"
                                     Placeholder="https://api.example.com/v1"
                                     HelperText="Override default endpoint URL"
                                     Class="mb-4" />
@@ -93,12 +99,14 @@
                     <MudNumericField T="int" @bind-Value="@Model.ContextWindow"
                                    Label="Context Window"
                                    Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
                                    HelperText="Maximum context length (tokens)"
                                    Class="mb-4" />
 
                     <MudNumericField T="int" @bind-Value="@Model.MaxTokens"
                                    Label="Max Tokens"
                                    Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
                                    HelperText="Maximum tokens in response"
                                    Class="mb-4" />
 

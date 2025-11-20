@@ -38,7 +38,7 @@
     }
     else
     {
-        <MudGrid>
+        <MudGrid Spacing="2">
             @foreach (var workspace in WorkspaceState.Value.Workspaces.Values.OrderByDescending(w => w.UpdatedAt))
             {
                 var isActive = workspace.Id == WorkspaceState.Value.ActiveWorkspaceId;

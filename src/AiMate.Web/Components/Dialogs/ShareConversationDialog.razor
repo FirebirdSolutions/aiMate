@@ -12,6 +12,7 @@
                     <MudText Typo="Typo.body2"><strong>Share Link</strong></MudText>
                     <MudTextField T="string" @bind-Value="@_shareUrl"
                                  Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
                                  ReadOnly="true"
                                  Adornment="Adornment.End"
                                  AdornmentIcon="@Icons.Material.Filled.ContentCopy"
@@ -22,7 +23,7 @@
 
             @* Social Sharing *@
             <MudText Typo="Typo.body2"><strong>Share on Social Media</strong></MudText>
-            <MudGrid>
+            <MudGrid Spacing="2">
                 @* Twitter/X *@
                 <MudItem xs="6" sm="4">
                     <MudButton Variant="Variant.Filled"
@@ -135,13 +136,15 @@
                         <MudTextField T="string" @bind-Value="@_password"
                                      Label="Password"
                                      Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
                                      InputType="InputType.Password"
                                      HelperText="Viewers will need this password to access the conversation" />
                     }
 
                     <MudSelect T="string" @bind-Value="@_expirationPeriod"
                               Label="Link expires"
-                              Variant="Variant.Outlined">
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense">
                         <MudSelectItem T="string" Value="@("never")">Never</MudSelectItem>
                         <MudSelectItem T="string" Value="@("1hour")">1 hour</MudSelectItem>
                         <MudSelectItem T="string" Value="@("24hours")">24 hours</MudSelectItem>

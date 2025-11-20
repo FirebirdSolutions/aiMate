@@ -41,7 +41,7 @@
     <!-- Tag templates list -->
     @if (FeedbackState.Value.TagTemplates.Any())
     {
-        <MudGrid>
+        <MudGrid Spacing="2">
             @foreach (var template in FeedbackState.Value.TagTemplates.OrderBy(t => t.DisplayOrder))
             {
                 <MudItem xs="12" md="6">

@@ -8,6 +8,7 @@
             <MudTextField T="string" @bind-Value="@Note.Title"
                          Label="Title"
                          Variant="Variant.Outlined"
+                         Margin="Margin.Dense"
                          Required="true"
                          Immediate="true"
                          HelperText="Give your note a descriptive title" />
@@ -15,7 +16,8 @@
             @* Content Type Selector *@
             <MudSelect T="string" @bind-Value="@Note.ContentType"
                       Label="Content Type"
-                      Variant="Variant.Outlined">
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense">
                 <MudSelectItem T="string" Value="@("markdown")">
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                         <MudIcon Icon="@Icons.Material.Filled.Code" Size="Size.Small" />
@@ -40,6 +42,7 @@
             <MudTextField T="string" @bind-Value="@Note.Content"
                          Label="Content"
                          Variant="Variant.Outlined"
+                         Margin="Margin.Dense"
                          Lines="10"
                          AutoGrow="true"
                          HelperText="@GetContentHelperText()" />
@@ -48,6 +51,7 @@
             <MudAutocomplete T="string" @bind-Value="@Note.Collection"
                             Label="Collection (optional)"
                             Variant="Variant.Outlined"
+                            Margin="Margin.Dense"
                             SearchFunc="@SearchCollections"
                             ResetValueOnEmptyText="true"
                             CoerceText="true"
@@ -66,6 +70,7 @@
             <MudSelect T="string" @bind-Value="@Note.Category"
                       Label="Category (optional)"
                       Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
                       Clearable="true">
                 <MudSelectItem T="string" Value="@("Personal")">Personal</MudSelectItem>
                 <MudSelectItem T="string" Value="@("Work")">Work</MudSelectItem>
@@ -79,6 +84,7 @@
             <MudSelect T="string" @bind-Value="@Note.Color"
                       Label="Color (optional)"
                       Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
                       Clearable="true">
                 <MudSelectItem T="string" Value="@("default")">
                     <MudChip T="string" Color="Color.Default" Size="Size.Small">Default</MudChip>
