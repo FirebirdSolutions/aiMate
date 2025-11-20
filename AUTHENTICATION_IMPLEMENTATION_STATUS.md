@@ -171,13 +171,13 @@ All 11 API controllers are now secured with appropriate `[Authorize]` attributes
 - ✅ ConnectionApiController - `[Authorize(Policy = "CanAddOwnKeys")]`
 - ✅ AdminApiController - `[Authorize(Policy = "AdminOnly")]`
 
-### 2. Update Effects to Use AuthState Instead of Hardcoded userId
-**Status**: Not started
+### ✅ 2. Update Effects to Use AuthState Instead of Hardcoded userId
+**Status**: ✅ **COMPLETED** (2025-11-20)
 **Effort**: 3-4 hours
 
-All Effects currently use `userId = "user-1"`. Need to inject `IState<AuthState>` and use `AuthState.CurrentUser.Id`.
+All Effects now inject `IState<AuthState>` and use real user IDs from authentication state.
 
-**Example for ChatEffects**:
+**Implementation Pattern**:
 ```csharp
 public class ChatEffects
 {
@@ -186,21 +186,23 @@ public class ChatEffects
     [EffectMethod]
     public async Task HandleSendMessage(SendMessageAction action, IDispatcher dispatcher)
     {
-        var userId = _authState.Value.CurrentUser?.Id.ToString() ?? throw new UnauthorizedAccessException();
+        var userId = _authState.Value.CurrentUser?.Id
+            ?? throw new UnauthorizedAccessException("User must be authenticated");
         // Use userId...
     }
 }
 ```
 
-**Effects to update**:
-- ChatEffects
-- WorkspaceEffects
-- NotesEffects
-- KnowledgeEffects
-- FeedbackEffects
-- SettingsEffects
-- ConnectionEffects
-- AdminEffects
+**Effects Updated**:
+- ✅ ChatEffects (1 location)
+- ✅ WorkspaceEffects (2 locations)
+- ✅ NotesEffects (1 location)
+- ✅ KnowledgeEffects (2 locations)
+- ✅ SettingsEffects (1 location)
+- ✅ ConnectionEffects (5 locations + tier-based permissions)
+- ✅ FeedbackEffects (no changes needed)
+- ✅ PluginEffects (no changes needed)
+- ✅ AdminEffects (no changes needed)
 
 ### 3. Add CheckAuthAction Dispatch on App Initialization
 **Status**: Not started
@@ -353,7 +355,7 @@ The BYOK (Bring Your Own Key) system supports:
 ## Next Steps (Priority Order)
 
 1. ~~**Add [Authorize] attributes** to all controllers (2-3 hrs)~~ ✅ **COMPLETED**
-2. **Update Effects** to use AuthState.CurrentUser.Id (3-4 hrs)
+2. ~~**Update Effects** to use AuthState.CurrentUser.Id (3-4 hrs)~~ ✅ **COMPLETED**
 3. **Add CheckAuthAction dispatch** on app init (1 hr)
 4. **Create database migration** for new entities (1-2 hrs)
 5. **Test login/register flow** end-to-end (2-3 hrs)
@@ -362,7 +364,7 @@ The BYOK (Bring Your Own Key) system supports:
 8. **Add navigation guards** for protected routes (2-3 hrs)
 9. **Comprehensive testing** (10-15 hrs)
 
-**Total Estimated Time**: ~~28-45 hours~~ → **25-42 hours** (controller authorization completed)
+**Total Estimated Time**: ~~28-45 hours~~ → ~~25-42 hours~~ → **21-38 hours** (Effects integration completed)
 
 ---
 
@@ -372,9 +374,10 @@ The BYOK (Bring Your Own Key) system supports:
 ✅ **Authorization**: 100% complete with policies and handlers
 ✅ **Multi-Tenant**: 100% entities and relationships defined
 ✅ **API Security**: 100% complete - all 11 controllers secured
-⚠️ **Integration**: 40% complete (needs Effects updates, CheckAuth dispatch, testing)
+✅ **Effects Integration**: 100% complete - all Effects use real user IDs
+⚠️ **Final Integration**: 80% complete (needs CheckAuth dispatch, testing)
 
-**Bottom Line**: The authentication system is architecturally complete and production-ready. API security is now fully implemented with all controllers secured. The remaining work is integration (updating Effects to use real user IDs) and testing. Estimate **25-42 hours** to full production deployment.
+**Bottom Line**: The authentication system is architecturally complete and production-ready. API security is fully implemented. All Effects now use real user IDs from AuthState with proper tier-based permissions. The remaining work is minimal integration (CheckAuth dispatch on app init) and testing. Estimate **21-38 hours** to full production deployment.
 
 ---
 
