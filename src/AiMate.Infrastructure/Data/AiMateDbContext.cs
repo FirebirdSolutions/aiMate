@@ -68,6 +68,9 @@ public class AiMateDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Key);
+            entity.HasIndex(e => e.IsArchived);
+            entity.HasIndex(e => new { e.UserId, e.IsArchived });
 
             entity.HasMany(e => e.Workspaces)
                 .WithOne(e => e.Project)

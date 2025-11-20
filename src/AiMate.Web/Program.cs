@@ -246,6 +246,7 @@ builder.Services.AddScoped<AiMate.Core.Services.IKnowledgeGraphService, AiMate.I
 builder.Services.AddScoped<AiMate.Core.Services.IKnowledgeService, AiMate.Infrastructure.Services.KnowledgeService>();
 builder.Services.AddScoped<AiMate.Core.Services.IWorkspaceService, AiMate.Infrastructure.Services.WorkspaceService>();
 builder.Services.AddScoped<AiMate.Core.Services.IConversationService, AiMate.Infrastructure.Services.ConversationService>();
+builder.Services.AddScoped<AiMate.Core.Services.IProjectService, AiMate.Infrastructure.Services.ProjectService>();
 builder.Services.AddScoped<AiMate.Core.Services.INotesService, AiMate.Infrastructure.Services.NotesService>();
 builder.Services.AddScoped<AiMate.Core.Services.IAuthService, AiMate.Infrastructure.Services.AuthService>();
 builder.Services.AddScoped<AiMate.Core.Services.IFileUploadService, AiMate.Infrastructure.Services.FileUploadService>();
