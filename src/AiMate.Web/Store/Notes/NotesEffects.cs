@@ -29,14 +29,10 @@ public class NotesEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Get authenticated user
-            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
-            {
-                dispatcher.Dispatch(new LoadNotesFailureAction("User not authenticated"));
-                return;
-            }
+            // Get current user ID from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to load notes");
 
-            var userId = _authState.Value.CurrentUser.Id.ToString();
             var notes = await httpClient.GetFromJsonAsync<List<NoteDto>>($"/api/v1/notes?userId={userId}");
 
             if (notes != null)
@@ -111,6 +107,7 @@ public class NotesEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var request = new UpdateNoteRequest
             {
                 Title = action.UpdatedNote.Title,
@@ -161,6 +158,7 @@ public class NotesEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var response = await httpClient.DeleteAsync($"/api/v1/notes/{action.NoteId}");
 
             if (response.IsSuccessStatusCode)

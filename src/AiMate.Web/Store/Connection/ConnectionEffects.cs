@@ -29,24 +29,10 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Check if HttpClient has BaseAddress configured
-            if (httpClient.BaseAddress == null)
-            {
-                _logger.LogWarning("Connections API not available, loading empty state");
-                dispatcher.Dispatch(new LoadConnectionsSuccessAction(new List<ProviderConnectionDto>()));
-                return;
-            }
-
-            // Get authenticated user
-            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
-            {
-                _logger.LogWarning("User not authenticated, cannot load connections");
-                dispatcher.Dispatch(new LoadConnectionsFailureAction("User not authenticated"));
-                return;
-            }
-
-            var userId = _authState.Value.CurrentUser.Id.ToString();
-            var tier = _authState.Value.CurrentUser.Tier.ToString();
+            // Get current user ID and tier from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to load connections");
+            var tier = _authState.Value.CurrentUser?.Tier.ToString() ?? "Free";
 
             var connections = await httpClient.GetFromJsonAsync<List<ProviderConnectionDto>>(
                 $"/api/v1/connections?userId={userId}&tierStr={tier}");
@@ -59,7 +45,8 @@ public class ConnectionEffects
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load connections");
-            dispatcher.Dispatch(new LoadConnectionsFailureAction(ex.Message));
+            // Fall back to empty list if API call fails
+            dispatcher.Dispatch(new LoadConnectionsSuccessAction(new List<ProviderConnectionDto>()));
         }
     }
 
@@ -70,22 +57,7 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Check if HttpClient has BaseAddress configured
-            if (httpClient.BaseAddress == null)
-            {
-                _logger.LogWarning("Connections API not available, using default limits");
-                // Provide default limits for Free tier
-                dispatcher.Dispatch(new LoadConnectionLimitsSuccessAction(
-                    maxConnections: 3,
-                    byokEnabled: false,
-                    canAddOwnKeys: false,
-                    canAddCustomEndpoints: false,
-                    canShareConnections: false
-                ));
-                return;
-            }
-
-            // Get user tier from auth state, default to Free if not authenticated
+            // Get current user tier from auth state
             var tier = _authState.Value.CurrentUser?.Tier.ToString() ?? "Free";
 
             var response = await httpClient.GetFromJsonAsync<ConnectionLimitsResponse>(
@@ -105,6 +77,14 @@ public class ConnectionEffects
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load connection limits");
+            // Provide default Free tier limits on API failure
+            dispatcher.Dispatch(new LoadConnectionLimitsSuccessAction(
+                maxConnections: 3,
+                byokEnabled: false,
+                canAddOwnKeys: false,
+                canAddCustomEndpoints: false,
+                canShareConnections: false
+            ));
         }
     }
 
@@ -115,25 +95,10 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Check if HttpClient has BaseAddress configured
-            if (httpClient.BaseAddress == null)
-            {
-                var errorMsg = "API not available - connection creation requires backend implementation";
-                _logger.LogWarning(errorMsg);
-                dispatcher.Dispatch(new CreateConnectionFailureAction(errorMsg));
-                return;
-            }
-
-            // Get authenticated user
-            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
-            {
-                _logger.LogWarning("User not authenticated, cannot create connection");
-                dispatcher.Dispatch(new CreateConnectionFailureAction("User not authenticated"));
-                return;
-            }
-
-            var userId = _authState.Value.CurrentUser.Id.ToString();
-            var tier = _authState.Value.CurrentUser.Tier.ToString();
+            // Get current user ID and tier from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to create connection");
+            var tier = _authState.Value.CurrentUser?.Tier.ToString() ?? "Free";
 
             var response = await httpClient.PostAsJsonAsync(
                 $"/api/v1/connections?userId={userId}&tierStr={tier}",
@@ -167,25 +132,10 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Check if HttpClient has BaseAddress configured
-            if (httpClient.BaseAddress == null)
-            {
-                var errorMsg = "API not available - connection update requires backend implementation";
-                _logger.LogWarning(errorMsg);
-                dispatcher.Dispatch(new UpdateConnectionFailureAction(errorMsg));
-                return;
-            }
-
-            // Get authenticated user
-            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
-            {
-                _logger.LogWarning("User not authenticated, cannot update connection");
-                dispatcher.Dispatch(new UpdateConnectionFailureAction("User not authenticated"));
-                return;
-            }
-
-            var userId = _authState.Value.CurrentUser.Id.ToString();
-            var tier = _authState.Value.CurrentUser.Tier.ToString();
+            // Get current user ID and tier from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to update connection");
+            var tier = _authState.Value.CurrentUser?.Tier.ToString() ?? "Free";
 
             var response = await httpClient.PutAsJsonAsync(
                 $"/api/v1/connections/{action.Id}?userId={userId}&tierStr={tier}",
@@ -219,25 +169,10 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Check if HttpClient has BaseAddress configured
-            if (httpClient.BaseAddress == null)
-            {
-                var errorMsg = "API not available - connection deletion requires backend implementation";
-                _logger.LogWarning(errorMsg);
-                dispatcher.Dispatch(new DeleteConnectionFailureAction(errorMsg));
-                return;
-            }
-
-            // Get authenticated user
-            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
-            {
-                _logger.LogWarning("User not authenticated, cannot delete connection");
-                dispatcher.Dispatch(new DeleteConnectionFailureAction("User not authenticated"));
-                return;
-            }
-
-            var userId = _authState.Value.CurrentUser.Id.ToString();
-            var tier = _authState.Value.CurrentUser.Tier.ToString();
+            // Get current user ID and tier from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to delete connection");
+            var tier = _authState.Value.CurrentUser?.Tier.ToString() ?? "Free";
 
             var response = await httpClient.DeleteAsync(
                 $"/api/v1/connections/{action.Id}?userId={userId}&tierStr={tier}");
@@ -266,24 +201,9 @@ public class ConnectionEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Check if HttpClient has BaseAddress configured
-            if (httpClient.BaseAddress == null)
-            {
-                var errorMsg = "API not available - connection testing requires backend implementation";
-                _logger.LogWarning(errorMsg);
-                dispatcher.Dispatch(new TestConnectionFailureAction(errorMsg));
-                return;
-            }
-
-            // Get authenticated user
-            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
-            {
-                _logger.LogWarning("User not authenticated, cannot test connection");
-                dispatcher.Dispatch(new TestConnectionFailureAction("User not authenticated"));
-                return;
-            }
-
-            var userId = _authState.Value.CurrentUser.Id.ToString();
+            // Get current user ID from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to test connection");
 
             var response = await httpClient.PostAsync(
                 $"/api/v1/connections/{action.Id}/test?userId={userId}", null);

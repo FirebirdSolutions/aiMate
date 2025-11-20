@@ -26,6 +26,7 @@ public class FeedbackEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var templates = await httpClient.GetFromJsonAsync<List<FeedbackTagTemplate>>("/api/v1/feedback/templates");
             if (templates != null)
             {
@@ -64,6 +65,8 @@ public class FeedbackEffects
                 modelId = action.ModelId,
                 responseTimeMs = action.ResponseTimeMs
             };
+
+            var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
             var response = await httpClient.PostAsJsonAsync(
                 $"/api/v1/feedback/messages/{action.MessageId}",
@@ -117,6 +120,7 @@ public class FeedbackEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var feedback = await httpClient.GetFromJsonAsync<MessageFeedback>(
                 $"/api/v1/feedback/messages/{action.MessageId}");
 
@@ -147,6 +151,7 @@ public class FeedbackEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var url = $"/api/v1/feedback/stats/models/{action.ModelId}";
             if (action.FromDate.HasValue || action.ToDate.HasValue)
             {
@@ -181,6 +186,7 @@ public class FeedbackEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var request = new
             {
                 category = action.Category,
@@ -231,6 +237,7 @@ public class FeedbackEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var request = new
             {
                 category = action.Category,
@@ -277,6 +284,7 @@ public class FeedbackEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var response = await httpClient.DeleteAsync($"/api/v1/feedback/templates/{action.TemplateId}");
 
             if (response.IsSuccessStatusCode)

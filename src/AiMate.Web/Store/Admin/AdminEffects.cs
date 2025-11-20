@@ -160,12 +160,6 @@ public class AdminEffects
 
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Check if HttpClient has BaseAddress configured
-            if (httpClient.BaseAddress == null)
-            {
-                throw new InvalidOperationException("API not available - cannot test connection without backend");
-            }
-
             // Call API to test connection
             var response = await httpClient.PostAsJsonAsync($"{ApiEndpoint}/test-connection", new
             {

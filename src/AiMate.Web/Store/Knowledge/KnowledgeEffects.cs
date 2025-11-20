@@ -29,14 +29,10 @@ public class KnowledgeEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Get authenticated user
-            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
-            {
-                dispatcher.Dispatch(new LoadArticlesFailureAction("User not authenticated"));
-                return;
-            }
+            // Get current user ID from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to load articles");
 
-            var userId = _authState.Value.CurrentUser.Id.ToString();
             var articles = await httpClient.GetFromJsonAsync<List<KnowledgeArticleDto>>(
                 $"/api/v1/knowledge?userId={userId}");
 
@@ -66,14 +62,10 @@ public class KnowledgeEffects
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
 
-            // Get authenticated user
-            if (!_authState.Value.IsAuthenticated || _authState.Value.CurrentUser == null)
-            {
-                dispatcher.Dispatch(new LoadAnalyticsFailureAction("User not authenticated"));
-                return;
-            }
+            // Get current user ID from auth state
+            var userId = _authState.Value.CurrentUser?.Id.ToString()
+                ?? throw new UnauthorizedAccessException("User must be authenticated to load analytics");
 
-            var userId = _authState.Value.CurrentUser.Id.ToString();
             var analytics = await httpClient.GetFromJsonAsync<KnowledgeAnalyticsDto>(
                 $"/api/v1/knowledge/analytics?userId={userId}");
 
@@ -151,6 +143,7 @@ public class KnowledgeEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var request = new UpdateKnowledgeArticleRequest
             {
                 Title = action.UpdatedArticle.Title,
@@ -204,6 +197,7 @@ public class KnowledgeEffects
         try
         {
             var httpClient = _httpClientFactory.CreateClient("ApiClient");
+
             var response = await httpClient.DeleteAsync($"/api/v1/knowledge/{action.ArticleId}");
 
             if (response.IsSuccessStatusCode)

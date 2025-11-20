@@ -1,6 +1,7 @@
 using AiMate.Core.Entities;
 using AiMate.Core.Services;
 using AiMate.Shared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AiMate.Web.Controllers;
@@ -9,8 +10,9 @@ namespace AiMate.Web.Controllers;
 /// API controller for note management
 /// </summary>
 [ApiController]
-[Route("api/v1/notes")]
-public class NotesApiController : ControllerBase
+[Route("api/v1/[controller]")]
+[Authorize] // Requires authentication
+public class NotesController : ControllerBase
 {
     private readonly INotesService _notesService;
     private readonly ILogger<NotesApiController> _logger;
