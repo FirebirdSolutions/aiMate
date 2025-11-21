@@ -138,13 +138,8 @@
     {
         base.OnInitialized();
 
-        // Redirect if already authenticated
-        if (AuthState.Value.IsAuthenticated)
-        {
-            Navigation.NavigateTo("/", forceLoad: true);
-        }
-
-        // Subscribe to auth state changes
+        // MainLayout will handle redirect if already authenticated
+        // Subscribe to auth state changes to trigger UI updates
         AuthState.StateChanged += OnAuthStateChanged;
     }
 
