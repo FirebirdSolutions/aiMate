@@ -3,135 +3,126 @@
 @inherits Fluxor.Blazor.Web.Components.FluxorComponent
 @inject IState<AdminState> AdminState
 
-<MudText Typo="Typo.h6" Class="mb-4">System Overview</MudText>
+<div class="space-y-6">
+    <h2 class="text-xl font-semibold text-gray-100">System Overview</h2>
 
-<MudGrid Spacing="2">
     @* Quick Stats *@
-    <MudItem xs="12" sm="6" md="3">
-        <MudPaper Class="pa-4" Elevation="2">
-            <MudStack Spacing="1">
-                <MudText Typo="Typo.caption" Color="Color.Secondary">Total Users</MudText>
-                <MudText Typo="Typo.h4">@AdminState.Value.TotalUsers</MudText>
-                <MudText Typo="Typo.caption" Color="Color.Info">
-                    Single-user mode
-                </MudText>
-            </MudStack>
-        </MudPaper>
-    </MudItem>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        @* Total Users *@
+        <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-xl p-5">
+            <p class="text-xs text-gray-400 mb-1">Total Users</p>
+            <p class="text-3xl font-bold text-gray-100 mb-2">@AdminState.Value.TotalUsers</p>
+            <p class="text-xs text-blue-400">Single-user mode</p>
+        </div>
 
-    <MudItem xs="12" sm="6" md="3">
-        <MudPaper Class="pa-4" Elevation="2">
-            <MudStack Spacing="1">
-                <MudText Typo="Typo.caption" Color="Color.Secondary">Total Conversations</MudText>
-                <MudText Typo="Typo.h4">@AdminState.Value.TotalConversations</MudText>
-                <MudText Typo="Typo.caption" Color="Color.Success">
-                    <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Size="Size.Small" />
-                    +@AdminState.Value.ConversationsToday today
-                </MudText>
-            </MudStack>
-        </MudPaper>
-    </MudItem>
+        @* Total Conversations *@
+        <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-xl p-5">
+            <p class="text-xs text-gray-400 mb-1">Total Conversations</p>
+            <p class="text-3xl font-bold text-gray-100 mb-2">@AdminState.Value.TotalConversations</p>
+            <div class="flex items-center gap-1 text-xs text-green-400">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941"/>
+                </svg>
+                +@AdminState.Value.ConversationsToday today
+            </div>
+        </div>
 
-    <MudItem xs="12" sm="6" md="3">
-        <MudPaper Class="pa-4" Elevation="2">
-            <MudStack Spacing="1">
-                <MudText Typo="Typo.caption" Color="Color.Secondary">Active Models</MudText>
-                <MudText Typo="Typo.h4">@AdminState.Value.ActiveModels</MudText>
-                <MudText Typo="Typo.caption" Color="Color.Secondary">
-                    @AdminState.Value.TotalModels configured
-                </MudText>
-            </MudStack>
-        </MudPaper>
-    </MudItem>
+        @* Active Models *@
+        <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-xl p-5">
+            <p class="text-xs text-gray-400 mb-1">Active Models</p>
+            <p class="text-3xl font-bold text-gray-100 mb-2">@AdminState.Value.ActiveModels</p>
+            <p class="text-xs text-gray-400">@AdminState.Value.TotalModels configured</p>
+        </div>
 
-    <MudItem xs="12" sm="6" md="3">
-        <MudPaper Class="pa-4" Elevation="2">
-            <MudStack Spacing="1">
-                <MudText Typo="Typo.caption" Color="Color.Secondary">MCP Servers</MudText>
-                <MudText Typo="Typo.h4">@AdminState.Value.ConnectedMcpServers</MudText>
-                <MudText Typo="Typo.caption" Color="@(AdminState.Value.ConnectedMcpServers > 0 ? Color.Success : Color.Secondary)">
-                    @(AdminState.Value.ConnectedMcpServers > 0 ? $"{AdminState.Value.ConnectedMcpServers} of {AdminState.Value.TotalMcpServers} connected" : "None configured")
-                </MudText>
-            </MudStack>
-        </MudPaper>
-    </MudItem>
+        @* MCP Servers *@
+        <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-xl p-5">
+            <p class="text-xs text-gray-400 mb-1">MCP Servers</p>
+            <p class="text-3xl font-bold text-gray-100 mb-2">@AdminState.Value.ConnectedMcpServers</p>
+            <p class="text-xs @(AdminState.Value.ConnectedMcpServers > 0 ? "text-green-400" : "text-gray-400")">
+                @(AdminState.Value.ConnectedMcpServers > 0 ? $"{AdminState.Value.ConnectedMcpServers} of {AdminState.Value.TotalMcpServers} connected" : "None configured")
+            </p>
+        </div>
+    </div>
 
     @* System Health *@
-    <MudItem xs="12">
-        <MudText Typo="Typo.h6" Class="mt-4 mb-2">System Health</MudText>
-        <MudDivider />
-    </MudItem>
+    <div>
+        <h3 class="text-lg font-semibold text-gray-100 mb-4">System Health</h3>
 
-    <MudItem xs="12">
-        <MudSimpleTable Dense="true">
-            <tbody>
-                <tr>
-                    <td><strong>LiteLLM Proxy</strong></td>
-                    <td>
-                        <MudChip T="string" Size="Size.Small" Color="@(AdminState.Value.LiteLLMConnected ? Color.Success : Color.Error)">
+        <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-xl overflow-hidden">
+            <div class="divide-y divide-[#2A2A2A]">
+                @* LiteLLM Proxy *@
+                <div class="px-5 py-4 flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-200">LiteLLM Proxy</span>
+                    <div class="flex items-center gap-3">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold @(AdminState.Value.LiteLLMConnected ? "bg-green-500/20 text-green-400 border border-green-500/50" : "bg-red-500/20 text-red-400 border border-red-500/50")">
                             @(AdminState.Value.LiteLLMConnected ? "Connected" : "Disconnected")
-                        </MudChip>
-                    </td>
-                    <td>@AdminState.Value.LiteLLMUrl</td>
-                </tr>
-                <tr>
-                    <td><strong>Storage</strong></td>
-                    <td>
-                        <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                        </span>
+                        <span class="text-sm text-gray-400">@AdminState.Value.LiteLLMUrl</span>
+                    </div>
+                </div>
+
+                @* Storage *@
+                <div class="px-5 py-4 flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-200">Storage</span>
+                    <div class="flex items-center gap-3">
+                        <span class="px-2.5 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/50 rounded-full text-xs font-semibold">
                             @AdminState.Value.StorageUsedMB.ToString("F1") / @AdminState.Value.StorageLimitMB.ToString("F1") MB
-                        </MudChip>
-                    </td>
-                    <td>@((AdminState.Value.StorageUsedMB / AdminState.Value.StorageLimitMB * 100).ToString("F1"))% used</td>
-                </tr>
-                <tr>
-                    <td><strong>App Version</strong></td>
-                    <td>
-                        <MudChip T="string" Size="Size.Small">@AdminState.Value.AppVersion</MudChip>
-                    </td>
-                    <td>Blazor WASM • .NET 9</td>
-                </tr>
-                <tr>
-                    <td><strong>Uptime</strong></td>
-                    <td>@AdminState.Value.Uptime</td>
-                    <td>Since @DateTime.Now.AddHours(-2).ToString("HH:mm")</td>
-                </tr>
-            </tbody>
-        </MudSimpleTable>
-    </MudItem>
+                        </span>
+                        <span class="text-sm text-gray-400">@((AdminState.Value.StorageUsedMB / AdminState.Value.StorageLimitMB * 100).ToString("F1"))% used</span>
+                    </div>
+                </div>
+
+                @* App Version *@
+                <div class="px-5 py-4 flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-200">App Version</span>
+                    <div class="flex items-center gap-3">
+                        <span class="px-2.5 py-1 bg-[#1A1A1A] border border-[#2A2A2A] rounded-full text-xs font-medium text-gray-300">
+                            @AdminState.Value.AppVersion
+                        </span>
+                        <span class="text-sm text-gray-400">Blazor Server • .NET 9</span>
+                    </div>
+                </div>
+
+                @* Uptime *@
+                <div class="px-5 py-4 flex items-center justify-between">
+                    <span class="text-sm font-medium text-gray-200">Uptime</span>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-gray-300">@AdminState.Value.Uptime</span>
+                        <span class="text-sm text-gray-400">Since @DateTime.Now.AddHours(-2).ToString("HH:mm")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     @* Storage Details *@
-    <MudItem xs="12">
-        <MudText Typo="Typo.h6" Class="mt-4 mb-2">Storage</MudText>
-        <MudDivider />
-    </MudItem>
+    <div>
+        <h3 class="text-lg font-semibold text-gray-100 mb-4">Storage</h3>
 
-    <MudItem xs="12" md="6">
-        <MudPaper Class="pa-4" Elevation="2">
-            <MudStack Spacing="2">
-                <MudText Typo="Typo.subtitle2">LocalStorage</MudText>
-                <MudProgressLinear
-                                  Value="@((AdminState.Value.LocalStorageUsedMB / AdminState.Value.LocalStorageLimitMB) * 100)"
-                                  Color="Color.Primary"
-                                  Size="Size.Medium" />
-                <MudText Typo="Typo.body2">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @* LocalStorage *@
+            <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-xl p-5">
+                <h4 class="text-sm font-semibold text-gray-200 mb-3">LocalStorage</h4>
+                <div class="relative w-full h-2 bg-[#1A1A1A] rounded-full overflow-hidden mb-2">
+                    <div class="absolute top-0 left-0 h-full bg-purple-600 rounded-full transition-all"
+                         style="width: @((AdminState.Value.LocalStorageUsedMB / AdminState.Value.LocalStorageLimitMB) * 100)%"></div>
+                </div>
+                <p class="text-sm text-gray-300">
                     @AdminState.Value.LocalStorageUsedMB.ToString("F1") MB / @AdminState.Value.LocalStorageLimitMB.ToString("F1") MB
-                </MudText>
-            </MudStack>
-        </MudPaper>
-    </MudItem>
+                </p>
+            </div>
 
-    <MudItem xs="12" md="6">
-        <MudPaper Class="pa-4" Elevation="2">
-            <MudStack Spacing="2">
-                <MudText Typo="Typo.subtitle2">IndexedDB</MudText>
-                <MudProgressLinear
-                                  Value="@((AdminState.Value.IndexedDBUsedMB / AdminState.Value.IndexedDBLimitMB) * 100)"
-                                  Color="Color.Secondary"
-                                  Size="Size.Medium" />
-                <MudText Typo="Typo.body2">
+            @* IndexedDB *@
+            <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-xl p-5">
+                <h4 class="text-sm font-semibold text-gray-200 mb-3">IndexedDB</h4>
+                <div class="relative w-full h-2 bg-[#1A1A1A] rounded-full overflow-hidden mb-2">
+                    <div class="absolute top-0 left-0 h-full bg-blue-600 rounded-full transition-all"
+                         style="width: @((AdminState.Value.IndexedDBUsedMB / AdminState.Value.IndexedDBLimitMB) * 100)%"></div>
+                </div>
+                <p class="text-sm text-gray-300">
                     @AdminState.Value.IndexedDBUsedMB.ToString("F1") MB / @AdminState.Value.IndexedDBLimitMB.ToString("F1") MB
-                </MudText>
-            </MudStack>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
