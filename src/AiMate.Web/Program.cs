@@ -275,6 +275,18 @@ builder.Services.AddScoped<AiMate.Core.Services.IMCPToolService, AiMate.Infrastr
 builder.Services.AddScoped<AiMate.Core.Services.IApiKeyService, AiMate.Infrastructure.Services.ApiKeyService>();
 builder.Services.AddScoped<AiMate.Core.Services.IFeedbackService, AiMate.Infrastructure.Services.FeedbackService>();
 builder.Services.AddScoped<AiMate.Core.Services.IConnectionService, AiMate.Infrastructure.Services.ConnectionService>();
+builder.Services.AddScoped<AiMate.Core.Services.IPluginSettingsService, AiMate.Infrastructure.Services.PluginSettingsService>();
+builder.Services.AddScoped<AiMate.Core.Services.ICodeFileService, AiMate.Infrastructure.Services.CodeFileService>();
+
+// Register Roslyn and IntelliSense services
+builder.Services.AddScoped<AiMate.Core.Services.IRoslynCompilationService, AiMate.Infrastructure.Services.RoslynCompilationService>();
+builder.Services.AddScoped<AiMate.Core.Services.IIntelliSenseService, AiMate.Infrastructure.Services.IntelliSenseService>();
+
+// Register Structured Content services
+builder.Services.AddScoped<AiMate.Core.Services.IStructuredContentService, AiMate.Infrastructure.Services.StructuredContentService>();
+builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.NavigationActionHandler>();
+builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.ApiCallActionHandler>();
+builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.ExportActionHandler>();
 
 // Register Plugin System (Singleton for plugin lifecycle management)
 builder.Services.AddSingleton<AiMate.Core.Services.IPluginManager, AiMate.Infrastructure.Services.PluginManager>();

@@ -28,6 +28,9 @@ public class AiMateDbContext : DbContext
     public DbSet<FeedbackTagOption> FeedbackTagOptions => Set<FeedbackTagOption>();
     public DbSet<Note> Notes => Set<Note>();
     public DbSet<Connection> Connections => Set<Connection>();
+    public DbSet<PluginSettings> PluginSettings => Set<PluginSettings>();
+    public DbSet<CodeFile> CodeFiles => Set<CodeFile>();
+    public DbSet<StructuredContentTemplate> StructuredContentTemplates => Set<StructuredContentTemplate>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -267,6 +270,54 @@ public class AiMateDbContext : DbContext
             entity.HasOne(e => e.Organization)
                 .WithMany()
                 .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // PluginSettings configuration
+        modelBuilder.Entity<PluginSettings>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.PluginId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.PluginId, e.UserId }).IsUnique();
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // CodeFile configuration
+        modelBuilder.Entity<CodeFile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.Path);
+            entity.HasIndex(e => new { e.ProjectId, e.Path }).IsUnique();
+            entity.HasIndex(e => e.Language);
+            entity.HasIndex(e => e.LastModified);
+
+            entity.HasOne(e => e.Project)
+                .WithMany()
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // StructuredContentTemplate configuration
+        modelBuilder.Entity<StructuredContentTemplate>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => new { e.Name, e.Type });
+            entity.HasIndex(e => e.IsBuiltIn);
+            entity.HasIndex(e => e.IsPublic);
+            entity.HasIndex(e => e.CreatedBy);
+            entity.HasIndex(e => e.UsageCount);
+
+            entity.HasOne(e => e.Creator)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedBy)
                 .OnDelete(DeleteBehavior.SetNull);
         });
     }
