@@ -2,6 +2,9 @@
 **Date:** November 22, 2025
 **Purpose:** Map Tailwind/Blazor components to backend API endpoints
 
+> **📋 Related Documentation:**
+> This guide should be reviewed together with [`docs/UI_COMPONENTS_AUDIT_REPORT.md`](./UI_COMPONENTS_AUDIT_REPORT.md) which provides a comprehensive audit of all UI components, their implementation status, and identifies which components require backend integration.
+
 ---
 
 ## Overview

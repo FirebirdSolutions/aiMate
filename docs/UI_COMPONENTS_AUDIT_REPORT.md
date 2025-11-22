@@ -5,6 +5,9 @@
 **Total Screenshots Reviewed:** 53
 **Total Components Analyzed:** 76 Razor Components
 
+> **📋 Related Documentation:**
+> This audit should be reviewed together with [`docs/FRONTEND_BACKEND_INTEGRATION_GUIDE.md`](./FRONTEND_BACKEND_INTEGRATION_GUIDE.md) which documents backend API wiring requirements for components marked as ⚠️ Partial or requiring integration.
+
 ---
 
 ## Executive Summary
@@ -12,8 +15,9 @@
 This audit cross-references the UI design screenshots (documented in `docs/Screenshots for UI Enhancements/INDEX.md`) against the actual implemented Blazor components in the codebase. The analysis identifies:
 
 ✅ **Implemented Features** - Components that exist and match screenshot requirements
-⚠️ **Partially Implemented** - Components that exist but are missing features shown in screenshots
+⚠️ **Partially Implemented** - Components that exist but are missing features shown in screenshots or backend integration
 ❌ **Missing Components** - Features shown in screenshots with no corresponding implementation
+🔌 **Needs Backend Integration** - UI exists but requires API wiring (see Integration Guide)
 
 ---
 
@@ -209,6 +213,197 @@ This audit cross-references the UI design screenshots (documented in `docs/Scree
 **Key Gaps:**
 1. **FAQ Accordion Component** - Not implemented
 2. **Feedback Dialog Detail** - Need to verify 1-10 rating scale and all feedback button options
+
+---
+
+## Backend Integration Requirements
+
+> **🔗 See:** [`docs/FRONTEND_BACKEND_INTEGRATION_GUIDE.md`](./FRONTEND_BACKEND_INTEGRATION_GUIDE.md) for detailed integration steps, API endpoints, and code examples.
+
+### Components Requiring Backend API Wiring
+
+The following components are either partially implemented or fully implemented in UI but **require backend integration** to be functional:
+
+#### 1. Search Components 🔌
+
+| Component | Status | Backend API | Integration Guide Reference |
+|-----------|--------|-------------|---------------------------|
+| `GlobalSearchDialog.razor` | ⚠️ Needs API | `GET /api/v1/search` | Section: "🔍 Search Integration" |
+| `Search.razor` | ⚠️ Needs API | `GET /api/v1/search/conversations`<br>`GET /api/v1/search/messages` | Section: "🔍 Search Integration" |
+
+**Current State:** Both components use mock data and client-side search only.
+
+**Required Changes:**
+- Remove `GenerateMockResults()` method from GlobalSearchDialog
+- Replace client-side filtering with API calls
+- Add debouncing (300ms) for search queries
+- Map API responses to component models
+
+**Backend Endpoints Available:** ✅ Fully implemented in `SearchApiController.cs`
+
+---
+
+#### 2. File Management Components 🔌
+
+| Component | Status | Backend API | Integration Guide Reference |
+|-----------|--------|-------------|---------------------------|
+| `Files.razor` | ⚠️ Needs API | `GET /api/v1/files`<br>`POST /api/v1/files/upload`<br>`DELETE /api/v1/files/{id}` | Section: "📁 File Management Integration" |
+| `FileUploadDialog.razor` | ⚠️ Needs API | `POST /api/v1/files/upload` | Section: "📁 File Management Integration" |
+| `AttachFilesMenu.razor` | ⚠️ Needs API | `POST /api/v1/files/upload` | Section: "📁 File Management Integration" |
+
+**Current State:** Empty state with "File API not implemented yet" message. All methods are stubs.
+
+**Required Changes:**
+- Implement file upload with multipart/form-data
+- Add download functionality with JS interop
+- Implement delete with confirmation dialog
+- Add Recent Files panel to AttachFilesMenu (connects to gap #1 above)
+
+**Backend Endpoints Available:** ✅ Fully implemented in `FileApiController.cs`
+
+**Additional Requirement for Recent Files Panel:**
+- Store recent uploads in localStorage or state
+- Display last 5-10 files in attachment menu
+- Allow quick re-attachment without file picker
+
+---
+
+#### 3. Feedback System Components 🔌
+
+| Component | Status | Backend API | Integration Guide Reference |
+|-----------|--------|-------------|---------------------------|
+| `MessageFeedbackWidget.razor` | ⚠️ Needs API | `POST /api/v1/feedback/message`<br>`GET /api/v1/feedback/tags/templates` | Section: "💬 Feedback Integration" |
+| `FeedbackTagsAdminTab.razor` | ⚠️ Needs API | `GET /api/v1/feedback/admin/tags/templates`<br>`POST/PUT/DELETE /api/v1/feedback/admin/tags/templates/{id}` | Section: "💬 Feedback Integration" |
+
+**Current State:** UI complete but dispatches Fluxor actions with no backend sync.
+
+**Required Changes:**
+- Create `FeedbackEffects.cs` for API integration
+- Load tag templates from backend
+- Submit feedback to API instead of local state only
+- Add admin CRUD for feedback tags
+
+**Backend Endpoints Available:** ✅ Fully implemented in `FeedbackSystemApiController.cs`
+
+---
+
+#### 4. Admin Panel Components 🔌
+
+| Component | Status | Backend API | Integration Guide Reference |
+|-----------|--------|-------------|---------------------------|
+| `OverviewAdminTab.razor` | ⚠️ Needs API | `GET /api/v1/admin` | Section: "🎨 Admin Components Integration" |
+| `UsersAdminTab.razor` | ✅ Ready | N/A (single-user mode) | Section: "🎨 Admin Components Integration" |
+
+**Current State:** Shows mock/static data for system stats.
+
+**Required Changes:**
+- Create `AdminEffects.cs` for admin data loading
+- Update AdminState reducer to handle API responses
+- Add auto-refresh every 30 seconds for live stats
+- Display: Total Users, Conversations, Active Models, MCP servers
+
+**Backend Endpoints Available:** ✅ Fully implemented in `AdminApiController.cs` (requires Admin tier)
+
+---
+
+#### 5. User Settings Components 🔌
+
+| Component | Status | Backend API | Integration Guide Reference |
+|-----------|--------|-------------|---------------------------|
+| `AccountSettingsTab.razor` | ⚠️ Needs API | `GET/PUT /api/v1/users/profile`<br>`DELETE /api/v1/users/account` | Section: "⚙️ Settings Components Integration" |
+| `ConnectionsSettingsTab.razor` | ⚠️ Needs API | `GET/POST/PUT/DELETE /api/v1/connections/*`<br>`POST /api/v1/connections/{id}/test` | Section: "⚙️ Settings Components Integration" |
+| `UsageSettingsTab.razor` | ⚠️ Needs API | `GET /api/v1/users/usage`<br>`GET /api/v1/users/usage/export` | Section: "⚙️ Settings Components Integration" |
+
+**Current State:**
+- AccountSettings: UI complete, no backend sync
+- ConnectionsSettings: Full BYOK UI, needs API integration for CRUD + Test Connection
+- UsageSettings: Shows hardcoded mock data (147,532 tokens, $4.23 NZD)
+
+**Required Changes:**
+- Create `SettingsEffects.cs` for profile updates
+- Create `ConnectionEffects.cs` for connection management
+- Implement tier limit enforcement (BYOK connection limits)
+- Add usage export functionality (CSV/JSON download)
+- Display real usage data instead of mocks
+
+**Backend Endpoints Available:** ✅ Fully implemented in:
+- `UserApiController.cs` (profile, usage)
+- `ConnectionApiController.cs` (connections, BYOK, tier limits)
+
+---
+
+### Missing Components Requiring New Backend APIs
+
+These components are missing from the UI **and** require new backend APIs to be built:
+
+#### 6. Knowledge Base Advanced Features ❌ + 🔌
+
+**Missing UI Components:**
+- `KnowledgeCollectionsView.razor` - Card-based collections display
+- `KnowledgeArtifactsTab.razor` - Artifacts management
+- `KnowledgeAnalyticsTab.razor` - Analytics dashboard
+
+**Required Backend APIs (NOT YET IMPLEMENTED):**
+- `GET /api/v1/knowledge/collections` - List collections with item counts
+- `POST /api/v1/knowledge/collections` - Create collection
+- `GET /api/v1/knowledge/artifacts` - List artifacts
+- `GET /api/v1/knowledge/analytics` - Get usage analytics (views, references, engagement)
+
+**Priority:** P0 (High) - Core feature for knowledge management
+
+**Effort:** Medium (2-3 days UI + 2-3 days backend)
+
+---
+
+#### 7. Usage Analytics Dialog ❌ + 🔌
+
+**Missing UI Component:**
+- `UsageAnalyticsDialog.razor` - Detailed usage analytics modal
+
+**Required Backend APIs:**
+- ✅ `GET /api/v1/users/usage` - Already exists
+- ❌ `GET /api/v1/users/usage/by-model?start={date}&end={date}` - Time-filtered model usage (NEW)
+- ❌ `GET /api/v1/users/usage/timeline?granularity={hour|day|week}` - Time series data for charts (NEW)
+
+**Priority:** P0 (High) - User visibility into costs
+
+**Effort:** Medium (2 days UI + 1 day backend enhancements)
+
+---
+
+#### 8. Debug Console / API Log Viewer ❌ + 🔌
+
+**Missing UI Component:**
+- `DebugConsole.razor` - Developer console with API request/response logs
+
+**Required Backend APIs:**
+- ❌ `GET /api/v1/debug/logs?level={debug|info|warn|error}&limit={n}` - Stream logs (NEW)
+- ❌ `WebSocket /ws/debug` - Real-time log streaming (NEW)
+
+**Priority:** P1 (Medium) - Developer experience
+
+**Effort:** Medium (2 days UI + 2 days backend)
+
+**Note:** Could use browser DevTools Network tab as interim solution.
+
+---
+
+### Backend Integration Summary
+
+| Category | Components | Backend Status | Priority |
+|----------|-----------|----------------|----------|
+| Search | 2 | ✅ APIs Ready | P0 - High |
+| File Management | 3 | ✅ APIs Ready | P0 - High |
+| Feedback | 2 | ✅ APIs Ready | P0 - High |
+| Admin Panel | 2 | ✅ APIs Ready | P1 - Medium |
+| User Settings | 3 | ✅ APIs Ready | P1 - Medium |
+| **Total Ready** | **12** | **✅ 12/12** | **Can integrate immediately** |
+| Knowledge Advanced | 3 | ❌ Needs Backend | P0 - High |
+| Usage Analytics | 1 | ⚠️ Partial Backend | P0 - High |
+| Debug Console | 1 | ❌ Needs Backend | P1 - Medium |
+| **Total Missing Backend** | **5** | **❌ 3 new + ⚠️ 2 enhancements** | **Backend dev required** |
+
+**Key Insight:** **12 out of 17 components requiring backend integration have fully implemented APIs ready to wire up.** This represents ~70% of the integration work can proceed immediately without backend development.
 
 ---
 
