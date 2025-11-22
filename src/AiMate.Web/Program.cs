@@ -393,6 +393,9 @@ builder.Services.AddSingleton<AiMate.Core.Services.IEncryptionService, AiMate.In
 // Register Search Service (full-text and semantic search)
 builder.Services.AddScoped<AiMate.Core.Services.ISearchService, AiMate.Infrastructure.Services.SearchService>();
 
+// Register File Storage Service (local filesystem, can be swapped for Azure/S3)
+builder.Services.AddSingleton<AiMate.Core.Services.IFileStorageService, AiMate.Infrastructure.Services.LocalFileStorageService>();
+
 // Register HttpClient for services that need it
 builder.Services.AddHttpClient<AiMate.Infrastructure.Services.LiteLLMService>();
 builder.Services.AddHttpClient<AiMate.Infrastructure.Services.OpenAIEmbeddingService>();
