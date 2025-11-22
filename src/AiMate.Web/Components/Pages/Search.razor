@@ -6,6 +6,8 @@
 @inject IState<ChatState> ChatState
 @inject IDispatcher Dispatcher
 @inject NavigationManager Navigation
+@inject HttpClient Http
+@inject ISnackbar Snackbar
 
 <PageTitle>Search - aiMate</PageTitle>
 
@@ -48,53 +50,172 @@
 
 @code {
     private string _searchQuery = string.Empty;
+    private List<Core.Entities.Conversation> _conversationResults = new();
+    private List<Core.Entities.Message> _messageResults = new();
+    private CancellationTokenSource? _searchCts;
+    private bool _isSearching = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        if (!string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            await PerformSearch();
+        }
+    }
 
     private void HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Escape")
         {
             _searchQuery = string.Empty;
+            _conversationResults.Clear();
+            _messageResults.Clear();
+        }
+    }
+
+    private async Task PerformSearch()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            _conversationResults.Clear();
+            _messageResults.Clear();
+            return;
+        }
+
+        // Cancel previous search
+        _searchCts?.Cancel();
+        _searchCts = new CancellationTokenSource();
+
+        _isSearching = true;
+        StateHasChanged();
+
+        try
+        {
+            // Debounce 300ms (handled by MudTextField DebounceInterval)
+            await Task.Delay(100, _searchCts.Token);
+
+            // Call search APIs in parallel
+            var conversationsTask = GetConversationResultsAsync();
+            var messagesTask = GetMessageSearchResultsAsync();
+
+            await Task.WhenAll(conversationsTask, messagesTask);
+
+            _conversationResults = await conversationsTask;
+            _messageResults = await messagesTask;
+        }
+        catch (TaskCanceledException)
+        {
+            // Search cancelled - ignore
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Search failed: {ex.Message}", Severity.Error);
+            _conversationResults.Clear();
+            _messageResults.Clear();
+        }
+        finally
+        {
+            _isSearching = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<List<Core.Entities.Conversation>> GetConversationResultsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+            return new List<Core.Entities.Conversation>();
+
+        try
+        {
+            var response = await Http.GetFromJsonAsync<SearchResults<ConversationDto>>(
+                $"/api/v1/search/conversations?query={Uri.EscapeDataString(_searchQuery)}&limit=50",
+                _searchCts!.Token);
+
+            return response?.Results?.Select(r => new Core.Entities.Conversation
+            {
+                Id = r.Item?.Id ?? Guid.NewGuid(),
+                Title = r.Item?.Title ?? "Untitled",
+                UpdatedAt = r.Item?.UpdatedAt ?? DateTime.Now,
+                Messages = r.Item?.Messages ?? new List<Core.Entities.Message>()
+            }).ToList() ?? new List<Core.Entities.Conversation>();
+        }
+        catch
+        {
+            return new List<Core.Entities.Conversation>();
+        }
+    }
+
+    private async Task<List<Core.Entities.Message>> GetMessageSearchResultsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery))
+            return new List<Core.Entities.Message>();
+
+        try
+        {
+            var response = await Http.GetFromJsonAsync<SearchResults<MessageDto>>(
+                $"/api/v1/search/messages?query={Uri.EscapeDataString(_searchQuery)}&limit=50",
+                _searchCts!.Token);
+
+            return response?.Results?.Select(r => new Core.Entities.Message
+            {
+                Id = r.Item?.Id ?? Guid.NewGuid(),
+                ConversationId = r.Item?.ConversationId ?? Guid.NewGuid(),
+                Content = r.Item?.Content ?? "",
+                Role = r.Item?.Role ?? Core.Entities.MessageRole.User,
+                CreatedAt = r.Item?.CreatedAt ?? DateTime.Now
+            }).ToList() ?? new List<Core.Entities.Message>();
+        }
+        catch
+        {
+            return new List<Core.Entities.Message>();
         }
     }
 
     private List<object> GetAllResults()
     {
-        if (string.IsNullOrWhiteSpace(_searchQuery))
-            return new List<object>();
-
         var results = new List<object>();
-        results.AddRange(GetConversationResults());
-        results.AddRange(GetMessageSearchResults());
+        results.AddRange(_conversationResults);
+        results.AddRange(_messageResults);
         return results;
     }
 
-    private List<Core.Entities.Conversation> GetConversationResults()
-    {
-        if (string.IsNullOrWhiteSpace(_searchQuery))
-            return new List<Core.Entities.Conversation>();
+    private List<Core.Entities.Conversation> GetConversationResults() => _conversationResults;
+    private List<Core.Entities.Message> GetMessageSearchResults() => _messageResults;
 
-        var query = _searchQuery.ToLower();
-        return ChatState.Value.Conversations.Values
-            .Where(c => c.Title.ToLower().Contains(query))
-            .OrderByDescending(c => c.UpdatedAt)
-            .ToList();
+    private int GetConversationCount() => _conversationResults.Count;
+    private int GetMessageCount() => _messageResults.Count;
+
+    // API Response Models
+    public class SearchResults<T>
+    {
+        public List<SearchResultWrapper<T>>? Results { get; set; }
+        public int TotalCount { get; set; }
     }
 
-    private List<Core.Entities.Message> GetMessageSearchResults()
+    public class SearchResultWrapper<T>
     {
-        if (string.IsNullOrWhiteSpace(_searchQuery))
-            return new List<Core.Entities.Message>();
-
-        var query = _searchQuery.ToLower();
-        return ChatState.Value.Conversations.Values
-            .SelectMany(c => c.Messages)
-            .Where(m => m.Content.ToLower().Contains(query))
-            .OrderByDescending(m => m.CreatedAt)
-            .ToList();
+        public T? Item { get; set; }
+        public double Score { get; set; }
+        public string? Highlight { get; set; }
     }
 
-    private int GetConversationCount() => GetConversationResults().Count;
-    private int GetMessageCount() => GetMessageSearchResults().Count;
+    public class ConversationDto
+    {
+        public Guid Id { get; set; }
+        public string? Title { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public List<Core.Entities.Message>? Messages { get; set; }
+    }
+
+    public class MessageDto
+    {
+        public Guid Id { get; set; }
+        public Guid ConversationId { get; set; }
+        public string? Content { get; set; }
+        public Core.Entities.MessageRole Role { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
 
     private RenderFragment RenderSearchResults(List<object> results) => builder =>
     {
