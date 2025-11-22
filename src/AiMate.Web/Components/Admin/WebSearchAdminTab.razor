@@ -1,0 +1,164 @@
+@* Mobile-first responsive Web Search Admin Tab *@
+
+<div class="space-y-6 md:space-y-8">
+
+    @* Section: Web Search Engine *@
+    <div>
+        <h3 class="text-base md:text-lg font-semibold text-white mb-4">Web Search Engine</h3>
+
+        <div class="space-y-4">
+            @* Search Engine Selection *@
+            <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-4">
+                <label class="block text-sm font-medium text-white mb-2">Search Engine</label>
+                <select @bind="searchEngine" class="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="google">Google</option>
+                    <option value="bing">Bing</option>
+                    <option value="duckduckgo">DuckDuckGo</option>
+                    <option value="searxng">SearXNG</option>
+                </select>
+            </div>
+
+            @* Enable Query Suggestions Toggle *@
+            <div class="flex items-center justify-between p-4 bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg">
+                <div class="flex-1">
+                    <div class="text-sm font-medium text-white">Enable Query Suggestions</div>
+                    <div class="text-xs text-gray-400 mt-1">Provide search query suggestions based on context</div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" @bind="enableQuerySuggestions" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+            </div>
+
+            @* Result Count *@
+            <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-4">
+                <label class="block text-sm font-medium text-white mb-2">Result Count</label>
+                <input type="number"
+                       @bind="resultCount"
+                       min="1"
+                       max="20"
+                       class="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                       placeholder="5" />
+                <div class="text-xs text-gray-500 mt-2">Number of search results to return (1-20)</div>
+            </div>
+        </div>
+    </div>
+
+    @* Section: API Configuration *@
+    <div>
+        <h3 class="text-base md:text-lg font-semibold text-white mb-4">API Configuration</h3>
+
+        <div class="space-y-4">
+            @if (searchEngine == "google")
+            {
+                @* Google API Configuration *@
+                <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-4">
+                    <label class="block text-sm font-medium text-white mb-2">Google PSE API Key</label>
+                    <div class="flex items-center gap-2">
+                        <input type="@(showGoogleApiKey ? "text" : "password")"
+                               @bind="googleApiKey"
+                               class="flex-1 bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+                               placeholder="Enter your Google API key" />
+                        <button @onclick="@(() => showGoogleApiKey = !showGoogleApiKey)"
+                                class="p-2 text-gray-400 hover:text-white hover:bg-[#2A2A2A] rounded-lg transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                @if (showGoogleApiKey)
+                                {
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                }
+                                else
+                                {
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                }
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-4">
+                    <label class="block text-sm font-medium text-white mb-2">Google PSE Engine ID</label>
+                    <input type="text"
+                           @bind="googleEngineId"
+                           class="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+                           placeholder="Enter your Google PSE Engine ID" />
+                </div>
+            }
+            else if (searchEngine == "bing")
+            {
+                @* Bing API Configuration *@
+                <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-4">
+                    <label class="block text-sm font-medium text-white mb-2">Bing Search API Key</label>
+                    <div class="flex items-center gap-2">
+                        <input type="@(showBingApiKey ? "text" : "password")"
+                               @bind="bingApiKey"
+                               class="flex-1 bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono"
+                               placeholder="Enter your Bing API key" />
+                        <button @onclick="@(() => showBingApiKey = !showBingApiKey)"
+                                class="p-2 text-gray-400 hover:text-white hover:bg-[#2A2A2A] rounded-lg transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                @if (showBingApiKey)
+                                {
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                }
+                                else
+                                {
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                }
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            }
+            else if (searchEngine == "searxng")
+            {
+                @* SearXNG Configuration *@
+                <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-4">
+                    <label class="block text-sm font-medium text-white mb-2">SearXNG Instance URL</label>
+                    <input type="text"
+                           @bind="searxngUrl"
+                           class="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                           placeholder="https://searx.example.com" />
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (searchEngine != "duckduckgo")
+    {
+        @* Test Connection Button *@
+        <div class="flex items-center justify-end">
+            <button @onclick="HandleTestConnection"
+                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-all flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                Test Connection
+            </button>
+        </div>
+    }
+
+</div>
+
+@code {
+    private string searchEngine = "google";
+    private bool enableQuerySuggestions = false;
+    private int resultCount = 5;
+
+    private string googleApiKey = "";
+    private string googleEngineId = "";
+    private bool showGoogleApiKey = false;
+
+    private string bingApiKey = "";
+    private bool showBingApiKey = false;
+
+    private string searxngUrl = "";
+
+    private void HandleTestConnection()
+    {
+        // TODO: Implement API connection test
+    }
+}

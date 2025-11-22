@@ -4,68 +4,77 @@
 @inject IState<SettingsState> SettingsState
 @inject IDispatcher Dispatcher
 
-<MudText Typo="Typo.h6" Class="mb-4">General Settings</MudText>
+@* Mobile-first responsive General Settings Tab *@
 
-<MudGrid Spacing="2">
-    <MudItem xs="12" md="6">
-        <MudSelect T="string" Value="@_language"
-                  Label="Language"
-                  Variant="Variant.Outlined"
-                  Margin="Margin.Dense"
-                  ValueChanged="@((string value) => { _language = value; Dispatcher.Dispatch(new UpdateLanguageAction(value)); })">
-            <MudSelectItem T="string" Value="@("en-NZ")">English (New Zealand)</MudSelectItem>
-            <MudSelectItem T="string" Value="@("mi-NZ")">Te Reo Māori</MudSelectItem>
-            <MudSelectItem T="string" Value="@("en-US")">English (United States)</MudSelectItem>
-            <MudSelectItem T="string" Value="@("en-GB")">English (United Kingdom)</MudSelectItem>
-        </MudSelect>
-    </MudItem>
+<div class="space-y-6 md:space-y-8">
 
-    <MudItem xs="12" md="6">
-        <MudSelect T="string" Value="@_timeZone"
-                  Label="Time Zone"
-                  Variant="Variant.Outlined"
-                  Margin="Margin.Dense"
-                  ValueChanged="@((string value) => { _timeZone = value; Dispatcher.Dispatch(new UpdateTimeZoneAction(value)); })">
-            <MudSelectItem T="string" Value="@("Pacific/Auckland")">Pacific/Auckland (NZ)</MudSelectItem>
-            <MudSelectItem T="string" Value="@("Pacific/Chatham")">Pacific/Chatham (NZ)</MudSelectItem>
-            <MudSelectItem T="string" Value="@("Australia/Sydney")">Australia/Sydney</MudSelectItem>
-            <MudSelectItem T="string" Value="@("America/Los_Angeles")">America/Los_Angeles</MudSelectItem>
-            <MudSelectItem T="string" Value="@("America/New_York")">America/New_York</MudSelectItem>
-            <MudSelectItem T="string" Value="@("Europe/London")">Europe/London</MudSelectItem>
-            <MudSelectItem T="string" Value="@("UTC")">UTC</MudSelectItem>
-        </MudSelect>
-    </MudItem>
+    @* Section: WebUI Settings *@
+    <div>
+        <h3 class="text-base md:text-lg font-semibold text-white mb-4">WebUI Settings</h3>
 
-    <MudItem xs="12">
-        <MudDivider Class="my-4" />
-    </MudItem>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            @* Language Selection *@
+            <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-4">
+                <label class="block text-sm font-medium text-white mb-2">Language</label>
+                <select @bind="_language"
+                        @bind:after="@(() => Dispatcher.Dispatch(new UpdateLanguageAction(_language)))"
+                        class="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="en-GB">English (GB)</option>
+                    <option value="en-US">English (US)</option>
+                    <option value="en-NZ">English (NZ)</option>
+                    <option value="mi-NZ">Te Reo Māori</option>
+                </select>
+            </div>
 
-    <MudItem xs="12">
-        <MudSwitch T="bool" Value="@_enableNotifications"
-                  Label="Enable Notifications"
-                  Color="Color.Primary"
-                  ValueChanged="@((bool value) => { _enableNotifications = value; Dispatcher.Dispatch(new UpdateNotificationsAction(value)); })" />
-        <MudText Typo="Typo.caption" Color="Color.Secondary">
-            Show desktop notifications for important events
-        </MudText>
-    </MudItem>
+            @* Notifications *@
+            <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-4">
+                <label class="block text-sm font-medium text-white mb-2">Notifications</label>
+                <select @bind="_notificationSetting"
+                        class="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="off">Off</option>
+                    <option value="on">On</option>
+                </select>
+            </div>
+        </div>
+    </div>
 
-    <MudItem xs="12">
-        <MudSwitch T="bool" Value="@_enableSoundEffects"
-                  Label="Enable Sound Effects"
-                  Color="Color.Primary"
-                  ValueChanged="@((bool value) => { _enableSoundEffects = value; Dispatcher.Dispatch(new UpdateSoundEffectsAction(value)); })" />
-        <MudText Typo="Typo.caption" Color="Color.Secondary">
-            Play sounds for message sent/received
-        </MudText>
-    </MudItem>
-</MudGrid>
+    @* Section: System Prompt *@
+    <div>
+        <h3 class="text-base md:text-lg font-semibold text-white mb-4">System Prompt</h3>
+
+        <div class="bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-4">
+            <div class="text-sm text-gray-400 mb-2">Your name is Echo and you are an AI assistant, my name is Rich.</div>
+            <textarea @bind="_systemPrompt"
+                      rows="10"
+                      class="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none font-mono">
+            </textarea>
+            <div class="mt-3 p-3 bg-[#1A1A1A] border border-[#2A2A2A] rounded-lg">
+                <div class="text-xs font-semibold text-purple-400 mb-2">[Culture]</div>
+                <div class="text-xs text-gray-300 space-y-1">
+                    <div><span class="text-gray-500">Location:</span> New Zealand/Aotearoa (Land of the Long White Cloud)</div>
+                    <div><span class="text-gray-500">Population:</span> Kiwis/New Zealanders</div>
+                    <div><span class="text-gray-500">Style:</span> Laid back and friendly, less formal</div>
+                    <div><span class="text-gray-500">Currency:</span> NZD</div>
+                    <div><span class="text-gray-500">Language:</span> New Zealand English (Colour vs Color, Homogenise vs Homogenize)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
 
 @code {
     private string _language = "en-NZ";
     private string _timeZone = "Pacific/Auckland";
     private bool _enableNotifications = true;
     private bool _enableSoundEffects = false;
+    private string _notificationSetting = "off";
+    private string _systemPrompt = @"[Culture]
+Location: New Zealand/Aotearoa (Land of the Long White Cloud)
+Population: Kiwis/New Zealanders
+Style: Laid back and friendly, less formal
+Currency: NZD
+Language: New Zealand English (Colour vs Color, Homogenise vs Homogenize)";
 
     protected override void OnParametersSet()
     {
@@ -75,5 +84,6 @@
         _timeZone = SettingsState.Value.TimeZone;
         _enableNotifications = SettingsState.Value.EnableNotifications;
         _enableSoundEffects = SettingsState.Value.EnableSoundEffects;
+        _notificationSetting = _enableNotifications ? "on" : "off";
     }
 }
