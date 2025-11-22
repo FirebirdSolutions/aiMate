@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +28,157 @@ builder.Services.AddRazorComponents()
 
 // API Controllers for Developer tier
 builder.Services.AddControllers();
+
+// Rate Limiting
+builder.Services.AddRateLimiter(options =>
+{
+    // Default policy for authenticated API calls
+    options.AddFixedWindowLimiter("api", limiterOptions =>
+    {
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.PermitLimit = 60; // 60 requests per minute
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 10;
+    });
+
+    // Strict policy for anonymous error logging (prevent abuse)
+    options.AddFixedWindowLimiter("error-logging", limiterOptions =>
+    {
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.PermitLimit = 10; // 10 errors per minute per IP
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 0; // No queue for error logs
+    });
+
+    // Developer tier policy (higher limits)
+    options.AddFixedWindowLimiter("developer", limiterOptions =>
+    {
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.PermitLimit = 120; // 120 requests per minute
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 20;
+    });
+
+    // Admin endpoints (generous limits)
+    options.AddFixedWindowLimiter("admin", limiterOptions =>
+    {
+        limiterOptions.Window = TimeSpan.FromMinutes(1);
+        limiterOptions.PermitLimit = 200; // 200 requests per minute
+        limiterOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        limiterOptions.QueueLimit = 50;
+    });
+
+    // Global limiter (fallback)
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        // Get user identifier (IP address for anonymous, userId for authenticated)
+        var userId = context.User.Identity?.IsAuthenticated == true
+            ? context.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "unknown"
+            : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+        {
+            Window = TimeSpan.FromMinutes(1),
+            PermitLimit = 100,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 10
+        });
+    });
+
+    // Rejection response
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsJsonAsync(new
+        {
+            error = new
+            {
+                message = "Too many requests. Please try again later.",
+                type = "rate_limit_error",
+                retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+                    ? (int)retryAfter.TotalSeconds
+                    : 60
+            }
+        }, cancellationToken);
+    };
+});
+
+Log.Information("Rate limiting configured");
+
+// Response Caching and Compression
+builder.Services.AddResponseCaching(options =>
+{
+    options.MaximumBodySize = 64 * 1024 * 1024; // 64MB max cached response
+    options.UseCaseSensitivePaths = false;
+    options.SizeLimit = 100 * 1024 * 1024; // 100MB total cache size
+});
+
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true; // Enable compression for HTTPS
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+    options.MimeTypes = Microsoft.AspNetCore.ResponseCompression.ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/json", "application/xml", "text/plain", "text/css", "text/html", "application/javascript" });
+});
+
+// Configure Brotli compression (best compression)
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest; // Balance speed and size
+});
+
+// Configure Gzip compression (fallback for older browsers)
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+
+// Configure output caching (ASP.NET Core 9 feature - better than ResponseCaching)
+builder.Services.AddOutputCache(options =>
+{
+    // Default policy: cache for 60 seconds
+    options.AddBasePolicy(builder => builder
+        .Expire(TimeSpan.FromSeconds(60))
+        .Tag("default"));
+
+    // Policy for static API responses (user profiles, settings, etc.)
+    options.AddPolicy("static", builder => builder
+        .Expire(TimeSpan.FromMinutes(5))
+        .Tag("static")
+        .SetVaryByQuery("*"));
+
+    // Policy for search results (cache for 2 minutes)
+    options.AddPolicy("search", builder => builder
+        .Expire(TimeSpan.FromMinutes(2))
+        .Tag("search")
+        .SetVaryByQuery("query", "limit", "threshold"));
+
+    // Policy for knowledge base items (cache for 5 minutes)
+    options.AddPolicy("knowledge", builder => builder
+        .Expire(TimeSpan.FromMinutes(5))
+        .Tag("knowledge")
+        .SetVaryByQuery("*"));
+
+    // Policy for public content (cache for 30 minutes)
+    options.AddPolicy("public", builder => builder
+        .Expire(TimeSpan.FromMinutes(30))
+        .Tag("public")
+        .SetVaryByQuery("*"));
+
+    // Policy for analytics (cache for 1 minute - frequently changing data)
+    options.AddPolicy("analytics", builder => builder
+        .Expire(TimeSpan.FromMinutes(1))
+        .Tag("analytics")
+        .SetVaryByQuery("*"));
+
+    // No caching policy for dynamic content (chat completions, streaming, etc.)
+    options.AddPolicy("no-cache", builder => builder
+        .NoCache()
+        .Tag("no-cache"));
+});
+
+Log.Information("Response caching and compression configured");
 
 // JWT Authentication
 var jwtSecret = builder.Configuration["Jwt:Secret"]
@@ -116,49 +268,67 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationH
 
 Log.Information("JWT authentication and authorization configured");
 
-// Swagger/OpenAPI for API documentation (requires Swashbuckle.AspNetCore package)
-// Commented out until package is added to avoid build errors
+// Swagger/OpenAPI for API documentation
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "aiMate API",
+        Version = "v1",
+        Description = "REST API for aiMate - Chat completions, projects, notes, knowledge base, and BYOK connections",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "aiMate Support",
+            Email = "support@aimate.co.nz",
+            Url = new Uri("https://github.com/ChoonForge/aiMate")
+        },
+        License = new Microsoft.OpenApi.Models.OpenApiLicense
+        {
+            Name = "MIT",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
+    });
 
-//builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen(c =>
-//{
-//    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-//    {
-//        Title = "aiMate API",
-//        Version = "v1",
-//        Description = "REST API for aiMate - Developer tier access",
-//        Contact = new Microsoft.OpenApi.Models.OpenApiContact
-//        {
-//            Name = "aiMate",
-//            Email = "support@aimate.co.nz"
-//        }
-//    });
+    // Include XML comments
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
 
-//    // Add API Key authentication
-//    c.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-//    {
-//        Description = "API Key authentication. Use format: Bearer {your-api-key}",
-//        Name = "Authorization",
-//        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-//        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-//        Scheme = "Bearer"
-//    });
+    // Add JWT Bearer authentication
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Format: Bearer {token}",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
 
-//    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-//    {
-//        {
-//            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-//            {
-//                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-//                {
-//                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-//                    Id = "ApiKey"
-//                }
-//            },
-//            Array.Empty<string>()
-//        }
-//    });
-//});
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+
+    // Group endpoints by controller
+    c.TagActionsBy(api => new[] { api.GroupName ?? api.ActionDescriptor.RouteValues["controller"] ?? "Default" });
+    c.DocInclusionPredicate((name, api) => true);
+});
+
+Log.Information("Swagger/OpenAPI configured");
 
 
 // CORS for API access
@@ -171,6 +341,14 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
+
+// Data Protection (for API key encryption)
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "keys")))
+    .SetApplicationName("AiMate")
+    .SetDefaultKeyLifetime(TimeSpan.FromDays(90)); // Rotate keys every 90 days
+
+Log.Information("Data Protection configured for API key encryption");
 
 // MudBlazor
 builder.Services.AddMudServices();
@@ -210,6 +388,52 @@ else
     Log.Information("Using InMemory database provider");
     builder.Services.AddDbContext<AiMateDbContext>(options =>
         options.UseInMemoryDatabase("AiMateDb"));
+}
+
+// Hangfire Background Jobs
+// Note: Requires Hangfire.AspNetCore and Hangfire.PostgreSql (or Hangfire.InMemory) NuGet packages
+// Install with: dotnet add package Hangfire.AspNetCore
+//              dotnet add package Hangfire.PostgreSql (for production)
+//              dotnet add package Hangfire.InMemory (for development)
+try
+{
+    if (databaseProvider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase))
+    {
+        var connectionString = builder.Configuration.GetConnectionString("PostgreSQL");
+        if (!string.IsNullOrEmpty(connectionString))
+        {
+            builder.Services.AddHangfire(config =>
+            {
+                config.UsePostgreSqlStorage(c =>
+                    c.UseNpgsqlConnection(connectionString));
+                config.UseSimpleAssemblyNameTypeSerializer();
+                config.UseRecommendedSerializerSettings();
+            });
+        }
+    }
+    else
+    {
+        // Use in-memory storage for development
+        builder.Services.AddHangfire(config =>
+        {
+            config.UseInMemoryStorage();
+            config.UseSimpleAssemblyNameTypeSerializer();
+            config.UseRecommendedSerializerSettings();
+        });
+    }
+
+    builder.Services.AddHangfireServer(options =>
+    {
+        options.WorkerCount = 2; // Number of background workers
+        options.Queues = new[] { "default", "high-priority" };
+    });
+
+    Log.Information("Hangfire background jobs configured");
+}
+catch (Exception ex)
+{
+    // Hangfire packages not installed yet - log warning but don't fail startup
+    Log.Warning(ex, "Hangfire not configured - background jobs disabled. Install Hangfire.AspNetCore package to enable.");
 }
 
 // Add HTTP client for general use
@@ -256,6 +480,19 @@ builder.Services.AddScoped<AiMate.Core.Services.IDatasetGeneratorService, AiMate
 builder.Services.AddScoped<AiMate.Core.Services.IMCPToolService, AiMate.Infrastructure.Services.MCPToolService>();
 builder.Services.AddScoped<AiMate.Core.Services.IApiKeyService, AiMate.Infrastructure.Services.ApiKeyService>();
 builder.Services.AddScoped<AiMate.Core.Services.IFeedbackService, AiMate.Infrastructure.Services.FeedbackService>();
+builder.Services.AddScoped<AiMate.Core.Services.IConnectionService, AiMate.Infrastructure.Services.ConnectionService>();
+builder.Services.AddScoped<AiMate.Core.Services.IPluginSettingsService, AiMate.Infrastructure.Services.PluginSettingsService>();
+builder.Services.AddScoped<AiMate.Core.Services.ICodeFileService, AiMate.Infrastructure.Services.CodeFileService>();
+
+// Register Roslyn and IntelliSense services
+builder.Services.AddScoped<AiMate.Core.Services.IRoslynCompilationService, AiMate.Infrastructure.Services.RoslynCompilationService>();
+builder.Services.AddScoped<AiMate.Core.Services.IIntelliSenseService, AiMate.Infrastructure.Services.IntelliSenseService>();
+
+// Register Structured Content services
+builder.Services.AddScoped<AiMate.Core.Services.IStructuredContentService, AiMate.Infrastructure.Services.StructuredContentService>();
+builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.NavigationActionHandler>();
+builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.ApiCallActionHandler>();
+builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.ExportActionHandler>();
 
 // Register Plugin System (Singleton for plugin lifecycle management)
 builder.Services.AddSingleton<AiMate.Core.Services.IPluginManager, AiMate.Infrastructure.Services.PluginManager>();
@@ -265,6 +502,34 @@ builder.Services.AddSingleton<AiMate.Core.Services.IPermissionService, AiMate.In
 
 // Register UI Services
 builder.Services.AddScoped<AiMate.Web.Services.MarkdownService>();
+// Register Organization and Group services
+builder.Services.AddScoped<AiMate.Core.Services.IOrganizationService, AiMate.Infrastructure.Services.OrganizationService>();
+builder.Services.AddScoped<AiMate.Core.Services.IGroupService, AiMate.Infrastructure.Services.GroupService>();
+
+// Register User Feedback and Error Logging services (alpha testing)
+builder.Services.AddScoped<AiMate.Core.Services.IUserFeedbackService, AiMate.Infrastructure.Services.UserFeedbackService>();
+builder.Services.AddScoped<AiMate.Core.Services.IErrorLoggingService, AiMate.Infrastructure.Services.ErrorLoggingService>();
+
+// Register Encryption Service (for API key protection)
+builder.Services.AddSingleton<AiMate.Core.Services.IEncryptionService, AiMate.Infrastructure.Services.EncryptionService>();
+
+// Register Search Service (full-text and semantic search)
+builder.Services.AddScoped<AiMate.Core.Services.ISearchService, AiMate.Infrastructure.Services.SearchService>();
+
+// Register File Storage Service (local filesystem, can be swapped for Azure/S3)
+builder.Services.AddSingleton<AiMate.Core.Services.IFileStorageService, AiMate.Infrastructure.Services.LocalFileStorageService>();
+
+// Register Background Job Services (requires Hangfire packages)
+try
+{
+    builder.Services.AddSingleton<AiMate.Core.Services.IBackgroundJobService, AiMate.Infrastructure.Services.HangfireBackgroundJobService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IBackgroundJobs, AiMate.Infrastructure.Services.BackgroundJobs>();
+    Log.Information("Background job services registered");
+}
+catch (Exception ex)
+{
+    Log.Warning(ex, "Background job services not registered - Hangfire packages may not be installed");
+}
 
 // Register HttpClient for services that need it
 builder.Services.AddHttpClient<AiMate.Infrastructure.Services.LiteLLMService>();
@@ -320,26 +585,90 @@ if (!app.Environment.IsDevelopment())
 }
 
 // Enable Swagger in all environments (production needs API docs too)
-// Commented out until Swashbuckle.AspNetCore package is added
-/*
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "aiMate API v1");
     c.RoutePrefix = "api/docs"; // Access at /api/docs
+    c.DocumentTitle = "aiMate API Documentation";
+    c.DefaultModelsExpandDepth(-1); // Hide schemas section by default
 });
-*/
+
+Log.Information("Swagger UI enabled at /api/docs");
 
 app.UseHttpsRedirection();
+
+// Response compression (must be early in pipeline, before static files)
+app.UseResponseCompression();
+
 app.UseStaticFiles();
 app.UseAntiforgery();
 
 // CORS for API
 app.UseCors("ApiCorsPolicy");
 
+// Rate Limiting (must be before Authentication)
+app.UseRateLimiter();
+
 // Authentication and Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Output caching (after auth so we can cache per-user if needed)
+app.UseOutputCache();
+
+// Hangfire Dashboard (requires Hangfire packages)
+try
+{
+    app.UseHangfireDashboard("/hangfire", new Hangfire.DashboardOptions
+    {
+        Authorization = new[] { new HangfireAuthorizationFilter() },
+        DashboardTitle = "aiMate Background Jobs"
+    });
+
+    // Schedule recurring jobs
+    var jobService = app.Services.GetService<AiMate.Core.Services.IBackgroundJobService>();
+    var backgroundJobs = app.Services.CreateScope().ServiceProvider.GetService<AiMate.Core.Services.IBackgroundJobs>();
+
+    if (jobService != null && backgroundJobs != null)
+    {
+        // Clean up old error logs daily at 2 AM
+        jobService.AddOrUpdateRecurringJob(
+            "cleanup-old-errors",
+            () => backgroundJobs.CleanupOldErrorLogsAsync(),
+            Hangfire.Cron.Daily(2));
+
+        // Clean up old feedback monthly
+        jobService.AddOrUpdateRecurringJob(
+            "cleanup-old-feedback",
+            () => backgroundJobs.CleanupOldFeedbackAsync(),
+            Hangfire.Cron.Monthly(1, 3));
+
+        // Generate missing embeddings every hour
+        jobService.AddOrUpdateRecurringJob(
+            "generate-embeddings",
+            () => backgroundJobs.GenerateMissingEmbeddingsAsync(),
+            Hangfire.Cron.Hourly());
+
+        // Send daily summary email at 9 AM
+        jobService.AddOrUpdateRecurringJob(
+            "daily-summary-email",
+            () => backgroundJobs.SendDailySummaryEmailAsync(),
+            Hangfire.Cron.Daily(9));
+
+        // Clean up orphaned files weekly on Sundays at 4 AM
+        jobService.AddOrUpdateRecurringJob(
+            "cleanup-orphaned-files",
+            () => backgroundJobs.CleanupOrphanedFilesAsync(),
+            Hangfire.Cron.Weekly(DayOfWeek.Sunday, 4));
+
+        Log.Information("Hangfire recurring jobs scheduled");
+    }
+}
+catch (Exception ex)
+{
+    Log.Warning(ex, "Hangfire dashboard not configured - install Hangfire packages to enable");
+}
 
 app.MapRazorComponents<AiMate.Web.App>()
     .AddInteractiveServerRenderMode();

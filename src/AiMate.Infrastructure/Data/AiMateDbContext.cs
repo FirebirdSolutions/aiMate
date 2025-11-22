@@ -27,6 +27,16 @@ public class AiMateDbContext : DbContext
     public DbSet<FeedbackTagTemplate> FeedbackTagTemplates => Set<FeedbackTagTemplate>();
     public DbSet<FeedbackTagOption> FeedbackTagOptions => Set<FeedbackTagOption>();
     public DbSet<Note> Notes => Set<Note>();
+    public DbSet<Connection> Connections => Set<Connection>();
+    public DbSet<PluginSettings> PluginSettings => Set<PluginSettings>();
+    public DbSet<CodeFile> CodeFiles => Set<CodeFile>();
+    public DbSet<StructuredContentTemplate> StructuredContentTemplates => Set<StructuredContentTemplate>();
+    public DbSet<Organization> Organizations => Set<Organization>();
+    public DbSet<OrganizationMember> OrganizationMembers => Set<OrganizationMember>();
+    public DbSet<Group> Groups => Set<Group>();
+    public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
+    public DbSet<UserFeedback> UserFeedbacks => Set<UserFeedback>();
+    public DbSet<ErrorLog> ErrorLogs => Set<ErrorLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -246,6 +256,195 @@ public class AiMateDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Connection configuration
+        modelBuilder.Entity<Connection>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.OwnerId);
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => e.IsEnabled);
+            entity.HasIndex(e => new { e.OwnerId, e.IsEnabled });
+            entity.HasIndex(e => e.OrganizationId);
+
+            entity.HasOne(e => e.Owner)
+                .WithMany()
+                .HasForeignKey(e => e.OwnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Organization)
+                .WithMany()
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // PluginSettings configuration
+        modelBuilder.Entity<PluginSettings>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.PluginId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.PluginId, e.UserId }).IsUnique();
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // CodeFile configuration
+        modelBuilder.Entity<CodeFile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.Path);
+            entity.HasIndex(e => new { e.ProjectId, e.Path }).IsUnique();
+            entity.HasIndex(e => e.Language);
+            entity.HasIndex(e => e.LastModified);
+
+            entity.HasOne(e => e.Project)
+                .WithMany()
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // StructuredContentTemplate configuration
+        modelBuilder.Entity<StructuredContentTemplate>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => new { e.Name, e.Type });
+            entity.HasIndex(e => e.IsBuiltIn);
+            entity.HasIndex(e => e.IsPublic);
+            entity.HasIndex(e => e.CreatedBy);
+            entity.HasIndex(e => e.UsageCount);
+
+            entity.HasOne(e => e.Creator)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedBy)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Organization configuration
+        modelBuilder.Entity<Organization>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.OwnerId);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.HasMany(e => e.Members)
+                .WithOne(e => e.Organization)
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.Groups)
+                .WithOne(e => e.Organization)
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.Connections)
+                .WithOne(e => e.Organization)
+                .HasForeignKey(e => e.OrganizationId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // OrganizationMember configuration
+        modelBuilder.Entity<OrganizationMember>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.OrganizationId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.OrganizationId, e.UserId }).IsUnique();
+            entity.HasIndex(e => e.Role);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Group configuration
+        modelBuilder.Entity<Group>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.OrganizationId);
+            entity.HasIndex(e => e.OwnerId);
+            entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.HasOne(e => e.Owner)
+                .WithMany()
+                .HasForeignKey(e => e.OwnerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(e => e.Members)
+                .WithOne(e => e.Group)
+                .HasForeignKey(e => e.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.Connections)
+                .WithMany()
+                .UsingEntity(j => j.ToTable("GroupConnections"));
+        });
+
+        // GroupMember configuration
+        modelBuilder.Entity<GroupMember>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.GroupId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.GroupId, e.UserId }).IsUnique();
+            entity.HasIndex(e => e.Role);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserFeedback configuration
+        modelBuilder.Entity<UserFeedback>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.FeedbackType);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.AssignedToUserId);
+            entity.HasIndex(e => new { e.Status, e.CreatedAt });
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.AssignedTo)
+                .WithMany()
+                .HasForeignKey(e => e.AssignedToUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ErrorLog configuration
+        modelBuilder.Entity<ErrorLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.ErrorType);
+            entity.HasIndex(e => e.Severity);
+            entity.HasIndex(e => e.IsResolved);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.FirstOccurrence);
+            entity.HasIndex(e => e.LastOccurrence);
+            entity.HasIndex(e => new { e.Severity, e.IsResolved });
+            entity.HasIndex(e => new { e.ErrorType, e.IsResolved });
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

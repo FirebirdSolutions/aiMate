@@ -1,0 +1,489 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "aiMate Alpha Testing Survey";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link href="/css/survey.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 aiMate Alpha Testing Survey</h1>
+            <p class="subtitle">Help us build the AI workspace you actually want to use</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            <p class="progress-text"><span id="progressText">Section 1 of 10</span></p>
+        </div>
+
+        <div id="successMessage" class="success-message" style="display: none;">
+            <h2>✅ Thank you for your feedback!</h2>
+            <p>We really appreciate you taking the time to share your thoughts. If you opted in for alpha testing, we'll be in touch soon!</p>
+            <p>Your insights will directly shape aiMate's development. 🚀</p>
+        </div>
+
+        <form id="surveyForm" class="survey-form">
+            <!-- Section 1: Demographics -->
+            <div class="section" data-section="1">
+                <h2>1. About You</h2>
+                <p class="section-description">Help us understand who we're building for (all optional)</p>
+
+                <div class="form-group">
+                    <label for="ageRange">Age Range</label>
+                    <select id="ageRange" name="ageRange">
+                        <option value="">Prefer not to say</option>
+                        <option value="18-24">18-24</option>
+                        <option value="25-34">25-34</option>
+                        <option value="35-44">35-44</option>
+                        <option value="45-54">45-54</option>
+                        <option value="55-64">55-64</option>
+                        <option value="65+">65+</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="generalLocation">General Location</label>
+                    <input type="text" id="generalLocation" name="generalLocation" placeholder="e.g., New Zealand, Pacific Northwest, UK">
+                </div>
+
+                <div class="form-group">
+                    <label for="occupationCategory">What best describes your work?</label>
+                    <select id="occupationCategory" name="occupationCategory">
+                        <option value="">Select one</option>
+                        <option value="Technology">Technology/IT</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Education">Education</option>
+                        <option value="Business/Finance">Business/Finance</option>
+                        <option value="Creative/Design">Creative/Design</option>
+                        <option value="Marketing/Sales">Marketing/Sales</option>
+                        <option value="Student">Student</option>
+                        <option value="Retired">Retired</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="techComfortLevel">Tech Comfort Level</label>
+                    <select id="techComfortLevel" name="techComfortLevel">
+                        <option value="">Select one</option>
+                        <option value="Beginner">Beginner - I struggle with new tech</option>
+                        <option value="Intermediate">Intermediate - I can figure most things out</option>
+                        <option value="Advanced">Advanced - Very comfortable with technology</option>
+                        <option value="Expert">Expert - I work in tech or am a power user</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Section 2: Current AI Usage -->
+            <div class="section" data-section="2">
+                <h2>2. Your AI Experience</h2>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="currentlyUsesAI" name="currentlyUsesAI">
+                        I currently use AI tools
+                    </label>
+                </div>
+
+                <div id="aiUserQuestions" style="display: none;">
+                    <div class="form-group">
+                        <label for="aiToolsUsed">Which AI tools do you use? (comma-separated)</label>
+                        <input type="text" id="aiToolsUsed" name="aiToolsUsed" placeholder="e.g., ChatGPT, Claude, Gemini, Copilot">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="primaryAITool">Which is your main AI tool?</label>
+                        <input type="text" id="primaryAITool" name="primaryAITool" placeholder="e.g., ChatGPT">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="frequencyOfUse">How often do you use AI?</label>
+                        <select id="frequencyOfUse" name="frequencyOfUse">
+                            <option value="">Select one</option>
+                            <option value="Multiple times daily">Multiple times daily</option>
+                            <option value="Daily">Daily</option>
+                            <option value="Few times a week">Few times a week</option>
+                            <option value="Weekly">Weekly</option>
+                            <option value="Monthly">Monthly</option>
+                            <option value="Rarely">Rarely</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Which AI models are you familiar with?</label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="familiarWithGPT4"> GPT-4 / ChatGPT
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="familiarWithClaude"> Claude (Anthropic)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="familiarWithGemini"> Gemini (Google)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="familiarWithOpenSource"> Open Source (Llama, Mistral, etc.)
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="preferredLLMFeatures">What do you like about your preferred AI tool?</label>
+                        <textarea id="preferredLLMFeatures" name="preferredLLMFeatures" rows="2" placeholder="What makes it your favorite?"></textarea>
+                    </div>
+                </div>
+
+                <div id="nonAiUserQuestions" style="display: none;">
+                    <div class="form-group">
+                        <label>What's stopping you from using AI? (check all that apply)</label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="barrierCost"> Too expensive
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="barrierComplexity"> Too complicated to use
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="barrierPrivacyConcerns"> Privacy/security concerns
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="barrierDontKnowHowToStart"> Don't know how to get started
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="barrierDontSeeBenefit"> Don't see the benefit
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="barrierOther"> Other
+                        </label>
+                        <input type="text" name="otherBarrier" placeholder="Please specify" style="margin-top: 10px;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Dynamic Use Cases -->
+            <div class="section" data-section="3">
+                <h2>3. How Would You Use AI?</h2>
+                <p class="section-description">Select all the ways you'd use (or currently use) an AI assistant</p>
+                <div id="useCasesContainer" class="loading">
+                    Loading use cases...
+                </div>
+            </div>
+
+            <!-- Section 4: Conversation & Context -->
+            <div class="section" data-section="4">
+                <h2>4. Conversation Style</h2>
+
+                <div class="form-group">
+                    <label for="typicalConversationLength">How long are your typical AI conversations?</label>
+                    <select id="typicalConversationLength" name="typicalConversationLength">
+                        <option value="">Select one</option>
+                        <option value="Single question">Single question & answer</option>
+                        <option value="Few exchanges (2-5)">Few back-and-forth (2-5 messages)</option>
+                        <option value="Extended (6-15)">Extended conversation (6-15 messages)</option>
+                        <option value="Very long (15+)">Very long sessions (15+ messages)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Memory & Context Preferences</label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsLongTermMemory"> Remember things across sessions (e.g., my preferences, past projects)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsContextAcrossSessions"> Continue conversations where I left off
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="preferredResponseStyle">Preferred response style</label>
+                    <select id="preferredResponseStyle" name="preferredResponseStyle">
+                        <option value="">Select one</option>
+                        <option value="Concise & brief">Concise & brief - get to the point</option>
+                        <option value="Moderate detail">Moderate detail - balanced explanations</option>
+                        <option value="Very detailed">Very detailed - comprehensive answers</option>
+                        <option value="Depends on task">Depends on the task</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="qualityVsSpeed">Quality vs Speed preference</label>
+                    <select id="qualityVsSpeed" name="qualityVsSpeed">
+                        <option value="">Select one</option>
+                        <option value="Speed is critical">Speed is critical - fast responses</option>
+                        <option value="Balanced">Balanced - good quality, reasonable speed</option>
+                        <option value="Quality over speed">Quality over speed - take time for better answers</option>
+                        <option value="Highest quality always">Highest quality always - speed doesn't matter</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Section 5: File Handling -->
+            <div class="section" data-section="5">
+                <h2>5. Working with Files & Content</h2>
+
+                <div class="form-group">
+                    <label>What types of content do you work with? (check all that apply)</label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="worksWithDocuments" id="worksWithDocuments"> Documents (PDFs, Word docs, text files)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="worksWithImages" id="worksWithImages"> Images (view, analyze, or generate)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="worksWithCode" id="worksWithCode"> Code files (review, generate, debug)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="worksWithData" id="worksWithData"> Data (CSV, Excel, databases)
+                    </label>
+                </div>
+
+                <div id="fileSizeQuestion" style="display: none;">
+                    <div class="form-group">
+                        <label for="typicalFileSize">What's your typical file size?</label>
+                        <select id="typicalFileSize" name="typicalFileSize">
+                            <option value="">Select one</option>
+                            <option value="Small (<1MB)">Small (< 1MB)</option>
+                            <option value="Medium (1-10MB)">Medium (1-10MB)</option>
+                            <option value="Large (10-100MB)">Large (10-100MB)</option>
+                            <option value="Very Large (100MB+)">Very Large (100MB+)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 6: Features You'd Use -->
+            <div class="section" data-section="6">
+                <h2>6. Features You'd Use</h2>
+
+                <div class="form-group">
+                    <label>Advanced features you'd find useful:</label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsCodeExecution"> Code execution (run and test code)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsImageGeneration"> Image generation (create images from text)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsWebSearch"> Real-time web search
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsDataVisualization"> Data visualization (charts, graphs)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsVoiceInput"> Voice input (speak to AI)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsVoiceOutput"> Voice output (AI reads responses)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsVideoAnalysis"> Video analysis
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Collaboration & Organization:</label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsTeamCollaboration"> Team collaboration (share with team members)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsWorkspaceOrganization"> Workspace organization (projects, folders, tags)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="wouldShareConversations"> Public sharing (share conversations publicly)
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Developer & Integration Features:</label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsAPIAccess"> API access (programmatic access)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsIntegrationWithTools" id="needsIntegrations"> Tool integrations (Slack, email, IDEs, etc.)
+                    </label>
+                </div>
+
+                <div id="specificIntegrationsQuestion" style="display: none;">
+                    <div class="form-group">
+                        <label for="specificIntegrations">Which specific integrations would you want?</label>
+                        <input type="text" id="specificIntegrations" name="specificIntegrations" placeholder="e.g., Slack, VS Code, Gmail, Notion">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 7: Privacy & Data -->
+            <div class="section" data-section="7">
+                <h2>7. Privacy & Data Preferences</h2>
+
+                <div class="form-group">
+                    <label for="dataPrivacyConcern">How concerned are you about data privacy with AI tools?</label>
+                    <select id="dataPrivacyConcern" name="dataPrivacyConcern">
+                        <option value="">Select one</option>
+                        <option value="Not concerned">Not concerned - convenience is more important</option>
+                        <option value="Somewhat concerned">Somewhat concerned - I'm cautious</option>
+                        <option value="Very concerned">Very concerned - privacy is a priority</option>
+                        <option value="Critical concern">Critical concern - it's a dealbreaker</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="preferredDataLocation">Data storage preference</label>
+                    <select id="preferredDataLocation" name="preferredDataLocation">
+                        <option value="">Select one</option>
+                        <option value="Cloud is fine">Cloud is fine - don't care where it's stored</option>
+                        <option value="Prefer local option">Prefer local option - but cloud is acceptable</option>
+                        <option value="Must be local only">Must be local/on-premise only</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="willingToShareDataForImprovement"> I'd be willing to share anonymized data to help improve the AI
+                    </label>
+                </div>
+            </div>
+
+            <!-- Section 8: Pricing & Value -->
+            <div class="section" data-section="8">
+                <h2>8. Pricing & What Matters Most</h2>
+
+                <div class="form-group">
+                    <label for="willingToPayMonthly">How much would you pay monthly for an AI tool that meets your needs?</label>
+                    <select id="willingToPayMonthly" name="willingToPayMonthly">
+                        <option value="">Select one</option>
+                        <option value="Free only">Free only - I won't pay</option>
+                        <option value="$0-10">$0-10 USD/month</option>
+                        <option value="$10-20">$10-20 USD/month</option>
+                        <option value="$20-50">$20-50 USD/month</option>
+                        <option value="$50+">$50+ USD/month</option>
+                        <option value="Depends on value">Depends on the value it provides</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="preferredPricingModel">Preferred pricing model</label>
+                    <select id="preferredPricingModel" name="preferredPricingModel">
+                        <option value="">Select one</option>
+                        <option value="Subscription">Subscription (monthly fee, unlimited use)</option>
+                        <option value="Pay-per-use">Pay-per-use (only pay for what you use)</option>
+                        <option value="One-time purchase">One-time purchase</option>
+                        <option value="Free with ads">Free with ads</option>
+                        <option value="Freemium">Freemium (free tier + paid upgrades)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="mostImportantValue">What's most important to you in an AI tool?</label>
+                    <select id="mostImportantValue" name="mostImportantValue">
+                        <option value="">Select one</option>
+                        <option value="Cost">Cost - keeping it affordable</option>
+                        <option value="Features">Features - having advanced capabilities</option>
+                        <option value="Privacy">Privacy - protecting my data</option>
+                        <option value="Speed">Speed - fast responses</option>
+                        <option value="Accuracy">Accuracy - high-quality answers</option>
+                        <option value="Ease of use">Ease of use - simple and intuitive</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Section 9: Platform Preferences -->
+            <div class="section" data-section="9">
+                <h2>9. Platform Preferences</h2>
+
+                <div class="form-group">
+                    <label>Which platforms do you use? (check all that apply)</label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="usesWeb"> Web browser
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="usesDesktop"> Desktop app (Windows/Mac/Linux)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="usesMobile"> Mobile (iOS/Android)
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="primaryPlatform">Which would be your primary platform?</label>
+                    <select id="primaryPlatform" name="primaryPlatform">
+                        <option value="">Select one</option>
+                        <option value="Web">Web</option>
+                        <option value="Desktop">Desktop</option>
+                        <option value="Mobile">Mobile</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="primaryLanguage">Primary language</label>
+                    <input type="text" id="primaryLanguage" name="primaryLanguage" placeholder="e.g., English, Spanish, Māori">
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="needsMultilingualSupport"> I need multilingual support (use multiple languages in same session)
+                    </label>
+                </div>
+            </div>
+
+            <!-- Section 10: Feedback -->
+            <div class="section" data-section="10">
+                <h2>10. Your Feedback</h2>
+
+                <div class="form-group">
+                    <label for="biggestFrustration">What's your biggest frustration with current AI tools?</label>
+                    <textarea id="biggestFrustration" name="biggestFrustration" rows="3" placeholder="What drives you crazy?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="whatsMissing">What's missing from existing AI tools?</label>
+                    <textarea id="whatsMissing" name="whatsMissing" rows="3" placeholder="What features or capabilities do you wish existed?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="idealAIFeatures">Describe your ideal AI workspace</label>
+                    <textarea id="idealAIFeatures" name="idealAIFeatures" rows="4" placeholder="If you could design the perfect AI tool, what would it do? How would it work?"></textarea>
+                </div>
+            </div>
+
+            <!-- Section 11: Alpha Testing -->
+            <div class="section" data-section="11">
+                <h2>11. Join Our Alpha</h2>
+                <p class="section-description">aiMate is a free, open-source AI workspace built for authenticity and privacy</p>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="interestedInAlphaTesting" name="interestedInAlphaTesting">
+                        Yes! I want to be considered for alpha testing aiMate
+                    </label>
+                </div>
+
+                <div id="alphaDetails" style="display: none;">
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" id="email" name="email" placeholder="your.email@example.com">
+                        <small>We'll only use this to contact you about alpha testing. No spam, ever.</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="additionalComments">Anything else you'd like us to know?</label>
+                    <textarea id="additionalComments" name="additionalComments" rows="3" placeholder="Questions, comments, or suggestions..."></textarea>
+                </div>
+
+                <input type="hidden" id="referralSource" name="referralSource" value="">
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">Submit Survey</button>
+                <p class="privacy-note">Your responses help us build better AI tools. Thank you! 🙏</p>
+            </div>
+        </form>
+    </div>
+
+    <script src="/js/survey.js"></script>
+</body>
+</html>
