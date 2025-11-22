@@ -1,179 +1,126 @@
 @page "/knowledge"
 @using Fluxor
 @using AiMate.Web.Store.Knowledge
+@using AiMate.Shared.Models
 @inherits Fluxor.Blazor.Web.Components.FluxorComponent
 @inject IState<KnowledgeState> KnowledgeState
 @inject IDispatcher Dispatcher
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@rendermode InteractiveServer
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Knowledge Base</MudText>
+<PageTitle>Knowledge Base - aiMate</PageTitle>
 
-    @if (KnowledgeState.Value.Error != null)
-    {
-        <MudAlert Severity="Severity.Error" Class="mb-4" CloseIconClicked="@(() => Dispatcher.Dispatch(new ClearKnowledgeErrorAction()))">
-            @KnowledgeState.Value.Error
-        </MudAlert>
-    }
+<div class="flex flex-col h-full bg-[#0F0F0F] px-6 py-6">
+    <div class="max-w-7xl mx-auto w-full">
+        <h1 class="text-3xl font-bold text-gray-100 mb-6">Knowledge Base</h1>
 
-    <MudGrid Spacing="2">
-        <!-- Search and Filters -->
-        <MudItem xs="12" md="3">
-            <MudPaper Class="pa-4 mb-4">
-                <MudTextField @bind-Value="@_searchQuery"
-                             Label="Search Knowledge"
-                             Variant="Variant.Outlined"
-                             Margin="Margin.Dense"
-                             Adornment="Adornment.End"
-                             AdornmentIcon="@Icons.Material.Filled.Search"
-                             OnKeyUp="@HandleSearchKeyUp"
-                             Class="mb-4" />
-
-                <MudButton Variant="Variant.Filled"
-                          Color="Color.Primary"
-                          FullWidth="true"
-                          StartIcon="@Icons.Material.Filled.Search"
-                          OnClick="@HandleSearch"
-                          Disabled="@KnowledgeState.Value.IsSearching"
-                          Class="mb-4">
-                    @(KnowledgeState.Value.IsSearching ? "Searching..." : "Search")
-                </MudButton>
-
-                <MudDivider Class="mb-4" />
-
-                <MudText Typo="Typo.subtitle2" Class="mb-2">Filter by Tags</MudText>
-
-                @if (KnowledgeState.Value.AllTags.Any())
-                {
-                    foreach (var tag in KnowledgeState.Value.AllTags)
-                    {
-                        var isSelected = KnowledgeState.Value.SelectedTags.Contains(tag);
-
-                        <MudChip T="string" Size="Size.Small"
-                                Color="@(isSelected ? Color.Primary : Color.Default)"
-                                Variant="@(isSelected ? Variant.Filled : Variant.Outlined)"
-                                OnClick="@(() => Dispatcher.Dispatch(new ToggleTagFilterAction(tag)))"
-                                Class="mb-1">
-                            @tag
-                        </MudChip>
-                    }
-                }
-                else
-                {
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">No tags yet</MudText>
-                }
-
-                @if (KnowledgeState.Value.SelectedTags.Any())
-                {
-                    <MudButton Size="Size.Small"
-                              Variant="Variant.Text"
-                              Color="Color.Secondary"
-                              OnClick="@(() => Dispatcher.Dispatch(new ClearTagFiltersAction()))"
-                              Class="mt-2">
-                        Clear Filters
-                    </MudButton>
-                }
-            </MudPaper>
-
-            <MudButton Variant="Variant.Filled"
-                      Color="Color.Primary"
-                      FullWidth="true"
-                      StartIcon="@Icons.Material.Filled.Add"
-                      OnClick="@(() => Dispatcher.Dispatch(new OpenKnowledgeItemEditorAction()))">
-                New Knowledge Item
-            </MudButton>
-        </MudItem>
-
-        <!-- Knowledge Items List -->
-        <MudItem xs="12" md="9">
-            @if (KnowledgeState.Value.IsLoading || KnowledgeState.Value.IsSearching)
-            {
-                <div class="d-flex justify-center pa-4">
-                    <MudProgressCircular Indeterminate="true" />
+        @if (KnowledgeState.Value.Error != null)
+        {
+            <div class="bg-red-500/10 border border-red-500/50 rounded-lg p-4 mb-6 flex items-start gap-3">
+                <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <div class="flex-1">
+                    <p class="text-red-400 text-sm">@KnowledgeState.Value.Error</p>
                 </div>
-            }
-            else if (DisplayedItems.Any())
-            {
-                <MudGrid Spacing="2">
-                    @foreach (var item in DisplayedItems)
-                    {
-                        var isSelected = item.Id == KnowledgeState.Value.SelectedItemId;
+                <button @onclick="@(() => Dispatcher.Dispatch(new ClearKnowledgeErrorAction()))"
+                        class="text-red-400 hover:text-red-300 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        }
 
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudCard Outlined="!isSelected"
-                                    Elevation="@(isSelected ? 4 : 0)"
-                                    Class="cursor-pointer"
-                                    @onclick="@(() => HandleSelectItem(item.Id))">
-                                <MudCardHeader>
-                                    <CardHeaderContent>
-                                        <MudText Typo="Typo.h6">@item.Title</MudText>
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@item.Type</MudText>
-                                    </CardHeaderContent>
-                                </MudCardHeader>
-                                <MudCardContent>
-                                    <MudText Typo="Typo.body2" Class="mb-2">
-                                        @(item.Content.Length > 150 ? item.Content.Substring(0, 150) + "..." : item.Content)
-                                    </MudText>
-                                    @if (item.Tags.Any())
-                                    {
-                                        <div class="d-flex flex-wrap gap-1">
-                                            @foreach (var tag in item.Tags.Take(3))
-                                            {
-                                                <MudChip T="string" Size="Size.Small" Color="Color.Default">@tag</MudChip>
-                                            }
-                                            @if (item.Tags.Count > 3)
-                                            {
-                                                <MudChip T="string" Size="Size.Small" Color="Color.Secondary">+@(item.Tags.Count - 3)</MudChip>
-                                            }
-                                        </div>
-                                    }
-                                </MudCardContent>
-                                <MudCardActions>
-                                    <MudButton Size="Size.Small"
-                                              Variant="Variant.Text"
-                                              Color="Color.Default"
-                                              OnClick="@(() => Dispatcher.Dispatch(new OpenKnowledgeItemEditorAction(item.Id)))">
-                                        Edit
-                                    </MudButton>
-                                    <MudButton Size="Size.Small"
-                                              Variant="Variant.Text"
-                                              Color="Color.Error"
-                                              OnClick="@((e) => HandleDelete(e, item.Id))">
-                                        Delete
-                                    </MudButton>
-                                </MudCardActions>
-                            </MudCard>
-                        </MudItem>
+        @* Tab Navigation *@
+        <div class="border-b border-[#2A2A2A] mb-6">
+            <nav class="flex gap-6">
+                <button @onclick="@(() => SetActiveTab(0))"
+                        class="@GetTabClass(0) px-4 py-3 text-sm font-medium transition-colors relative">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+                        </svg>
+                        Knowledge
+                    </div>
+                    @if (_activeTabIndex == 0)
+                    {
+                        <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500"></div>
                     }
-                </MudGrid>
-            }
-            else
+                </button>
+                <button @onclick="@(() => SetActiveTab(1))"
+                        class="@GetTabClass(1) px-4 py-3 text-sm font-medium transition-colors relative">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"/>
+                        </svg>
+                        Collections
+                    </div>
+                    @if (_activeTabIndex == 1)
+                    {
+                        <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500"></div>
+                    }
+                </button>
+                <button @onclick="@(() => SetActiveTab(2))"
+                        class="@GetTabClass(2) px-4 py-3 text-sm font-medium transition-colors relative">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/>
+                        </svg>
+                        Artifacts
+                    </div>
+                    @if (_activeTabIndex == 2)
+                    {
+                        <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500"></div>
+                    }
+                </button>
+                <button @onclick="@(() => SetActiveTab(3))"
+                        class="@GetTabClass(3) px-4 py-3 text-sm font-medium transition-colors relative">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+                        </svg>
+                        Analytics
+                    </div>
+                    @if (_activeTabIndex == 3)
+                    {
+                        <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500"></div>
+                    }
+                </button>
+            </nav>
+        </div>
+
+        @* Tab Content *@
+        <div class="flex-1">
+            @if (_activeTabIndex == 0)
             {
-                <MudPaper Class="pa-4">
-                    <MudText Typo="Typo.body1" Align="Align.Center">
-                        @if (!string.IsNullOrWhiteSpace(KnowledgeState.Value.SearchQuery))
-                        {
-                            <span>No knowledge items found for "@KnowledgeState.Value.SearchQuery"</span>
-                        }
-                        else if (KnowledgeState.Value.SelectedTags.Any())
-                        {
-                            <span>No items with selected tags</span>
-                        }
-                        else
-                        {
-                            <span>No knowledge items yet. Create your first item to get started!</span>
-                        }
-                    </MudText>
-                </MudPaper>
+                @RenderKnowledgeTab()
             }
-        </MudItem>
-    </MudGrid>
-</MudContainer>
+            else if (_activeTabIndex == 1)
+            {
+                @RenderCollectionsTab()
+            }
+            else if (_activeTabIndex == 2)
+            {
+                @RenderArtifactsTab()
+            }
+            else if (_activeTabIndex == 3)
+            {
+                @RenderAnalyticsTab()
+            }
+        </div>
+    </div>
+</div>
 
 <KnowledgeItemEditor />
 <KnowledgeItemViewer />
 
 @code {
+    private int _activeTabIndex = 0;
     private string _searchQuery = string.Empty;
+    private KnowledgeAnalyticsDto? _analytics = null;
+    private bool _isLoadingAnalytics = false;
 
     private IEnumerable<Core.Entities.KnowledgeItem> DisplayedItems
     {
@@ -211,6 +158,47 @@
         }
     }
 
+    private void SetActiveTab(int index)
+    {
+        _activeTabIndex = index;
+
+        // Load analytics when Analytics tab is opened
+        if (index == 3 && KnowledgeState.Value.Analytics == null && !_isLoadingAnalytics)
+        {
+            _ = LoadAnalytics();
+        }
+
+        StateHasChanged();
+    }
+
+    private string GetTabClass(int index)
+    {
+        return _activeTabIndex == index
+            ? "text-purple-400 border-purple-500"
+            : "text-gray-400 hover:text-gray-200 border-transparent";
+    }
+
+    private async Task LoadAnalytics()
+    {
+        _isLoadingAnalytics = true;
+        StateHasChanged();
+
+        try
+        {
+            Dispatcher.Dispatch(new LoadAnalyticsAction());
+            await Task.Delay(100); // Small delay to let Fluxor effect run
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to load analytics: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoadingAnalytics = false;
+            StateHasChanged();
+        }
+    }
+
     private void HandleSearch()
     {
         if (!string.IsNullOrWhiteSpace(_searchQuery))
@@ -235,8 +223,406 @@
 
     private void HandleDelete(MouseEventArgs e, Guid itemId)
     {
-        // UX ENHANCEMENT: Add confirmation dialog before delete
-        // await DialogService.ShowMessageBox("Delete Knowledge Item?", "This action cannot be undone.", yesText: "Delete", cancelText: "Cancel")
+        // Prevent event bubbling
+        e.StopPropagation();
         Dispatcher.Dispatch(new DeleteKnowledgeItemAction(itemId));
     }
+
+    // ========================================================================
+    // KNOWLEDGE TAB
+    // ========================================================================
+
+    private RenderFragment RenderKnowledgeTab() => __builder =>
+    {
+        <div class="grid grid-cols-12 gap-6">
+            @* Search and Filters Sidebar *@
+            <div class="col-span-12 md:col-span-3">
+                <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 mb-4">
+                    <div class="mb-4">
+                        <input type="text"
+                               @bind="@_searchQuery"
+                               @onkeyup="HandleSearchKeyUp"
+                               placeholder="Search knowledge..."
+                               class="w-full px-3 py-2 bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors" />
+                    </div>
+
+                    <button @onclick="HandleSearch"
+                            disabled="@KnowledgeState.Value.IsSearching"
+                            class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded-lg text-sm font-medium transition-colors mb-4 flex items-center justify-center gap-2">
+                        @if (KnowledgeState.Value.IsSearching)
+                        {
+                            <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Searching...</span>
+                        }
+                        else
+                        {
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                            </svg>
+                            <span>Search</span>
+                        }
+                    </button>
+
+                    <div class="border-t border-[#2A2A2A] pt-4 mb-4"></div>
+
+                    <h3 class="text-sm font-semibold text-gray-300 mb-3">Filter by Tags</h3>
+
+                    @if (KnowledgeState.Value.AllTags.Any())
+                    {
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            @foreach (var tag in KnowledgeState.Value.AllTags)
+                            {
+                                var isSelected = KnowledgeState.Value.SelectedTags.Contains(tag);
+                                <button @onclick="@(() => Dispatcher.Dispatch(new ToggleTagFilterAction(tag)))"
+                                        class="@(isSelected ? "bg-purple-600 text-white" : "bg-[#0F0F0F] text-gray-400 hover:text-gray-200") px-3 py-1 rounded-full text-xs font-medium border @(isSelected ? "border-purple-600" : "border-[#2A2A2A]") transition-colors">
+                                    @tag
+                                </button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-xs text-gray-500">No tags yet</p>
+                    }
+
+                    @if (KnowledgeState.Value.SelectedTags.Any())
+                    {
+                        <button @onclick="@(() => Dispatcher.Dispatch(new ClearTagFiltersAction()))"
+                                class="text-xs text-gray-400 hover:text-gray-200 transition-colors">
+                            Clear Filters
+                        </button>
+                    }
+                </div>
+
+                <button @onclick="@(() => Dispatcher.Dispatch(new OpenKnowledgeItemEditorAction()))"
+                        class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    New Knowledge Item
+                </button>
+            </div>
+
+            @* Knowledge Items Grid *@
+            <div class="col-span-12 md:col-span-9">
+                @if (KnowledgeState.Value.IsLoading || KnowledgeState.Value.IsSearching)
+                {
+                    <div class="flex items-center justify-center py-12">
+                        <div class="w-8 h-8 border-4 border-purple-600/30 border-t-purple-600 rounded-full animate-spin"></div>
+                    </div>
+                }
+                else if (DisplayedItems.Any())
+                {
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @foreach (var item in DisplayedItems)
+                        {
+                            var isSelected = item.Id == KnowledgeState.Value.SelectedItemId;
+                            <div @onclick="@(() => HandleSelectItem(item.Id))"
+                                 class="@(isSelected ? "bg-[#242424] border-purple-500/50" : "bg-[#1A1A1A] border-[#2A2A2A] hover:border-[#3A3A3A]") border rounded-xl p-4 cursor-pointer transition-all">
+                                <div class="mb-3">
+                                    <h3 class="text-base font-semibold text-gray-100 mb-1">@item.Title</h3>
+                                    <p class="text-xs text-gray-400">@item.Type</p>
+                                </div>
+                                <p class="text-sm text-gray-300 mb-3 line-clamp-3">
+                                    @(item.Content.Length > 150 ? item.Content.Substring(0, 150) + "..." : item.Content)
+                                </p>
+                                @if (item.Tags.Any())
+                                {
+                                    <div class="flex flex-wrap gap-1 mb-3">
+                                        @foreach (var tag in item.Tags.Take(3))
+                                        {
+                                            <span class="px-2 py-0.5 bg-[#0F0F0F] text-gray-400 text-xs rounded-full border border-[#2A2A2A]">
+                                                @tag
+                                            </span>
+                                        }
+                                        @if (item.Tags.Count > 3)
+                                        {
+                                            <span class="px-2 py-0.5 bg-[#0F0F0F] text-gray-500 text-xs rounded-full border border-[#2A2A2A]">
+                                                +@(item.Tags.Count - 3)
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                <div class="flex gap-2 pt-3 border-t border-[#2A2A2A]">
+                                    <button @onclick="@(() => Dispatcher.Dispatch(new OpenKnowledgeItemEditorAction(item.Id)))"
+                                            class="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-200 hover:bg-[#0F0F0F] rounded transition-colors">
+                                        Edit
+                                    </button>
+                                    <button @onclick="@((e) => HandleDelete(e, item.Id))"
+                                            class="px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors">
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-12 text-center">
+                        @if (!string.IsNullOrWhiteSpace(KnowledgeState.Value.SearchQuery))
+                        {
+                            <p class="text-gray-400">No knowledge items found for "@KnowledgeState.Value.SearchQuery"</p>
+                        }
+                        else if (KnowledgeState.Value.SelectedTags.Any())
+                        {
+                            <p class="text-gray-400">No items with selected tags</p>
+                        }
+                        else
+                        {
+                            <div class="flex flex-col items-center">
+                                <div class="w-16 h-16 bg-purple-500/10 rounded-full flex items-center justify-center mb-4">
+                                    <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-200 mb-2">No knowledge items yet</h3>
+                                <p class="text-gray-400 mb-4">Create your first item to get started!</p>
+                                <button @onclick="@(() => Dispatcher.Dispatch(new OpenKnowledgeItemEditorAction()))"
+                                        class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M12 4.5v15m7.5-7.5h-15"/>
+                                    </svg>
+                                    Create Knowledge Item
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    };
+
+    // ========================================================================
+    // COLLECTIONS TAB
+    // ========================================================================
+
+    private RenderFragment RenderCollectionsTab() => __builder =>
+    {
+        <div>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-100">Collections</h2>
+                <button class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    New Collection
+                </button>
+            </div>
+
+            <p class="text-gray-400 text-sm mb-6">
+                Collections feature coming soon. Organize your knowledge items into themed collections.
+            </p>
+
+            @* Sample Collection Cards *@
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-[#1A1A1A] border-l-4 border-purple-600 rounded-xl p-5 hover:bg-[#242424] transition-colors cursor-pointer">
+                    <h3 class="text-base font-semibold text-gray-100 mb-1">API Documentation</h3>
+                    <p class="text-sm text-gray-400">15 items</p>
+                </div>
+                <div class="bg-[#1A1A1A] border-l-4 border-blue-600 rounded-xl p-5 hover:bg-[#242424] transition-colors cursor-pointer">
+                    <h3 class="text-base font-semibold text-gray-100 mb-1">Meeting Notes</h3>
+                    <p class="text-sm text-gray-400">8 items</p>
+                </div>
+                <div class="bg-[#1A1A1A] border-l-4 border-green-600 rounded-xl p-5 hover:bg-[#242424] transition-colors cursor-pointer">
+                    <h3 class="text-base font-semibold text-gray-100 mb-1">Design Specs</h3>
+                    <p class="text-sm text-gray-400">12 items</p>
+                </div>
+                <div class="bg-[#1A1A1A] border-l-4 border-yellow-600 rounded-xl p-5 hover:bg-[#242424] transition-colors cursor-pointer">
+                    <h3 class="text-base font-semibold text-gray-100 mb-1">Frontend Development</h3>
+                    <p class="text-sm text-gray-400">23 items</p>
+                </div>
+            </div>
+        </div>
+    };
+
+    // ========================================================================
+    // ARTIFACTS TAB
+    // ========================================================================
+
+    private RenderFragment RenderArtifactsTab() => __builder =>
+    {
+        <div>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-100">Artifacts</h2>
+                <button class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M12 4.5v15m7.5-7.5h-15"/>
+                    </svg>
+                    New Artifact
+                </button>
+            </div>
+
+            <p class="text-gray-400 text-sm mb-6">
+                Artifacts feature coming soon. Save important outputs from AI conversations.
+            </p>
+
+            @* Sample Artifacts *@
+            <div class="space-y-3">
+                <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 hover:border-[#3A3A3A] transition-colors cursor-pointer">
+                    <h3 class="text-base font-semibold text-gray-100 mb-2">API Response Analysis</h3>
+                    <div class="flex gap-2 mb-2">
+                        <span class="px-2 py-0.5 bg-[#0F0F0F] text-gray-400 text-xs rounded-full border border-[#2A2A2A]">analysis</span>
+                        <span class="px-2 py-0.5 bg-[#0F0F0F] text-gray-400 text-xs rounded-full border border-[#2A2A2A]">api</span>
+                    </div>
+                    <p class="text-xs text-gray-500">Nov 15, 2025</p>
+                </div>
+                <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 hover:border-[#3A3A3A] transition-colors cursor-pointer">
+                    <h3 class="text-base font-semibold text-gray-100 mb-2">Code Optimization Ideas</h3>
+                    <div class="flex gap-2 mb-2">
+                        <span class="px-2 py-0.5 bg-[#0F0F0F] text-gray-400 text-xs rounded-full border border-[#2A2A2A]">code</span>
+                        <span class="px-2 py-0.5 bg-[#0F0F0F] text-gray-400 text-xs rounded-full border border-[#2A2A2A]">optimization</span>
+                    </div>
+                    <p class="text-xs text-gray-500">Nov 15, 2025</p>
+                </div>
+            </div>
+        </div>
+    };
+
+    // ========================================================================
+    // ANALYTICS TAB
+    // ========================================================================
+
+    private RenderFragment RenderAnalyticsTab() => __builder =>
+    {
+        <div>
+            <h2 class="text-xl font-semibold text-gray-100 mb-6">Knowledge Base Analytics</h2>
+
+            @if (_isLoadingAnalytics)
+            {
+                <div class="flex items-center justify-center py-12">
+                    <div class="w-8 h-8 border-4 border-purple-600/30 border-t-purple-600 rounded-full animate-spin"></div>
+                </div>
+            }
+            else if (KnowledgeState.Value.Analytics != null)
+            {
+                var analytics = KnowledgeState.Value.Analytics;
+
+                @* Statistics Cards *@
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
+                        <p class="text-xs text-gray-400 mb-1">Total Items</p>
+                        <p class="text-3xl font-bold text-gray-100">@analytics.TotalArticles</p>
+                    </div>
+                    <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
+                        <p class="text-xs text-gray-400 mb-1">Views</p>
+                        <p class="text-3xl font-bold text-gray-100">@analytics.TotalViews.ToString("N0")</p>
+                    </div>
+                    <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
+                        <p class="text-xs text-gray-400 mb-1">Collections</p>
+                        <p class="text-3xl font-bold text-gray-100">@analytics.CategoryCounts.Count</p>
+                    </div>
+                    <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
+                        <p class="text-xs text-gray-400 mb-1">References</p>
+                        <p class="text-3xl font-bold text-gray-100">@analytics.TotalReferences.ToString("N0")</p>
+                    </div>
+                </div>
+
+                @* Analytics Details *@
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @* Most Referenced Documents *@
+                    <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
+                        <h3 class="text-base font-semibold text-gray-100 mb-4">Most Referenced Documents</h3>
+                        @if (analytics.MostReferenced.Any())
+                        {
+                            <div class="space-y-3">
+                                @foreach (var article in analytics.MostReferenced)
+                                {
+                                    <div class="flex items-center justify-between py-2 border-b border-[#2A2A2A] last:border-0">
+                                        <span class="text-sm text-gray-300">@article.Title</span>
+                                        <span class="px-2 py-1 bg-purple-600/20 text-purple-400 text-xs rounded-full font-medium">
+                                            @article.ReferenceCount refs
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-sm text-gray-500">No references yet</p>
+                        }
+                    </div>
+
+                    @* Most Viewed Documents *@
+                    <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
+                        <h3 class="text-base font-semibold text-gray-100 mb-4">Most Viewed Documents</h3>
+                        @if (analytics.MostViewed.Any())
+                        {
+                            <div class="space-y-3">
+                                @foreach (var article in analytics.MostViewed)
+                                {
+                                    <div class="flex items-center justify-between py-2 border-b border-[#2A2A2A] last:border-0">
+                                        <span class="text-sm text-gray-300">@article.Title</span>
+                                        <span class="px-2 py-1 bg-blue-600/20 text-blue-400 text-xs rounded-full font-medium">
+                                            @article.ViewCount views
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-sm text-gray-500">No views yet</p>
+                        }
+                    </div>
+
+                    @* Recently Added *@
+                    <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
+                        <h3 class="text-base font-semibold text-gray-100 mb-4">Recently Added</h3>
+                        @if (analytics.RecentlyAdded.Any())
+                        {
+                            <div class="space-y-3">
+                                @foreach (var article in analytics.RecentlyAdded)
+                                {
+                                    <div class="flex items-center justify-between py-2 border-b border-[#2A2A2A] last:border-0">
+                                        <span class="text-sm text-gray-300">@article.Title</span>
+                                        <span class="text-xs text-gray-500">
+                                            @article.CreatedAt.ToString("MMM dd")
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-sm text-gray-500">No items yet</p>
+                        }
+                    </div>
+
+                    @* Tag Distribution *@
+                    <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
+                        <h3 class="text-base font-semibold text-gray-100 mb-4">Tag Distribution</h3>
+                        @if (analytics.TagCounts.Any())
+                        {
+                            <div class="flex flex-wrap gap-2">
+                                @foreach (var tagCount in analytics.TagCounts.OrderByDescending(t => t.Value).Take(10))
+                                {
+                                    <span class="px-3 py-1 bg-[#0F0F0F] text-gray-300 text-xs rounded-full border border-[#2A2A2A]">
+                                        @tagCount.Key (@tagCount.Value)
+                                    </span>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-sm text-gray-500">No tags yet</p>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-12 text-center">
+                    <div class="w-16 h-16 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+                        </svg>
+                    </div>
+                    <p class="text-gray-400">
+                        No analytics data available. Create knowledge items to see analytics.
+                    </p>
+                </div>
+            }
+        </div>
+    };
 }
