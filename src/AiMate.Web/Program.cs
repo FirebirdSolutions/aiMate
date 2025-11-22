@@ -105,6 +105,81 @@ builder.Services.AddRateLimiter(options =>
 
 Log.Information("Rate limiting configured");
 
+// Response Caching and Compression
+builder.Services.AddResponseCaching(options =>
+{
+    options.MaximumBodySize = 64 * 1024 * 1024; // 64MB max cached response
+    options.UseCaseSensitivePaths = false;
+    options.SizeLimit = 100 * 1024 * 1024; // 100MB total cache size
+});
+
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true; // Enable compression for HTTPS
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+    options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+    options.MimeTypes = Microsoft.AspNetCore.ResponseCompression.ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/json", "application/xml", "text/plain", "text/css", "text/html", "application/javascript" });
+});
+
+// Configure Brotli compression (best compression)
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest; // Balance speed and size
+});
+
+// Configure Gzip compression (fallback for older browsers)
+builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+
+// Configure output caching (ASP.NET Core 9 feature - better than ResponseCaching)
+builder.Services.AddOutputCache(options =>
+{
+    // Default policy: cache for 60 seconds
+    options.AddBasePolicy(builder => builder
+        .Expire(TimeSpan.FromSeconds(60))
+        .Tag("default"));
+
+    // Policy for static API responses (user profiles, settings, etc.)
+    options.AddPolicy("static", builder => builder
+        .Expire(TimeSpan.FromMinutes(5))
+        .Tag("static")
+        .SetVaryByQuery("*"));
+
+    // Policy for search results (cache for 2 minutes)
+    options.AddPolicy("search", builder => builder
+        .Expire(TimeSpan.FromMinutes(2))
+        .Tag("search")
+        .SetVaryByQuery("query", "limit", "threshold"));
+
+    // Policy for knowledge base items (cache for 5 minutes)
+    options.AddPolicy("knowledge", builder => builder
+        .Expire(TimeSpan.FromMinutes(5))
+        .Tag("knowledge")
+        .SetVaryByQuery("*"));
+
+    // Policy for public content (cache for 30 minutes)
+    options.AddPolicy("public", builder => builder
+        .Expire(TimeSpan.FromMinutes(30))
+        .Tag("public")
+        .SetVaryByQuery("*"));
+
+    // Policy for analytics (cache for 1 minute - frequently changing data)
+    options.AddPolicy("analytics", builder => builder
+        .Expire(TimeSpan.FromMinutes(1))
+        .Tag("analytics")
+        .SetVaryByQuery("*"));
+
+    // No caching policy for dynamic content (chat completions, streaming, etc.)
+    options.AddPolicy("no-cache", builder => builder
+        .NoCache()
+        .Tag("no-cache"));
+});
+
+Log.Information("Response caching and compression configured");
+
 // JWT Authentication
 var jwtSecret = builder.Configuration["Jwt:Secret"]
     ?? "aiMate-super-secret-key-change-in-production-minimum-32-characters-long";
@@ -520,6 +595,10 @@ app.UseSwaggerUI(c =>
 Log.Information("Swagger UI enabled at /api/docs");
 
 app.UseHttpsRedirection();
+
+// Response compression (must be early in pipeline, before static files)
+app.UseResponseCompression();
+
 app.UseStaticFiles();
 app.UseAntiforgery();
 
@@ -532,6 +611,9 @@ app.UseRateLimiter();
 // Authentication and Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Output caching (after auth so we can cache per-user if needed)
+app.UseOutputCache();
 
 // Hangfire Dashboard (requires Hangfire packages)
 try
