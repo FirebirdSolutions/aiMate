@@ -32,7 +32,14 @@ public class ConnectionApiController : ControllerBase
     /// <summary>
     /// Get all connections accessible to the current user
     /// </summary>
+    /// <param name="userId">User ID (GUID)</param>
+    /// <param name="tierStr">User tier (Free, BYOK, Developer, Admin)</param>
+    /// <returns>List of provider connections</returns>
+    /// <response code="200">Returns the list of connections</response>
+    /// <response code="400">Invalid user ID format</response>
     [HttpGet]
+    [ProducesResponseType(typeof(List<ProviderConnectionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetConnections([FromQuery] string userId, [FromQuery] string tierStr = "Free")
     {
         try
@@ -110,9 +117,34 @@ public class ConnectionApiController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new connection (BYOK)
+    /// Create a new provider connection (BYOK - Bring Your Own Key)
     /// </summary>
+    /// <param name="connection">Connection details (name, type, API key, etc.)</param>
+    /// <param name="userId">User ID (GUID)</param>
+    /// <param name="tierStr">User tier (Free, BYOK, Developer, Admin)</param>
+    /// <returns>Created connection with ID</returns>
+    /// <response code="201">Connection created successfully</response>
+    /// <response code="400">Invalid request or connection limit reached</response>
+    /// <response code="403">Insufficient permissions for tier</response>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     POST /api/v1/connections?userId=abc123&amp;tierStr=Developer
+    ///     {
+    ///         "name": "My OpenAI Connection",
+    ///         "type": "Cloud",
+    ///         "providerType": "OpenAI",
+    ///         "apiKey": "sk-...",
+    ///         "url": "https://api.openai.com/v1",
+    ///         "modelIds": ["gpt-4", "gpt-3.5-turbo"],
+    ///         "visibility": "Private"
+    ///     }
+    ///
+    /// </remarks>
     [HttpPost]
+    [ProducesResponseType(typeof(ProviderConnectionDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateConnection(
         [FromBody] ProviderConnectionDto connection,
         [FromQuery] string userId,
