@@ -350,11 +350,27 @@ public class PluginManager : IPluginManager
 
     Task<MessageInterceptResult> IPluginManager.OnBeforeSendAsync(Message message, Core.Services.ConversationContext context)
     {
-        throw new NotImplementedException();
+        // Map Core.Services.ConversationContext to Core.Plugins.ConversationContext
+        var pluginContext = new Core.Plugins.ConversationContext
+        {
+            ConversationId = context.ConversationId,
+            UserId = context.UserId,
+            WorkspaceId = context.WorkspaceId
+        };
+
+        return OnBeforeSendAsync(message, pluginContext);
     }
 
     Task<MessageInterceptResult> IPluginManager.OnAfterReceiveAsync(Message message, Core.Services.ConversationContext context)
     {
-        throw new NotImplementedException();
+        // Map Core.Services.ConversationContext to Core.Plugins.ConversationContext
+        var pluginContext = new Core.Plugins.ConversationContext
+        {
+            ConversationId = context.ConversationId,
+            UserId = context.UserId,
+            WorkspaceId = context.WorkspaceId
+        };
+
+        return OnAfterReceiveAsync(message, pluginContext);
     }
 }
