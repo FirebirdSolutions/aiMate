@@ -21,7 +21,7 @@
     <div class="space-y-3">
         @foreach (var connection in connections)
         {
-            <div class="p-4 bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg hover:border-purple-500/50 transition-all">
+            <div @key="connection.Id" class="p-4 bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg hover:border-purple-500/50 transition-all">
                 <div class="flex items-start justify-between mb-3">
                     <div class="flex items-center gap-3 flex-1">
                         @* Provider Icon *@
