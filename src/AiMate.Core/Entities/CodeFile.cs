@@ -66,7 +66,7 @@ public class CodeFile
     /// <summary>
     /// When the file was last modified
     /// </summary>
-    public DateTime LastModified { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
     /// Who created the file

@@ -31,6 +31,8 @@ public class FeedbackTag
     public TagSentiment Sentiment { get; set; } = TagSentiment.Neutral;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
 
 /// <summary>
