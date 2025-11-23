@@ -76,6 +76,16 @@ public class FileUploadService : IFileUploadService
         return workspaceFile;
     }
 
+    /// <summary>
+    /// Gets a file stream for the specified file ID
+    /// </summary>
+    /// <param name="fileId">The file identifier</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>A tuple containing the file stream and content type, or null if not found</returns>
+    /// <remarks>
+    /// IMPORTANT: The caller MUST dispose the returned stream when finished to avoid resource leaks.
+    /// Consider using: using var (stream, contentType) = await GetFileAsync(fileId);
+    /// </remarks>
     public async Task<(Stream Stream, string ContentType)?> GetFileAsync(
         Guid fileId,
         CancellationToken cancellationToken = default)
@@ -88,7 +98,13 @@ public class FileUploadService : IFileUploadService
             return null;
         }
 
-        var stream = new FileStream(workspaceFile.FilePath, FileMode.Open, FileAccess.Read);
+        // FileShare.Read allows multiple concurrent reads
+        var stream = new FileStream(
+            workspaceFile.FilePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read);
+
         return (stream, workspaceFile.MimeType);
     }
 

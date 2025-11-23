@@ -23,7 +23,7 @@ public class StructuredContentPlugin : IPlugin, IMessageInterceptor
     public string Category => "Content Enhancement";
     public bool IsEnabled { get; set; } = true;
 
-    PluginCategory IPlugin.Category => throw new NotImplementedException();
+    PluginCategory IPlugin.Category => PluginCategory.ContentEnhancement;
 
     public StructuredContentPlugin(
         IStructuredContentService contentService,
@@ -141,11 +141,14 @@ public class StructuredContentPlugin : IPlugin, IMessageInterceptor
 
     Task IPlugin.DisposeAsync()
     {
-        throw new NotImplementedException();
+        // Call the existing ValueTask DisposeAsync
+        return DisposeAsync().AsTask();
     }
 
     public Core.Entities.PluginSettings? GetSettingsUI()
     {
-        throw new NotImplementedException();
+        // No configuration UI needed for this plugin
+        // All settings are automatically detected from AI responses
+        return null;
     }
 }
