@@ -69,6 +69,9 @@ public class ConversationContext
     public List<string> ResourcesMentioned { get; set; } = new();
     public List<string> ActionItems { get; set; } = new();
     public Dictionary<string, string> Metadata { get; set; } = new();
+    public Guid ConversationId { get; set; }
+    public string UserId { get; set; }
+    public string WorkspaceId { get; set; }
 }
 
 /// <summary>

@@ -128,7 +128,7 @@ public static class CodeFileEntityConfiguration
             entity.HasIndex(e => e.Path);
             entity.HasIndex(e => new { e.ProjectId, e.Path }).IsUnique();
             entity.HasIndex(e => e.Language);
-            entity.HasIndex(e => e.LastModified);
+            entity.HasIndex(e => e.UpdatedAt);
 
             entity.HasOne(e => e.Project)
                 .WithMany()

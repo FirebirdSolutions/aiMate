@@ -71,5 +71,6 @@ public enum PluginCategory
     Integration,      // External integrations
     UI,              // General UI enhancements
     Safety,          // Content filtering, safety
-    Other
+    Other,
+    ContentEnhancement
 }

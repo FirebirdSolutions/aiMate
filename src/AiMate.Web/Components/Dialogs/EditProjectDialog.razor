@@ -94,7 +94,8 @@
                     <div class="md:col-span-1">
                         <label class="block text-sm font-medium text-gray-200 mb-2">Start Date</label>
                         <input type="date"
-                               @bind="_startDateString"
+                               value="@_startDateString"
+                               @oninput="@(e => _startDateString = e.Value?.ToString() ?? "")"
                                class="w-full bg-[#0F0F0F] border border-[#2A2A2A] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                     </div>
 
@@ -102,8 +103,9 @@
                     <div class="md:col-span-1">
                         <label class="block text-sm font-medium text-gray-200 mb-2">Due Date</label>
                         <input type="date"
-                               @bind="_dueDateString"
+                               value="@_dueDateString"
                                min="@_startDateString"
+                               @oninput="@(e => _dueDateString = e.Value?.ToString() ?? "")"
                                class="w-full bg-[#0F0F0F] border border-[#2A2A2A] text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                     </div>
 

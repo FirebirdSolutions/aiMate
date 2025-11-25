@@ -416,7 +416,7 @@ public class CodeFilesApiController : ControllerBase
             Version = file.Version,
             ContentHash = file.ContentHash,
             CreatedAt = file.CreatedAt,
-            LastModified = file.LastModified,
+            LastModified = file.UpdatedAt,
             Tags = file.Tags,
             Metadata = file.Metadata
         };

@@ -151,7 +151,7 @@ public class CodeFileService : ICodeFileService
             file.ContentHash = ComputeHash(file.Content);
             file.SizeBytes = Encoding.UTF8.GetByteCount(file.Content);
             file.CreatedAt = DateTime.UtcNow;
-            file.LastModified = DateTime.UtcNow;
+            file.UpdatedAt = DateTime.UtcNow;
             file.Version = 1;
 
             _dbContext.CodeFiles.Add(file);
@@ -184,7 +184,7 @@ public class CodeFileService : ICodeFileService
             existing.Content = file.Content;
             existing.ContentHash = ComputeHash(file.Content);
             existing.SizeBytes = Encoding.UTF8.GetByteCount(file.Content);
-            existing.LastModified = DateTime.UtcNow;
+            existing.UpdatedAt = DateTime.UtcNow;
             existing.LastModifiedBy = file.LastModifiedBy;
             existing.Version++;
             existing.IsDirty = file.IsDirty;

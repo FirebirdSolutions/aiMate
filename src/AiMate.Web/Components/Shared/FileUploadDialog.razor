@@ -32,7 +32,7 @@
                            type="file"
                            multiple
                            accept=".txt,.md,.pdf,.png,.jpg,.jpeg,.doc,.docx"
-                           @onchange="OnFilesChanged"
+                           @* @onchange="OnFilesChanged" *@
                            class="hidden" />
                 </div>
 
@@ -129,7 +129,7 @@
     public Guid WorkspaceId { get; set; }
 
     [Parameter]
-    public EventCallback OnUploadComplete { get; set; }
+    public EventCallback<object?> OnUploadComplete { get; set; }
 
     private List<IBrowserFile> _selectedFiles = new();
     private bool _isUploading = false;
@@ -185,7 +185,7 @@
             await Task.Delay(1500);
 
             await IsVisibleChanged.InvokeAsync(false);
-            await OnUploadComplete.InvokeAsync();
+            await OnUploadComplete.InvokeAsync(null);
         }
         catch (Exception ex)
         {
