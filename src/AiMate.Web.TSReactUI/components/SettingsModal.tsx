@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "./ui/table";
 import { useTheme } from "./ThemeProvider";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { useDebug } from "./DebugContext";
 import { UsageDetailsDialog } from "./UsageDetailsDialog";
 import { BaseModal } from "./BaseModal";
@@ -195,7 +195,7 @@ function InterfaceTab() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="theme">Appearance</Label>
-            <Select value={localTheme} onValueChange={setLocalTheme}>
+            <Select value={localTheme} onValueChange={(value) => setLocalTheme(value as any)}>
               <SelectTrigger className="w-[180px]" id="theme">
                 <SelectValue />
               </SelectTrigger>
@@ -209,7 +209,7 @@ function InterfaceTab() {
 
           <div className="flex items-center justify-between">
             <Label htmlFor="color-theme">Color Theme</Label>
-            <Select value={localColorTheme} onValueChange={setLocalColorTheme}>
+            <Select value={localColorTheme} onValueChange={(value) => setLocalColorTheme(value as any)}>
               <SelectTrigger className="w-[180px]" id="color-theme">
                 <SelectValue />
               </SelectTrigger>
@@ -224,7 +224,7 @@ function InterfaceTab() {
 
           <div className="flex items-center justify-between">
             <Label htmlFor="font-size">Font Size</Label>
-            <Select value={localFontSize} onValueChange={setLocalFontSize}>
+            <Select value={localFontSize} onValueChange={(value) => setLocalFontSize(value as any)}>
               <SelectTrigger className="w-[180px]" id="font-size">
                 <SelectValue />
               </SelectTrigger>

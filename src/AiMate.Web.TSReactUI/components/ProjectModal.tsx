@@ -11,7 +11,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { FolderKanban, Upload, Download, Eye, Trash2, File, MessageSquare, MoreVertical, Pin, Share, Edit, Archive, Copy, ListRestart, Search, X, GripVertical, Check } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { ScrollArea } from "./ui/scroll-area";
 import {
   Popover,

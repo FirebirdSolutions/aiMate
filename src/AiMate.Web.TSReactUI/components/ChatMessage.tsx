@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Bot, User, Edit2, Check, X, RotateCw, Sparkles, Copy, Volume2, Info, ThumbsUp, ThumbsDown, Play, Share2, Send, Brain } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import {
   Popover,
   PopoverContent,
@@ -193,7 +193,7 @@ export function ChatMessage({
                 <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2">
                   <ReactMarkdown
                     components={{
-                      code: ({ node, inline, className, children, ...props }) => {
+                      code: ({ node, inline, className, children, ...props }: any) => {
                         // Hide structured content code blocks
                         const codeString = String(children);
                         if (!inline && codeString.includes('```structured')) {

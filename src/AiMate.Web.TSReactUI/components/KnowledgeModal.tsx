@@ -68,7 +68,7 @@ import {
 import { Separator } from "./ui/separator";
 import { Progress } from "./ui/progress";
 import { useDebug } from "./DebugContext";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import * as API from "../utils/api-stubs";
 import { useSwipeGesture } from "../utils/useSwipeGesture";
 

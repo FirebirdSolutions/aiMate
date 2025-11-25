@@ -2,7 +2,7 @@ import { Share2, Copy, Mail, MessageSquare } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { BaseDialog } from "./BaseDialog";
 
 interface ShareDialogProps {
