@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { useDebug } from "./DebugContext";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import * as API from "../utils/api-stubs";
 import { KnowledgeSuggestions } from "./KnowledgeSuggestions";
 import { AttachedContext } from "./AttachedContext";
