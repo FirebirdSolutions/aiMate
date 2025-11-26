@@ -1,11 +1,12 @@
 using AiMate.Core.Entities;
 using AiMate.Core.Enums;
 using AiMate.Core.Services;
-using AiMate.Shared.Models;
+using AiMate.Shared.Dtos.Admin;
+using AiMate.Shared.Dtos.Workspace;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AiMate.Web.Controllers;
+namespace AiMate.Api.Controllers;
 
 /// <summary>
 /// API for managing LLM provider connections with BYOK support

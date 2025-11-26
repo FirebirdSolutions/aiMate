@@ -1,5 +1,5 @@
 using AiMate.Infrastructure.Data;
-using AiMate.Shared.Models;
+using AiMate.Shared.Dtos.Settings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

@@ -1,5 +1,6 @@
 using AiMate.Core.Services;
-using AiMate.Shared.Models;
+using AiMate.Shared.Dtos.Workspace;
+using AiMate.Shared.Dtos.Conversation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

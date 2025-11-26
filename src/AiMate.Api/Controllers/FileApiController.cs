@@ -1,6 +1,7 @@
 using AiMate.Core.Entities;
 using AiMate.Core.Services;
 using AiMate.Infrastructure.Data;
+using AiMate.Shared.Dtos.Files;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -345,9 +346,4 @@ public class FileApiController : ControllerBase
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         return Guid.Parse(userIdClaim!);
     }
-}
-
-public class UpdateFileMetadataRequest
-{
-    public string? Description { get; set; }
 }

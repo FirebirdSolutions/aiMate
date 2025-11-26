@@ -1,11 +1,11 @@
 using AiMate.Core.Entities;
 using AiMate.Core.Enums;
 using AiMate.Core.Services;
-using AiMate.Shared.Models;
+using AiMate.Shared.Dtos.Knowledge;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AiMate.Web.Controllers;
+namespace AiMate.Api.Controllers;
 
 /// <summary>
 /// API for managing knowledge base articles with RAG support

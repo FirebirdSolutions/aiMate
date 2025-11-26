@@ -1,10 +1,10 @@
 using AiMate.Core.Entities;
 using AiMate.Core.Services;
-using AiMate.Shared.Models;
+using AiMate.Shared.Dtos.Projects;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AiMate.Web.Controllers;
+namespace AiMate.Api.Controllers;
 
 /// <summary>
 /// API for managing software projects and initiatives

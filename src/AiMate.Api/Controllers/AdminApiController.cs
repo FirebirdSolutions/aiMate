@@ -1,12 +1,12 @@
 using AiMate.Core.Services;
 using AiMate.Infrastructure.Data;
-using AiMate.Shared.Models;
+using AiMate.Shared.Dtos.Admin;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace AiMate.Web.Controllers;
+namespace AiMate.Api.Controllers;
 
 /// <summary>
 /// Admin API for system administration and configuration
