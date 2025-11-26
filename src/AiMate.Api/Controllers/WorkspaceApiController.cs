@@ -3,7 +3,7 @@ using AiMate.Shared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AiMate.Web.Controllers;
+namespace AiMate.Api.Controllers;
 
 /// <summary>
 /// Workspace API for managing workspaces and conversations
@@ -340,6 +340,54 @@ public class WorkspaceApiController : ControllerBase
     }
 
     /// <summary>
+    /// Get a specific conversation by ID
+    /// </summary>
+    /// <param name="workspaceId">Workspace ID containing the conversation</param>
+    /// <param name="conversationId">Conversation ID to retrieve</param>
+    /// <returns>Conversation details</returns>
+    /// <response code="200">Returns the conversation</response>
+    /// <response code="404">Conversation not found</response>
+    /// <response code="500">Internal server error</response>
+    [HttpGet("{workspaceId}/conversations/{conversationId}")]
+    [ProducesResponseType(typeof(ConversationDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetConversation(Guid workspaceId, Guid conversationId)
+    {
+        try
+        {
+            _logger.LogInformation("Fetching conversation {ConversationId} from workspace {WorkspaceId}", conversationId, workspaceId);
+
+            var conversation = await _conversationService.GetConversationByIdAsync(conversationId);
+
+            if (conversation == null || conversation.WorkspaceId != workspaceId)
+            {
+                return NotFound(new { error = "Conversation not found" });
+            }
+
+            var conversationDto = new ConversationDto
+            {
+                Id = conversation.Id.GetHashCode(),
+                WorkspaceId = conversation.WorkspaceId.GetHashCode(),
+                Title = conversation.Title,
+                ModelId = conversation.ModelId,
+                IsPinned = conversation.IsPinned,
+                IsArchived = conversation.IsArchived,
+                CreatedAt = conversation.CreatedAt,
+                UpdatedAt = conversation.UpdatedAt,
+                MessageCount = conversation.Messages?.Count ?? 0
+            };
+
+            return Ok(conversationDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching conversation");
+            return StatusCode(500, new { error = "Failed to fetch conversation", message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Create a new conversation in a workspace
     /// </summary>
     /// <param name="workspaceId">Workspace ID to create conversation in</param>
@@ -378,8 +426,8 @@ public class WorkspaceApiController : ControllerBase
             };
 
             return CreatedAtAction(
-                nameof(GetConversations),
-                new { workspaceId },
+                nameof(GetConversation),
+                new { workspaceId, conversationId = created.Id },
                 conversationDto
             );
         }
@@ -387,6 +435,115 @@ public class WorkspaceApiController : ControllerBase
         {
             _logger.LogError(ex, "Error creating conversation");
             return StatusCode(500, new { error = "Failed to create conversation", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Update an existing conversation
+    /// </summary>
+    /// <param name="workspaceId">Workspace ID containing the conversation</param>
+    /// <param name="conversationId">Conversation ID to update</param>
+    /// <param name="request">Conversation update request with modified fields</param>
+    /// <returns>Updated conversation details</returns>
+    /// <response code="200">Conversation updated successfully</response>
+    /// <response code="404">Conversation not found</response>
+    /// <response code="500">Internal server error</response>
+    [HttpPut("{workspaceId}/conversations/{conversationId}")]
+    [ProducesResponseType(typeof(ConversationDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> UpdateConversation(Guid workspaceId, Guid conversationId, [FromBody] UpdateConversationRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Updating conversation {ConversationId} in workspace {WorkspaceId}", conversationId, workspaceId);
+
+            var conversation = await _conversationService.GetConversationByIdAsync(conversationId);
+
+            if (conversation == null || conversation.WorkspaceId != workspaceId)
+            {
+                return NotFound(new { error = "Conversation not found" });
+            }
+
+            // Update fields if provided
+            if (!string.IsNullOrEmpty(request.Title))
+            {
+                conversation.Title = request.Title;
+            }
+
+            if (!string.IsNullOrEmpty(request.ModelId))
+            {
+                conversation.ModelId = request.ModelId;
+            }
+
+            if (request.IsPinned.HasValue)
+            {
+                conversation.IsPinned = request.IsPinned.Value;
+            }
+
+            if (request.IsArchived.HasValue)
+            {
+                conversation.IsArchived = request.IsArchived.Value;
+            }
+
+            await _conversationService.UpdateConversationAsync(conversation);
+
+            var conversationDto = new ConversationDto
+            {
+                Id = conversation.Id.GetHashCode(),
+                WorkspaceId = conversation.WorkspaceId.GetHashCode(),
+                Title = conversation.Title,
+                ModelId = conversation.ModelId,
+                IsPinned = conversation.IsPinned,
+                IsArchived = conversation.IsArchived,
+                CreatedAt = conversation.CreatedAt,
+                UpdatedAt = conversation.UpdatedAt,
+                MessageCount = conversation.Messages?.Count ?? 0
+            };
+
+            return Ok(conversationDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating conversation");
+            return StatusCode(500, new { error = "Failed to update conversation", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Delete a conversation
+    /// </summary>
+    /// <param name="workspaceId">Workspace ID containing the conversation</param>
+    /// <param name="conversationId">Conversation ID to delete</param>
+    /// <returns>Success message</returns>
+    /// <response code="200">Conversation deleted successfully</response>
+    /// <response code="404">Conversation not found</response>
+    /// <response code="500">Internal server error</response>
+    [HttpDelete("{workspaceId}/conversations/{conversationId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> DeleteConversation(Guid workspaceId, Guid conversationId)
+    {
+        try
+        {
+            _logger.LogInformation("Deleting conversation {ConversationId} from workspace {WorkspaceId}", conversationId, workspaceId);
+
+            var conversation = await _conversationService.GetConversationByIdAsync(conversationId);
+
+            if (conversation == null || conversation.WorkspaceId != workspaceId)
+            {
+                return NotFound(new { error = "Conversation not found" });
+            }
+
+            await _conversationService.DeleteConversationAsync(conversationId);
+
+            return Ok(new { success = true, message = "Conversation deleted successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting conversation");
+            return StatusCode(500, new { error = "Failed to delete conversation", message = ex.Message });
         }
     }
 }
