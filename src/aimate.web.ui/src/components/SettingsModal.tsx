@@ -24,6 +24,7 @@ import {
 import { useTheme } from "./ThemeProvider";
 import { toast } from "sonner";
 import { useDebug } from "./DebugContext";
+import { useUserSettings } from "../context/UserSettingsContext";
 import { UsageDetailsDialog } from "./UsageDetailsDialog";
 import { BaseModal } from "./BaseModal";
 
@@ -111,6 +112,9 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 }
 
 function GeneralTab() {
+  const { settings, updateGeneral } = useUserSettings();
+  const general = settings.general;
+
   return (
     <div className="space-y-4">
       <div>
@@ -118,7 +122,7 @@ function GeneralTab() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="language">Language</Label>
-            <Select defaultValue="en-gb">
+            <Select value={general.language} onValueChange={(v) => updateGeneral({ language: v })}>
               <SelectTrigger className="w-[180px]" id="language">
                 <SelectValue />
               </SelectTrigger>
@@ -134,7 +138,7 @@ function GeneralTab() {
 
           <div className="flex items-center justify-between">
             <Label htmlFor="notifications">Notifications</Label>
-            <Select defaultValue="off">
+            <Select value={general.notifications} onValueChange={(v) => updateGeneral({ notifications: v })}>
               <SelectTrigger className="w-[180px]" id="notifications">
                 <SelectValue />
               </SelectTrigger>
@@ -157,12 +161,8 @@ function GeneralTab() {
         </p>
         <Textarea
           placeholder="Enter your system prompt..."
-          defaultValue={`[Culture]
-Location: New Zealand/Aotearoa (Land of the Long White Cloud)
-Population: Kiwis/New Zealanders
-Style: Laid back and friendly, less formal
-Currency: NZD
-Language: New Zealand English (Colour vs Color, Homogenise vs Homogenize)`}
+          value={general.systemPrompt}
+          onChange={(e) => updateGeneral({ systemPrompt: e.target.value })}
           className="min-h-[240px] font-mono text-sm"
         />
       </div>
@@ -172,6 +172,8 @@ Language: New Zealand English (Colour vs Color, Homogenise vs Homogenize)`}
 
 function InterfaceTab() {
   const { theme, setTheme, fontSize, setFontSize, colorTheme, setColorTheme } = useTheme();
+  const { settings, updateInterface } = useUserSettings();
+  const iface = settings.interface;
   const [localTheme, setLocalTheme] = useState(theme);
   const [localFontSize, setLocalFontSize] = useState(fontSize);
   const [localColorTheme, setLocalColorTheme] = useState(colorTheme);
@@ -195,7 +197,7 @@ function InterfaceTab() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="theme">Appearance</Label>
-            <Select value={localTheme} onValueChange={(value) => setLocalTheme(value as any)}>
+            <Select value={localTheme} onValueChange={(value) => setLocalTheme(value as "light" | "dark" | "system")}>
               <SelectTrigger className="w-[180px]" id="theme">
                 <SelectValue />
               </SelectTrigger>
@@ -209,7 +211,7 @@ function InterfaceTab() {
 
           <div className="flex items-center justify-between">
             <Label htmlFor="color-theme">Color Theme</Label>
-            <Select value={localColorTheme} onValueChange={(value) => setLocalColorTheme(value as any)}>
+            <Select value={localColorTheme} onValueChange={(value) => setLocalColorTheme(value as "purple" | "green" | "orange" | "pink" | "cyan")}>
               <SelectTrigger className="w-[180px]" id="color-theme">
                 <SelectValue />
               </SelectTrigger>
@@ -224,7 +226,7 @@ function InterfaceTab() {
 
           <div className="flex items-center justify-between">
             <Label htmlFor="font-size">Font Size</Label>
-            <Select value={localFontSize} onValueChange={(value) => setLocalFontSize(value as any)}>
+            <Select value={localFontSize} onValueChange={(value) => setLocalFontSize(value as "small" | "medium" | "large")}>
               <SelectTrigger className="w-[180px]" id="font-size">
                 <SelectValue />
               </SelectTrigger>
@@ -250,7 +252,12 @@ function InterfaceTab() {
                 Display message timestamps
               </p>
             </div>
-            <Switch id="timestamps" defaultChecked />
+            <Switch
+              id="timestamps"
+              checked={iface.showTimestamps}
+              onCheckedChange={(v) => updateInterface({ showTimestamps: v })}
+              className="data-[state=checked]:bg-purple-600"
+            />
           </div>
 
           <div className="flex items-center justify-between">
@@ -260,7 +267,12 @@ function InterfaceTab() {
                 Highlight code in messages
               </p>
             </div>
-            <Switch id="code-syntax" defaultChecked />
+            <Switch
+              id="code-syntax"
+              checked={iface.syntaxHighlighting}
+              onCheckedChange={(v) => updateInterface({ syntaxHighlighting: v })}
+              className="data-[state=checked]:bg-purple-600"
+            />
           </div>
 
           <div className="flex items-center justify-between">
@@ -270,7 +282,12 @@ function InterfaceTab() {
                 Render markdown formatting
               </p>
             </div>
-            <Switch id="markdown" defaultChecked />
+            <Switch
+              id="markdown"
+              checked={iface.markdownSupport}
+              onCheckedChange={(v) => updateInterface({ markdownSupport: v })}
+              className="data-[state=checked]:bg-purple-600"
+            />
           </div>
         </div>
       </div>
@@ -279,6 +296,9 @@ function InterfaceTab() {
 }
 
 function ConnectionsTab() {
+  const { settings, updateConnections } = useUserSettings();
+  const conn = settings.connections;
+
   return (
     <div className="space-y-4">
       <div>
@@ -294,6 +314,8 @@ function ConnectionsTab() {
               id="openai-key"
               type="password"
               placeholder="sk-..."
+              value={conn.openaiApiKey}
+              onChange={(e) => updateConnections({ openaiApiKey: e.target.value })}
               className="mt-2"
             />
           </div>
@@ -304,6 +326,8 @@ function ConnectionsTab() {
               id="anthropic-key"
               type="password"
               placeholder="sk-ant-..."
+              value={conn.anthropicApiKey}
+              onChange={(e) => updateConnections({ anthropicApiKey: e.target.value })}
               className="mt-2"
             />
           </div>
@@ -314,6 +338,8 @@ function ConnectionsTab() {
               id="ollama-url"
               type="url"
               placeholder="http://localhost:11434"
+              value={conn.ollamaBaseUrl}
+              onChange={(e) => updateConnections({ ollamaBaseUrl: e.target.value })}
               className="mt-2"
             />
           </div>
@@ -324,6 +350,9 @@ function ConnectionsTab() {
 }
 
 function PersonalisationTab() {
+  const { settings, updatePersonalisation } = useUserSettings();
+  const pers = settings.personalisation;
+
   return (
     <div className="space-y-4">
       <div>
@@ -331,7 +360,7 @@ function PersonalisationTab() {
         <div className="space-y-4">
           <div>
             <Label htmlFor="creativity">Creativity Level</Label>
-            <Select defaultValue="balanced">
+            <Select value={pers.creativityLevel} onValueChange={(v) => updatePersonalisation({ creativityLevel: v })}>
               <SelectTrigger className="mt-2" id="creativity">
                 <SelectValue />
               </SelectTrigger>
@@ -345,7 +374,7 @@ function PersonalisationTab() {
 
           <div>
             <Label htmlFor="response-style">Response Style</Label>
-            <Select defaultValue="balanced">
+            <Select value={pers.responseStyle} onValueChange={(v) => updatePersonalisation({ responseStyle: v })}>
               <SelectTrigger className="mt-2" id="response-style">
                 <SelectValue />
               </SelectTrigger>
@@ -372,6 +401,8 @@ function PersonalisationTab() {
             <Textarea
               id="custom-instructions"
               placeholder="e.g., Always respond in a friendly tone, use emojis occasionally..."
+              value={pers.customInstructions}
+              onChange={(e) => updatePersonalisation({ customInstructions: e.target.value })}
               className="min-h-[120px]"
             />
           </div>
@@ -383,7 +414,12 @@ function PersonalisationTab() {
                 AI remembers details from previous messages
               </p>
             </div>
-            <Switch id="remember-context" defaultChecked />
+            <Switch
+              id="remember-context"
+              checked={pers.rememberContext}
+              onCheckedChange={(v) => updatePersonalisation({ rememberContext: v })}
+              className="data-[state=checked]:bg-purple-600"
+            />
           </div>
         </div>
       </div>
@@ -392,6 +428,14 @@ function PersonalisationTab() {
 }
 
 function AccountTab() {
+  const { settings, updateAccount, resetSettings } = useUserSettings();
+  const account = settings.account;
+
+  const handleResetSettings = () => {
+    resetSettings();
+    toast.success("All settings have been reset to defaults");
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -403,7 +447,8 @@ function AccountTab() {
               id="email"
               type="email"
               placeholder="your.email@example.com"
-              defaultValue="rich@example.com"
+              value={account.email}
+              onChange={(e) => updateAccount({ email: e.target.value })}
               className="mt-2"
             />
           </div>
@@ -413,7 +458,8 @@ function AccountTab() {
             <Input
               id="username"
               placeholder="username"
-              defaultValue="rich"
+              value={account.username}
+              onChange={(e) => updateAccount({ username: e.target.value })}
               className="mt-2"
             />
           </div>
@@ -473,7 +519,12 @@ function AccountTab() {
                 Help improve the app with anonymous usage data
               </p>
             </div>
-            <Switch id="analytics" defaultChecked />
+            <Switch
+              id="analytics"
+              checked={account.allowAnalytics}
+              onCheckedChange={(v) => updateAccount({ allowAnalytics: v })}
+              className="data-[state=checked]:bg-purple-600"
+            />
           </div>
 
           <div className="flex items-center justify-between">
@@ -483,7 +534,12 @@ function AccountTab() {
                 Use data to personalize your experience
               </p>
             </div>
-            <Switch id="personalization" defaultChecked />
+            <Switch
+              id="personalization"
+              checked={account.personalization}
+              onCheckedChange={(v) => updateAccount({ personalization: v })}
+              className="data-[state=checked]:bg-purple-600"
+            />
           </div>
 
           <Button variant="outline">Download My Data</Button>
@@ -515,7 +571,11 @@ function AccountTab() {
           <Button variant="outline" className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950">
             Clear All Conversations
           </Button>
-          <Button variant="outline" className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950">
+          <Button
+            variant="outline"
+            className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950"
+            onClick={handleResetSettings}
+          >
             Reset All Settings
           </Button>
           <Button variant="outline" className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950">

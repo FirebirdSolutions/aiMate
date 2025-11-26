@@ -10,6 +10,8 @@ import { ShowcaseModeIndicator } from "./components/ShowcaseModeIndicator";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { DebugProvider, useDebug } from "./components/DebugContext";
 import { AuthProvider } from "./context/AuthContext";
+import { AdminSettingsProvider } from "./context/AdminSettingsContext";
+import { UserSettingsProvider } from "./context/UserSettingsContext";
 import { ScrollArea } from "./components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTitle } from "./components/ui/sheet";
 import { Sparkles } from "lucide-react";
@@ -255,13 +257,6 @@ function App() {
 
     setIsTyping(true);
 
-    addLog({
-      action: 'Requesting AI response',
-      api: 'api/v1/chat/completion',
-      payload: { model: selectedModel, conversationId: activeConversationId },
-      type: 'info'
-    });
-
     // Use real API for non-simulated models
     if (!isSimulatedModel(selectedModel)) {
       try {
@@ -345,6 +340,12 @@ function App() {
     }
 
     // Simulated model - use mock responses
+    addLog({
+      action: 'Using simulated response',
+      payload: { model: 'simulated', note: 'No real API call - mock response' },
+      type: 'info'
+    });
+
     setTimeout(() => {
       let aiMessage: Message;
 
@@ -510,11 +511,10 @@ function App() {
         )
       );
       setIsTyping(false);
-      
+
       addLog({
-        action: 'AI response received',
-        api: 'api/v1/chat/completion',
-        payload: { messageLength: aiMessage.content.length },
+        action: 'Simulated response generated',
+        payload: { messageLength: aiMessage.content.length, isSimulated: true },
         type: 'success'
       });
     }, 1000 + Math.random() * 1000);
@@ -792,11 +792,15 @@ function AppWrapper() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ThemeProvider defaultTheme="dark">
-          <DebugProvider>
-            <App />
-          </DebugProvider>
-        </ThemeProvider>
+        <AdminSettingsProvider>
+          <UserSettingsProvider>
+            <ThemeProvider defaultTheme="dark">
+              <DebugProvider>
+                <App />
+              </DebugProvider>
+            </ThemeProvider>
+          </UserSettingsProvider>
+        </AdminSettingsProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
