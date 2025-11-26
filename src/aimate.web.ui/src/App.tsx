@@ -11,6 +11,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { DebugProvider, useDebug } from "./components/DebugContext";
 import { AuthProvider } from "./context/AuthContext";
 import { AdminSettingsProvider } from "./context/AdminSettingsContext";
+import { UserSettingsProvider } from "./context/UserSettingsContext";
 import { ScrollArea } from "./components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTitle } from "./components/ui/sheet";
 import { Sparkles } from "lucide-react";
@@ -792,11 +793,13 @@ function AppWrapper() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AdminSettingsProvider>
-          <ThemeProvider defaultTheme="dark">
-            <DebugProvider>
-              <App />
-            </DebugProvider>
-          </ThemeProvider>
+          <UserSettingsProvider>
+            <ThemeProvider defaultTheme="dark">
+              <DebugProvider>
+                <App />
+              </DebugProvider>
+            </ThemeProvider>
+          </UserSettingsProvider>
         </AdminSettingsProvider>
       </AuthProvider>
     </QueryClientProvider>
