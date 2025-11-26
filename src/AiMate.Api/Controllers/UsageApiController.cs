@@ -1,10 +1,10 @@
 using AiMate.Infrastructure.Data;
-using AiMate.Shared.Models;
+using AiMate.Shared.Dtos.Usage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace AiMate.Web.Controllers;
+namespace AiMate.Api.Controllers;
 
 /// <summary>
 /// Usage Analytics API for tracking user consumption and costs
