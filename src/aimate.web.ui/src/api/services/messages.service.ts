@@ -71,13 +71,13 @@ class MessagesService {
             role: 'assistant',
             content: fullContent,
             timestamp: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
             metadata: {},
           });
         },
         (error: Error) => {
           reject(error);
-        },
-        signal
+        }
       );
     });
   }

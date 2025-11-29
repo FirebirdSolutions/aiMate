@@ -1,5 +1,5 @@
 import apiClient from './client';
-import { Model } from './types';
+import { ModelDto as Model } from './types';
 import { AppConfig } from '../utils/config';
 
 export interface AvailableModel {
@@ -57,7 +57,7 @@ export async function getAvailableModels(): Promise<AvailableModel[]> {
         name: m.name,
         provider: m.provider,
         color: getColorForProvider(m.provider),
-        isAvailable: m.isAvailable,
+        isAvailable: m.isAvailable || false,
         contextWindow: m.contextWindow,
         maxTokens: m.maxTokens,
       }));

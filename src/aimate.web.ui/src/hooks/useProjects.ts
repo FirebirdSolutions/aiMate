@@ -23,43 +23,67 @@ export function useProjects(workspaceId?: string) {
       const mockProjects: ProjectDto[] = [
         {
           id: 'proj-1',
+          key: 'AIMATE',
           name: 'aiMate.nz Platform',
           description: 'Building a sovereign AI platform for New Zealanders',
           workspaceId: wsId || 'default',
+          ownerId: 'user-1',
+          owner: 'Rich',
+          ownerEmail: 'rich@aimate.nz',
+          status: 'In Progress',
+          priority: 'High',
+          progressPercent: 75,
+          tags: ['ai', 'platform'],
+          teamMembers: ['user-1', 'user-2'],
           icon: '🚀',
           color: '#8B5CF6',
           conversationIds: ['conv-1', 'conv-3'],
           documentIds: ['doc-1', 'doc-3'],
           collaborators: ['user-1', 'user-2'],
-          status: 'active',
           createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
           updatedAt: new Date().toISOString(),
         },
         {
           id: 'proj-2',
+          key: 'CRISIS',
           name: 'Crisis Detection System',
           description: 'Safety features and NZ resource integration',
           workspaceId: wsId || 'default',
+          ownerId: 'user-1',
+          owner: 'Rich',
+          ownerEmail: 'rich@aimate.nz',
+          status: 'In Progress',
+          priority: 'Critical',
+          progressPercent: 90,
+          tags: ['safety', 'crisis'],
+          teamMembers: ['user-1'],
           icon: '🛡️',
           color: '#EF4444',
           conversationIds: ['conv-2'],
           documentIds: ['doc-2'],
           collaborators: ['user-1'],
-          status: 'active',
           createdAt: new Date(Date.now() - 86400000 * 20).toISOString(),
           updatedAt: new Date(Date.now() - 86400000).toISOString(),
         },
         {
           id: 'proj-3',
+          key: 'API',
           name: 'API Integration',
           description: 'REST API implementation and documentation',
           workspaceId: wsId || 'default',
+          ownerId: 'user-1',
+          owner: 'Rich',
+          ownerEmail: 'rich@aimate.nz',
+          status: 'Planning',
+          priority: 'Medium',
+          progressPercent: 20,
+          tags: ['api', 'dev'],
+          teamMembers: ['user-1'],
           icon: '⚡',
           color: '#3B82F6',
           conversationIds: [],
           documentIds: ['doc-3'],
           collaborators: ['user-1'],
-          status: 'planning',
           createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
           updatedAt: new Date(Date.now() - 3600000).toISOString(),
         },
@@ -91,15 +115,23 @@ export function useProjects(workspaceId?: string) {
     if (AppConfig.isOfflineMode()) {
       const newProject: ProjectDto = {
         id: `proj-${Date.now()}`,
+        key: data.key || `PROJ-${Date.now()}`,
         name: data.name,
         description: data.description,
         workspaceId: data.workspaceId || 'default',
+        ownerId: 'user-1',
+        owner: data.owner || 'User',
+        ownerEmail: data.ownerEmail || 'user@example.com',
+        status: data.status || 'Planning',
+        priority: data.priority || 'Medium',
+        progressPercent: data.progressPercent || 0,
+        tags: data.tags || [],
+        teamMembers: data.teamMembers || [],
         icon: data.icon || '📁',
         color: data.color || '#8B5CF6',
         conversationIds: [],
         documentIds: [],
         collaborators: [],
-        status: 'planning',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -122,11 +154,11 @@ export function useProjects(workspaceId?: string) {
   // ============================================================================
 
   const updateProject = useCallback(async (
-    projectId: string, 
+    projectId: string,
     updates: Partial<ProjectDto>
   ) => {
     // Optimistic update
-    setProjects(prev => prev.map(proj => 
+    setProjects(prev => prev.map(proj =>
       proj.id === projectId ? { ...proj, ...updates } : proj
     ));
 
@@ -170,8 +202,8 @@ export function useProjects(workspaceId?: string) {
 
   const addConversation = useCallback(async (projectId: string, conversationId: string) => {
     // Optimistic update
-    setProjects(prev => prev.map(proj => 
-      proj.id === projectId 
+    setProjects(prev => prev.map(proj =>
+      proj.id === projectId
         ? { ...proj, conversationIds: [...(proj.conversationIds || []), conversationId] }
         : proj
     ));
@@ -195,8 +227,8 @@ export function useProjects(workspaceId?: string) {
 
   const removeConversation = useCallback(async (projectId: string, conversationId: string) => {
     // Optimistic update
-    setProjects(prev => prev.map(proj => 
-      proj.id === projectId 
+    setProjects(prev => prev.map(proj =>
+      proj.id === projectId
         ? { ...proj, conversationIds: (proj.conversationIds || []).filter(id => id !== conversationId) }
         : proj
     ));
@@ -220,8 +252,8 @@ export function useProjects(workspaceId?: string) {
 
   const addDocument = useCallback(async (projectId: string, documentId: string) => {
     // Optimistic update
-    setProjects(prev => prev.map(proj => 
-      proj.id === projectId 
+    setProjects(prev => prev.map(proj =>
+      proj.id === projectId
         ? { ...proj, documentIds: [...(proj.documentIds || []), documentId] }
         : proj
     ));
@@ -245,8 +277,8 @@ export function useProjects(workspaceId?: string) {
 
   const addCollaborator = useCallback(async (projectId: string, userId: string) => {
     // Optimistic update
-    setProjects(prev => prev.map(proj => 
-      proj.id === projectId 
+    setProjects(prev => prev.map(proj =>
+      proj.id === projectId
         ? { ...proj, collaborators: [...(proj.collaborators || []), userId] }
         : proj
     ));
@@ -270,8 +302,8 @@ export function useProjects(workspaceId?: string) {
 
   const removeCollaborator = useCallback(async (projectId: string, userId: string) => {
     // Optimistic update
-    setProjects(prev => prev.map(proj => 
-      proj.id === projectId 
+    setProjects(prev => prev.map(proj =>
+      proj.id === projectId
         ? { ...proj, collaborators: (proj.collaborators || []).filter(id => id !== userId) }
         : proj
     ));
@@ -301,7 +333,7 @@ export function useProjects(workspaceId?: string) {
     projects,
     loading,
     error,
-    
+
     // Actions
     refresh: () => loadProjects(workspaceId),
     createProject,

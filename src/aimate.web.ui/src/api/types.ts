@@ -33,6 +33,28 @@ export interface PaginationParams {
 // AUTHENTICATION & API KEYS
 // ============================================================================
 
+export interface LoginRequest {
+  email?: string;
+  password?: string;
+  provider?: string;
+  token?: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: User;
+  refreshToken?: string;
+  expiresIn?: number;
+}
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  userTier: 'Free' | 'BYOK' | 'Developer' | 'Enterprise';
+  permissions?: string[];
+}
+
 export interface ApiKeyDto {
   id: string;
   userId: string;
@@ -44,6 +66,8 @@ export interface ApiKeyDto {
   requestsPerMinute: number;
   requestsPerDay: number;
 }
+
+export type ApiKey = ApiKeyDto;
 
 export interface CreateApiKeyDto {
   userId: string;
@@ -64,6 +88,44 @@ export interface ApiKeyResponseDto {
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
+}
+
+export type Message = ChatMessage;
+
+export interface MessageDto {
+  id: string;
+  conversationId: string;
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  model?: string;
+  createdAt: string;
+  updatedAt?: string;
+  metadata?: {
+    model?: string;
+    tokenCount?: number;
+    cost?: number;
+    [key: string]: any;
+  };
+  attachments?: Array<{ id: string; name: string; type: string; url: string }>;
+  structuredContent?: any;
+  feedback?: FeedbackDto;
+}
+
+export interface SendMessageDto {
+  conversationId?: string;
+  workspaceId?: string;
+  content: string;
+  model?: string;
+  parentMessageId?: string;
+  attachmentIds?: string[];
+  systemPrompt?: string;
+  stream?: boolean;
+}
+
+export interface UpdateMessageDto {
+  content?: string;
+  isLiked?: boolean;
 }
 
 export interface ChatCompletionRequest {
@@ -129,19 +191,29 @@ export interface WorkspaceDto {
   personality: string;
   createdAt: string;
   updatedAt: string;
+  icon?: string;
+  isDefault?: boolean;
+  color?: string;
+  conversationCount?: number;
 }
+
+export type Workspace = WorkspaceDto;
 
 export interface CreateWorkspaceDto {
   name: string;
   description?: string;
   type: 'Project' | 'Research' | 'Support' | 'Personal' | 'Other';
   personality?: string;
+  icon?: string;
+  color?: string;
 }
 
 export interface UpdateWorkspaceDto {
   name?: string;
   description?: string;
   personality?: string;
+  icon?: string;
+  color?: string;
 }
 
 export interface ConversationDto {
@@ -154,17 +226,25 @@ export interface ConversationDto {
   createdAt: string;
   updatedAt: string;
   messageCount: number;
+  lastMessageAt?: string;
+  tags?: string[];
 }
 
+export type Conversation = ConversationDto;
+
 export interface CreateConversationDto {
-  title: string;
+  title?: string;
+  workspaceId?: string;
+  tags?: string[];
+  modelId?: string;
 }
 
 export interface UpdateConversationDto {
   title?: string;
-  modelId?: string;
+  modelId?: string | null;
   isPinned?: boolean;
   isArchived?: boolean;
+  tags?: string[];
 }
 
 // ============================================================================
@@ -286,8 +366,11 @@ export interface KnowledgeAnalyticsDto {
 
 export interface SemanticSearchRequest {
   query: string;
+  workspaceId?: string;
   limit?: number;
   threshold?: number;
+  minScore?: number;
+  filters?: Record<string, any>;
 }
 
 export interface SemanticSearchResult {
@@ -302,6 +385,26 @@ export interface SemanticSearchResponse {
   results: SemanticSearchResult[];
   totalResults: number;
   queryTime: number;
+}
+
+export interface KnowledgeDocumentDto {
+  id: string;
+  workspaceId: string;
+  title: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  status: 'processing' | 'ready' | 'error';
+  chunkCount: number;
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UploadDocumentDto {
+  file: File;
+  workspaceId: string;
+  tags?: string[];
 }
 
 // ============================================================================
@@ -354,6 +457,7 @@ export interface UpdateNoteDto {
 
 export interface ProjectDto {
   id: string;
+  workspaceId: string;
   key: string;
   name: string;
   description?: string;
@@ -371,6 +475,11 @@ export interface ProjectDto {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  conversationIds?: string[];
+  documentIds?: string[];
+  collaborators?: string[];
+  icon?: string;
+  color?: string;
 }
 
 export interface CreateProjectDto {
@@ -388,6 +497,9 @@ export interface CreateProjectDto {
   tags?: string[];
   teamMembers?: string[];
   notes?: string;
+  workspaceId?: string;
+  icon?: string;
+  color?: string;
 }
 
 export interface UpdateProjectDto {
@@ -402,6 +514,9 @@ export interface UpdateProjectDto {
   tags?: string[];
   teamMembers?: string[];
   notes?: string;
+  conversationIds?: string[];
+  documentIds?: string[];
+  collaborators?: string[];
 }
 
 // ============================================================================
@@ -498,6 +613,8 @@ export interface ModelDto {
   color?: string;
 }
 
+export type ModelOption = ModelDto;
+
 export interface McpServerDto {
   id: string;
   name: string;
@@ -507,6 +624,7 @@ export interface McpServerDto {
   lastConnected?: string;
   tools: string[];
   version: string;
+  enabled?: boolean;
 }
 
 export interface LogEntryDto {
@@ -532,6 +650,7 @@ export interface FileDto {
   uploadedAt: string;
   uploadedBy: string;
   updatedAt?: string;
+  name?: string; // Alias for fileName
 }
 
 export interface FileUploadResponse {
@@ -585,6 +704,7 @@ export interface KnowledgeSearchResult {
   id: string;
   title: string;
   content?: string;
+  score?: number;
 }
 
 export interface GlobalSearchResultDto {
@@ -711,6 +831,7 @@ export interface ConnectionDto {
   lastUsed?: string;
   models: string[];
   updatedAt?: string;
+  enabled?: boolean;
 }
 
 export interface CreateConnectionDto {
@@ -794,3 +915,4 @@ export interface ParseStructuredContentResponse {
   success: boolean;
   parsed: Record<string, any>;
 }
+

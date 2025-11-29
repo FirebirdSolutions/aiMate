@@ -17,7 +17,7 @@ import { ScrollArea } from "./components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTitle } from "./components/ui/sheet";
 import { Sparkles } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,13 +34,13 @@ function ChatApp() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>("gpt-4-turbo");
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  
+
   const { addLog } = useDebug();
   const scrollRef = useRef<HTMLDivElement>(null);
-  
+
   // Get all our data from context
   const { chat, conversations, workspaces, admin } = useAppData();
-  
+
   // Load messages when conversation changes
   useEffect(() => {
     if (activeConversationId) {
@@ -54,7 +54,7 @@ function ChatApp() {
       });
     }
   }, [activeConversationId, chat.loadMessages, addLog]);
-  
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
@@ -84,17 +84,18 @@ function ChatApp() {
         title: "New Conversation",
         workspaceId: workspaces.currentWorkspace?.id,
       });
-      
+
       setActiveConversationId(newConv.id);
       setMobileSidebarOpen(false);
-      
+
       addLog({
         action: 'New conversation created',
         api: 'api/v1/conversations',
         payload: { conversationId: newConv.id },
-        type: 'success'
+        type: 'success',
+        category: 'chat:conversation'
       });
-      
+
       toast.success("New conversation created");
     } catch (err) {
       console.error('Failed to create conversation:', err);
@@ -105,7 +106,7 @@ function ChatApp() {
   const handleSendMessage = async (content: string) => {
     // Determine which conversation to use
     let targetConversationId = activeConversationId;
-    
+
     if (!targetConversationId) {
       // Create new conversation first
       try {
@@ -126,7 +127,8 @@ function ChatApp() {
         action: 'Sending message',
         api: 'api/v1/chat/send',
         payload: { message: content, conversationId: targetConversationId, model: selectedModel },
-        type: 'info'
+        type: 'info',
+        category: 'chat:message'
       });
 
       await chat.sendMessage(content, {
@@ -138,9 +140,10 @@ function ChatApp() {
       addLog({
         action: 'Message sent successfully',
         api: 'api/v1/chat/send',
-        type: 'success'
+        type: 'success',
+        category: 'chat:message'
       });
-      
+
       // Update conversation title if this is the first message
       const conv = conversations.conversations.find(c => c.id === targetConversationId);
       if (conv && conv.messageCount === 0) {
@@ -155,7 +158,8 @@ function ChatApp() {
           action: 'Failed to send message',
           api: 'api/v1/chat/send',
           payload: { error: String(err) },
-          type: 'error'
+          type: 'error',
+          category: 'chat:message'
         });
         toast.error("Failed to send message");
       }
@@ -166,7 +170,7 @@ function ChatApp() {
     try {
       await chat.editMessage(messageId, newContent);
       toast.success("Message updated");
-      
+
       // Regenerate response after editing
       setTimeout(() => {
         handleRegenerateResponse();
@@ -179,7 +183,7 @@ function ChatApp() {
 
   const handleRegenerateResponse = async () => {
     if (!chat.messages.length) return;
-    
+
     // Find the last assistant message
     const lastAssistantMsg = [...chat.messages].reverse().find(m => m.role === 'assistant');
     if (!lastAssistantMsg) return;
@@ -189,11 +193,12 @@ function ChatApp() {
         action: 'Regenerating response',
         api: 'api/v1/chat/regenerate',
         payload: { messageId: lastAssistantMsg.id },
-        type: 'info'
+        type: 'info',
+        category: 'chat:regenerate'
       });
 
       await chat.regenerateMessage(lastAssistantMsg.id);
-      
+
       toast.success("Response regenerated");
     } catch (err) {
       console.error('Failed to regenerate:', err);
@@ -204,19 +209,20 @@ function ChatApp() {
   const handleDeleteConversation = async (id: string) => {
     try {
       await conversations.deleteConversation(id);
-      
+
       if (activeConversationId === id) {
         const remaining = conversations.conversations.filter(c => c.id !== id);
         setActiveConversationId(remaining.length > 0 ? remaining[0].id : null);
       }
-      
+
       addLog({
         action: 'Conversation deleted',
         api: 'api/v1/conversations',
         payload: { conversationId: id },
-        type: 'warning'
+        type: 'warning',
+        category: 'chat:conversation'
       });
-      
+
       toast.success("Conversation deleted");
     } catch (err) {
       console.error('Failed to delete conversation:', err);
@@ -238,22 +244,23 @@ function ChatApp() {
     try {
       const conv = conversations.conversations.find(c => c.id === id);
       if (!conv) return;
-      
+
       const cloned = await conversations.createConversation({
         title: `${conv.title} (Copy)`,
         workspaceId: conv.workspaceId,
         tags: conv.tags,
       });
-      
+
       setActiveConversationId(cloned.id);
-      
+
       addLog({
         action: 'Conversation cloned',
         api: 'api/v1/conversations',
         payload: { originalId: id, clonedId: cloned.id },
-        type: 'success'
+        type: 'success',
+        category: 'chat:conversation'
       });
-      
+
       toast.success("Conversation duplicated");
     } catch (err) {
       console.error('Failed to clone conversation:', err);
@@ -289,7 +296,7 @@ function ChatApp() {
 
   const handleToggleModel = async (modelId: string) => {
     if (!admin) return;
-    
+
     try {
       await admin.toggleModel(modelId);
       toast.success("Model status updated");
@@ -365,6 +372,7 @@ function ChatApp() {
             provider: m.provider,
             contextWindow: m.contextWindow,
             capabilities: m.capabilities,
+            color: '#888888', // Default color
           }))}
         />
 
@@ -375,26 +383,26 @@ function ChatApp() {
             ) : (
               <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
                 {chat.messages.map((message, index) => (
-                    <ChatMessage
-                      key={message.id}
-                      role={message.role}
-                      content={message.content}
-                      timestamp={message.timestamp}
-                      structuredContent={message.structuredContent}
-                      onEdit={
-                        message.role === "user"
-                          ? (newContent) => handleEditMessage(message.id, newContent)
-                          : undefined
-                      }
-                      onRegenerate={
-                        message.role === "assistant" &&
+                  <ChatMessage
+                    key={message.id}
+                    role={message.role}
+                    content={message.content}
+                    timestamp={message.timestamp}
+                    structuredContent={message.structuredContent}
+                    onEdit={
+                      message.role === "user"
+                        ? (newContent) => handleEditMessage(message.id, newContent)
+                        : undefined
+                    }
+                    onRegenerate={
+                      message.role === "assistant" &&
                         index === chat.messages.length - 1 &&
                         !chat.streaming
-                          ? handleRegenerateResponse
-                          : undefined
-                      }
-                    />
-                  ))}
+                        ? handleRegenerateResponse
+                        : undefined
+                    }
+                  />
+                ))}
 
                 {chat.streaming && (
                   <div className="flex gap-3 items-center">
@@ -421,7 +429,7 @@ function ChatApp() {
           onSend={handleSendMessage}
           disabled={chat.streaming}
         />
-        
+
         <DebugPanel />
       </div>
 

@@ -3,7 +3,7 @@ import { Upload, Trash2, FileText, Download, Eye } from "lucide-react";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { useDebug } from "./DebugContext";
 import { getFiles } from "../utils/api-stubs";
 import { BaseModal } from "./BaseModal";
@@ -48,6 +48,7 @@ export function FilesModal({ open, onOpenChange }: FilesModalProps) {
       }));
       setFiles(formattedFiles);
       addLog({
+        category: 'files:modal',
         action: 'Loaded Files',
         api: response.metadata?.endpoint || '/api/v1/GetFiles',
         payload: response.data,

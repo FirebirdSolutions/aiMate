@@ -16,9 +16,9 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user] = useState<User | null>({
     id: '1',
+    username: 'rich',
     email: 'rich@example.com',
-    name: 'rich',
-    role: 'admin',
+    userTier: 'Developer',
     permissions: ['all'],
   });
   const [isLoading] = useState(false);

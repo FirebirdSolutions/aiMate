@@ -34,13 +34,15 @@ export function useWorkspaces() {
       }
 
       console.log('[useWorkspaces] Loading workspaces...');
-      
+
       // Use mock workspaces in offline mode
       const mockWorkspaces: WorkspaceDto[] = [
         {
           id: 'ws-default',
           name: 'Personal',
           description: 'My personal workspace',
+          type: 'Personal',
+          personality: 'friendly',
           icon: '🏠',
           color: '#8B5CF6',
           isDefault: true,
@@ -52,6 +54,8 @@ export function useWorkspaces() {
           id: 'ws-work',
           name: 'Work',
           description: 'Professional projects and tasks',
+          type: 'Project',
+          personality: 'professional',
           icon: '💼',
           color: '#3B82F6',
           isDefault: false,
@@ -63,6 +67,8 @@ export function useWorkspaces() {
           id: 'ws-research',
           name: 'Research',
           description: 'Research and learning',
+          type: 'Research',
+          personality: 'analytical',
           icon: '🔬',
           color: '#10B981',
           isDefault: false,
@@ -74,6 +80,8 @@ export function useWorkspaces() {
           id: 'ws-aimate',
           name: 'aiMate Development',
           description: 'Building aiMate.nz',
+          type: 'Project',
+          personality: 'creative',
           icon: '🚀',
           color: '#F59E0B',
           isDefault: false,
@@ -94,14 +102,14 @@ export function useWorkspaces() {
       setLoading(true);
       const data = await workspacesService.getWorkspaces();
       setWorkspaces(data);
-      
+
       // Set default workspace as current if none selected
       const defaultWs = data.find(ws => ws.isDefault) || data[0];
       setCurrentWorkspace(prev => {
         // Only set if no current workspace exists
         return prev || defaultWs || null;
       });
-      
+
       setError(null);
       isInitializedRef.current = true;
       globalWorkspacesInitialized = true;
@@ -124,6 +132,8 @@ export function useWorkspaces() {
         id: `ws-${Date.now()}`,
         name: data.name,
         description: data.description,
+        type: data.type,
+        personality: data.personality || 'friendly',
         icon: data.icon || '📁',
         color: data.color || '#8B5CF6',
         isDefault: false,
@@ -150,15 +160,15 @@ export function useWorkspaces() {
   // ============================================================================
 
   const updateWorkspace = useCallback(async (
-    workspaceId: string, 
+    workspaceId: string,
     updates: Partial<WorkspaceDto>
   ) => {
     // Optimistic update
-    setWorkspaces(prev => prev.map(ws => 
+    setWorkspaces(prev => prev.map(ws =>
       ws.id === workspaceId ? { ...ws, ...updates } : ws
     ));
-    
-    setCurrentWorkspace(prev => 
+
+    setCurrentWorkspace(prev =>
       prev?.id === workspaceId ? { ...prev, ...updates } : prev
     );
 
@@ -186,7 +196,7 @@ export function useWorkspaces() {
       const filtered = prev.filter(ws => ws.id !== workspaceId);
       return filtered;
     });
-    
+
     // Switch to default workspace if deleting current
     setCurrentWorkspace(prev => {
       if (prev?.id === workspaceId) {
@@ -195,7 +205,7 @@ export function useWorkspaces() {
       }
       return prev;
     });
-    
+
     if (deletedWorkspaceWasCurrent) {
       setWorkspaces(prev => {
         const defaultWs = prev.find(ws => ws.isDefault);
@@ -228,7 +238,7 @@ export function useWorkspaces() {
       const workspace = prev.find(ws => ws.id === workspaceId);
       if (workspace) {
         setCurrentWorkspace(workspace);
-        
+
         // Store in localStorage for persistence
         try {
           localStorage.setItem('aiMate:currentWorkspace', workspaceId);
@@ -272,7 +282,7 @@ export function useWorkspaces() {
       setWorkspaces(prev => {
         const original = prev.find(ws => ws.id === workspaceId);
         if (!original) return prev;
-        
+
         duplicate = {
           ...original,
           id: `ws-${Date.now()}`,
@@ -320,7 +330,7 @@ export function useWorkspaces() {
       } catch (err) {
         console.error('[useWorkspaces] Failed to restore workspace:', err);
       }
-      
+
       // Fallback to default workspace
       const defaultWs = workspaces.find(ws => ws.isDefault) || workspaces[0];
       setCurrentWorkspace(defaultWs);
@@ -341,7 +351,7 @@ export function useWorkspaces() {
     currentWorkspace,
     loading,
     error,
-    
+
     // Actions
     refresh: loadWorkspaces,
     createWorkspace,

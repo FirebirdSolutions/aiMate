@@ -24,32 +24,38 @@ export function useKnowledge(workspaceId?: string) {
       const mockDocs: KnowledgeDocumentDto[] = [
         {
           id: 'doc-1',
-          name: 'aiMate Safety Protocol.pdf',
-          type: 'pdf',
-          size: 245678,
-          uploadedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-          status: 'processed',
+          title: 'aiMate Safety Protocol',
+          fileName: 'aiMate Safety Protocol.pdf',
+          fileType: 'pdf',
+          fileSize: 245678,
+          createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+          updatedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+          status: 'ready',
           chunkCount: 45,
           workspaceId: wsId || 'default',
           tags: ['safety', 'protocol'],
         },
         {
           id: 'doc-2',
-          name: 'NZ Crisis Resources.docx',
-          type: 'docx',
-          size: 89234,
-          uploadedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-          status: 'processed',
+          title: 'NZ Crisis Resources',
+          fileName: 'NZ Crisis Resources.docx',
+          fileType: 'docx',
+          fileSize: 89234,
+          createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+          updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+          status: 'ready',
           chunkCount: 28,
           workspaceId: wsId || 'default',
           tags: ['crisis', 'resources', 'nz'],
         },
         {
           id: 'doc-3',
-          name: 'API Documentation.md',
-          type: 'markdown',
-          size: 34567,
-          uploadedAt: new Date(Date.now() - 86400000).toISOString(),
+          title: 'API Documentation',
+          fileName: 'API Documentation.md',
+          fileType: 'markdown',
+          fileSize: 34567,
+          createdAt: new Date(Date.now() - 86400000).toISOString(),
+          updatedAt: new Date(Date.now() - 86400000).toISOString(),
           status: 'processing',
           chunkCount: 0,
           workspaceId: wsId || 'default',
@@ -83,26 +89,28 @@ export function useKnowledge(workspaceId?: string) {
     if (AppConfig.isOfflineMode()) {
       const mockDoc: KnowledgeDocumentDto = {
         id: `doc-${Date.now()}`,
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        uploadedAt: new Date().toISOString(),
+        title: file.name,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         status: 'processing',
         chunkCount: 0,
         workspaceId: workspaceId || 'default',
         tags: data?.tags || [],
       };
       setDocuments(prev => [mockDoc, ...prev]);
-      
+
       // Simulate processing
       setTimeout(() => {
-        setDocuments(prev => prev.map(doc => 
-          doc.id === mockDoc.id 
-            ? { ...doc, status: 'processed', chunkCount: Math.floor(Math.random() * 50) + 10 }
+        setDocuments(prev => prev.map(doc =>
+          doc.id === mockDoc.id
+            ? { ...doc, status: 'ready', chunkCount: Math.floor(Math.random() * 50) + 10 }
             : doc
         ));
       }, 3000);
-      
+
       return mockDoc;
     }
 
@@ -110,7 +118,7 @@ export function useKnowledge(workspaceId?: string) {
       setUploading(true);
       const doc = await knowledgeService.uploadDocument(file, {
         workspaceId: workspaceId,
-        ...data,
+        tags: data?.tags,
       });
       setDocuments(prev => [doc, ...prev]);
       return doc;
@@ -148,11 +156,11 @@ export function useKnowledge(workspaceId?: string) {
   // ============================================================================
 
   const updateDocument = useCallback(async (
-    documentId: string, 
+    documentId: string,
     updates: Partial<KnowledgeDocumentDto>
   ) => {
     // Optimistic update
-    setDocuments(prev => prev.map(doc => 
+    setDocuments(prev => prev.map(doc =>
       doc.id === documentId ? { ...doc, ...updates } : doc
     ));
 
@@ -175,8 +183,8 @@ export function useKnowledge(workspaceId?: string) {
 
   const searchDocuments = useCallback(async (query: string) => {
     if (AppConfig.isOfflineMode()) {
-      return documents.filter(doc => 
-        doc.name.toLowerCase().includes(query.toLowerCase()) ||
+      return documents.filter(doc =>
+        doc.fileName.toLowerCase().includes(query.toLowerCase()) ||
         doc.tags?.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
       );
     }
@@ -196,23 +204,20 @@ export function useKnowledge(workspaceId?: string) {
   const semanticSearch = useCallback(async (query: string, limit: number = 10) => {
     if (AppConfig.isOfflineMode()) {
       return {
-        query,
         results: documents.slice(0, limit).map(doc => ({
-          document: doc,
-          relevanceScore: Math.random(),
-          chunks: [
-            {
-              id: `chunk-${doc.id}-1`,
-              content: `Sample content from ${doc.name}...`,
-              pageNumber: 1,
-            }
-          ],
+          id: `res-${doc.id}`,
+          title: doc.title,
+          content: `Sample content from ${doc.fileName}...`,
+          score: Math.random(),
+          relevance: 'high' as const,
         })),
+        totalResults: documents.length,
+        queryTime: 100,
       };
     }
 
     try {
-      return await knowledgeService.semanticSearch(query, workspaceId, limit);
+      return await knowledgeService.semanticSearch({ query, workspaceId, limit });
     } catch (err) {
       console.error('[useKnowledge] Failed to perform semantic search:', err);
       throw err;
@@ -225,14 +230,14 @@ export function useKnowledge(workspaceId?: string) {
 
   const reprocessDocument = useCallback(async (documentId: string) => {
     // Optimistic update
-    setDocuments(prev => prev.map(doc => 
+    setDocuments(prev => prev.map(doc =>
       doc.id === documentId ? { ...doc, status: 'processing' } : doc
     ));
 
     if (AppConfig.isOfflineMode()) {
       setTimeout(() => {
-        setDocuments(prev => prev.map(doc => 
-          doc.id === documentId ? { ...doc, status: 'processed' } : doc
+        setDocuments(prev => prev.map(doc =>
+          doc.id === documentId ? { ...doc, status: 'ready' } : doc
         ));
       }, 2000);
       return;
@@ -283,7 +288,7 @@ export function useKnowledge(workspaceId?: string) {
     loading,
     uploading,
     error,
-    
+
     // Actions
     refresh: () => loadDocuments(workspaceId),
     uploadDocument,

@@ -29,25 +29,26 @@ export function useFiles() {
       // Simulate upload in offline mode
       setUploading(true);
       setUploadProgress(0);
-      
+
       const mockFile: FileDto = {
         id: `file-${Date.now()}`,
         name: file.name,
-        type: file.type,
-        size: file.size,
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
         url: URL.createObjectURL(file),
         uploadedAt: new Date().toISOString(),
-        conversationId: options?.conversationId,
-        workspaceId: options?.workspaceId,
+        uploadedBy: 'user',
+        workspaceId: options?.workspaceId || 'default',
       };
-      
+
       // Simulate progress
       for (let i = 0; i <= 100; i += 10) {
         await new Promise(resolve => setTimeout(resolve, 100));
         setUploadProgress(i);
         options?.onProgress?.(i);
       }
-      
+
       setUploading(false);
       setUploadProgress(0);
       return mockFile;
@@ -57,19 +58,17 @@ export function useFiles() {
       setUploading(true);
       setUploadProgress(0);
       setError(null);
-      
+
       const uploadedFile = await filesService.uploadFile(
+        options?.workspaceId || 'default',
         file,
-        {
-          conversationId: options?.conversationId,
-          workspaceId: options?.workspaceId,
-        },
+        undefined,
         (progress) => {
           setUploadProgress(progress);
           options?.onProgress?.(progress);
         }
       );
-      
+
       return uploadedFile;
     } catch (err) {
       console.error('[useFiles] Failed to upload file:', err);
@@ -94,7 +93,7 @@ export function useFiles() {
     }
   ) => {
     const uploadedFiles: FileDto[] = [];
-    
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       try {
@@ -108,7 +107,7 @@ export function useFiles() {
         // Continue with other files
       }
     }
-    
+
     return uploadedFiles;
   }, [uploadFile]);
 
@@ -116,13 +115,13 @@ export function useFiles() {
   // DELETE FILE
   // ============================================================================
 
-  const deleteFile = useCallback(async (fileId: string) => {
+  const deleteFile = useCallback(async (fileId: string, workspaceId: string = 'default') => {
     if (AppConfig.isOfflineMode()) {
       return;
     }
 
     try {
-      await filesService.deleteFile(fileId);
+      await filesService.deleteFile(workspaceId, fileId);
     } catch (err) {
       console.error('[useFiles] Failed to delete file:', err);
       throw err;
@@ -133,13 +132,13 @@ export function useFiles() {
   // GET FILE URL
   // ============================================================================
 
-  const getFileUrl = useCallback(async (fileId: string) => {
+  const getFileUrl = useCallback(async (fileId: string, workspaceId: string = 'default') => {
     if (AppConfig.isOfflineMode()) {
       return `https://mock-file-url.aimate.nz/${fileId}`;
     }
 
     try {
-      return await filesService.getFileUrl(fileId);
+      return await filesService.getFileUrl(workspaceId, fileId);
     } catch (err) {
       console.error('[useFiles] Failed to get file URL:', err);
       throw err;
@@ -150,13 +149,13 @@ export function useFiles() {
   // DOWNLOAD FILE
   // ============================================================================
 
-  const downloadFile = useCallback(async (fileId: string, filename?: string) => {
+  const downloadFile = useCallback(async (fileId: string, workspaceId: string = 'default', filename?: string) => {
     if (AppConfig.isOfflineMode()) {
       throw new Error('Cannot download files in offline mode');
     }
 
     try {
-      const blob = await filesService.downloadFile(fileId);
+      const blob = await filesService.downloadFile(workspaceId, fileId);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -185,13 +184,13 @@ export function useFiles() {
     if (AppConfig.isOfflineMode()) {
       const mockFile: FileDto = {
         id: `file-${Date.now()}`,
-        name: url.split('/').pop() || 'image.jpg',
-        type: 'image/jpeg',
-        size: 0,
+        fileName: url.split('/').pop() || 'image.jpg',
+        fileType: 'image/jpeg',
+        fileSize: 0,
         url: url,
         uploadedAt: new Date().toISOString(),
-        conversationId: options?.conversationId,
-        workspaceId: options?.workspaceId,
+        uploadedBy: 'user',
+        workspaceId: options?.workspaceId || 'default',
       };
       return mockFile;
     }
@@ -249,7 +248,7 @@ export function useFiles() {
     uploading,
     uploadProgress,
     error,
-    
+
     // Actions
     uploadFile,
     uploadFiles,

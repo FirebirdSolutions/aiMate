@@ -214,6 +214,7 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
     setLoading(false);
     
     addLog({
+      category: 'knowledge:modal',
       action: 'Loaded Knowledge',
       api: '/api/v1/knowledge',
       payload: mockItems,

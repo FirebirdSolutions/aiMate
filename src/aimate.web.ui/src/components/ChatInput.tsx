@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Switch } from "./ui/switch";
 import { Separator } from "./ui/separator";
 import { useDebug, useUIEventLogger } from "./DebugContext";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { KnowledgeSuggestions } from "./KnowledgeSuggestions";
 import { AttachedContext } from "./AttachedContext";
 
@@ -50,7 +50,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [attachedFiles, setAttachedFiles] = useState<string[]>([]);
   const [attachedChats, setAttachedChats] = useState<string[]>([]);
   const [attachedWebpages, setAttachedWebpages] = useState<string[]>([]);
-  
+
   // Data from API stubs
   const [notes, setNotes] = useState<any[]>([]);
   const [knowledge, setKnowledge] = useState<any[]>([]);
@@ -58,7 +58,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [chats, setChats] = useState<any[]>([]);
   const [webpages, setWebpages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   const [enabledTools, setEnabledTools] = useState({
     webSearch: false,
     codeInterpreter: true,
@@ -83,6 +83,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       logUIEvent('Message sent', 'ui:chat:send', { messageLength: message.trim().length, hasAttachments: attachedItems.length > 0 });
       // Log the send event
       addLog({
+        category: 'chat:input',
         action: 'Message Sent',
         api: '/api/v1/SendMessage',
         payload: { message: message.trim(), timestamp: new Date().toISOString() },
@@ -141,7 +142,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     ];
     setNotes(mockNotes);
     addLog({
-      action: 'Loaded Notes',
+        category: 'chat:input',
+        action: 'Loaded Notes',
       api: '/api/v1/notes',
       payload: mockNotes,
       type: 'success'
@@ -159,7 +161,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     ];
     setKnowledge(mockKnowledge);
     addLog({
-      action: 'Loaded Knowledge',
+        category: 'chat:input',
+        action: 'Loaded Knowledge',
       api: '/api/v1/knowledge',
       payload: mockKnowledge,
       type: 'success'
@@ -177,7 +180,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     ];
     setFiles(mockFiles);
     addLog({
-      action: 'Loaded Files',
+        category: 'chat:input',
+        action: 'Loaded Files',
       api: '/api/v1/files',
       payload: mockFiles,
       type: 'success'
@@ -195,7 +199,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     ];
     setChats(mockChats);
     addLog({
-      action: 'Loaded Chats',
+        category: 'chat:input',
+        action: 'Loaded Chats',
       api: '/api/v1/conversations',
       payload: mockChats,
       type: 'success'
@@ -207,7 +212,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     setAttachedNotes((prev) => [...prev, noteId]);
     toast.success("Note attached to chat context");
     addLog({
-      action: 'Attached Note',
+        category: 'chat:input',
+        action: 'Attached Note',
       api: '/api/v1/attachments/note',
       payload: { noteId },
       type: 'success'
@@ -220,7 +226,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     setAttachedKnowledge((prev) => [...prev, knowledgeId]);
     toast.success("Knowledge attached to chat context");
     addLog({
-      action: 'Attached Knowledge',
+        category: 'chat:input',
+        action: 'Attached Knowledge',
       api: '/api/v1/attachments/knowledge',
       payload: { knowledgeId },
       type: 'success'
@@ -233,7 +240,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     setAttachedFiles((prev) => [...prev, fileId]);
     toast.success("File attached to chat context");
     addLog({
-      action: 'Attached File',
+        category: 'chat:input',
+        action: 'Attached File',
       api: '/api/v1/attachments/file',
       payload: { fileId },
       type: 'success'
@@ -246,7 +254,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     setAttachedChats((prev) => [...prev, chatId]);
     toast.success("Chat referenced in context");
     addLog({
-      action: 'Referenced Chat',
+        category: 'chat:input',
+        action: 'Referenced Chat',
       api: '/api/v1/attachments/chat',
       payload: { chatId },
       type: 'success'
@@ -260,7 +269,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       // Mock webpage attachment
       const webpageId = `webpage-${Date.now()}`;
       setAttachedWebpages((prev) => [...prev, webpageId]);
-      
+
       // Add to webpages list for display
       setWebpages((prev) => [...prev, {
         id: webpageId,
@@ -268,9 +277,10 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         url: webpageUrl,
         description: ""
       }]);
-      
+
       toast.success("Webpage attached successfully!");
       addLog({
+        category: 'chat:input',
         action: 'Attached Webpage',
         api: '/api/v1/attachments/webpage',
         payload: { url: webpageUrl },
@@ -307,12 +317,12 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     setIsDragging(false);
 
     const droppedFiles = Array.from(e.dataTransfer.files);
-    
+
     if (droppedFiles.length > 0) {
       const newItems: AttachedItem[] = droppedFiles.map((file) => {
         const isImage = file.type.startsWith("image/");
         const isDoc = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"].includes(file.type);
-        
+
         return {
           id: `${Date.now()}-${file.name}`,
           name: file.name,
@@ -324,8 +334,9 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 
       setAttachedItems((prev) => [...prev, ...newItems]);
       toast.success(`${droppedFiles.length} file(s) attached`);
-      
+
       addLog({
+        category: 'chat:input',
         action: 'Files Dropped',
         api: '/api/v1/DropFiles',
         payload: { fileCount: droppedFiles.length, files: newItems },
@@ -390,7 +401,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
               Configure your weather forecast preferences
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-6 py-4">
             {/* Unit of Measure */}
             <div className="space-y-2">
@@ -431,7 +442,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             {/* Display Options */}
             <div className="space-y-4">
               <Label>Display Options</Label>
-              
+
               <div className="flex items-center justify-between">
                 <span className="text-sm">Show Temperature</span>
                 <Switch
@@ -566,8 +577,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         >
           <div className="flex items-center gap-1 pl-1 shrink-0">
             {/* Attach Menu */}
-            <Popover 
-              open={attachMenuOpen} 
+            <Popover
+              open={attachMenuOpen}
               onOpenChange={setAttachMenuOpen}
               modal={false}
             >
@@ -581,9 +592,9 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                   <Plus className="h-5 w-5" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent 
-                className="w-64 p-2" 
-                align="start" 
+              <PopoverContent
+                className="w-64 p-2"
+                align="start"
                 side="top"
                 onInteractOutside={(e) => showcaseMode && e.preventDefault()}
               >
@@ -642,7 +653,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                     <Camera className="h-4 w-4" />
                     <span>Capture</span>
                   </button>
-                  
+
                   {/* Attach Webpage with Flyout */}
                   <Popover open={webpageMenuOpen} onOpenChange={setWebpageMenuOpen}>
                     <PopoverTrigger asChild>
@@ -684,7 +695,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                       </div>
                     </PopoverContent>
                   </Popover>
-                  
+
                   {/* Attach Notes with Flyout */}
                   <Popover open={notesMenuOpen} onOpenChange={setNotesMenuOpen}>
                     <PopoverTrigger asChild>
@@ -846,94 +857,94 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                   </div>
                 </Button>
               </PopoverTrigger>
-                <PopoverContent
-                  side="top"
-                  align="start"
-                  className="w-80 p-2 bg-gray-900 dark:bg-gray-900 text-white border-gray-700"
-                  onInteractOutside={(e) => showcaseMode && e.preventDefault()}
-                >
-                  <div className="space-y-1">
-                    {/* Web Search */}
-                    <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Search className="h-4 w-4" />
-                        <span className="text-sm">Web Search</span>
-                      </div>
-                      <Switch
-                        checked={enabledTools.webSearch}
-                        onCheckedChange={() => toggleTool("webSearch")}
-                        className="data-[state=checked]:bg-purple-600"
-                      />
+              <PopoverContent
+                side="top"
+                align="start"
+                className="w-80 p-2 bg-gray-900 dark:bg-gray-900 text-white border-gray-700"
+                onInteractOutside={(e) => showcaseMode && e.preventDefault()}
+              >
+                <div className="space-y-1">
+                  {/* Web Search */}
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Search className="h-4 w-4" />
+                      <span className="text-sm">Web Search</span>
                     </div>
+                    <Switch
+                      checked={enabledTools.webSearch}
+                      onCheckedChange={() => toggleTool("webSearch")}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                  </div>
 
-                    {/* Code Interpreter */}
-                    <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Code className="h-4 w-4" />
-                        <span className="text-sm">Code Interpreter</span>
-                      </div>
-                      <Switch
-                        checked={enabledTools.codeInterpreter}
-                        onCheckedChange={() => toggleTool("codeInterpreter")}
-                        className="data-[state=checked]:bg-purple-600"
-                      />
+                  {/* Code Interpreter */}
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Code className="h-4 w-4" />
+                      <span className="text-sm">Code Interpreter</span>
                     </div>
+                    <Switch
+                      checked={enabledTools.codeInterpreter}
+                      onCheckedChange={() => toggleTool("codeInterpreter")}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                  </div>
 
-                    {/* Supreme File Management */}
-                    <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Wrench className="h-4 w-4" />
-                        <span className="text-sm">Supreme File Management</span>
-                      </div>
-                      <Switch
-                        checked={enabledTools.fileManagement}
-                        onCheckedChange={() => toggleTool("fileManagement")}
-                        className="data-[state=checked]:bg-purple-600"
-                      />
+                  {/* Supreme File Management */}
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Wrench className="h-4 w-4" />
+                      <span className="text-sm">Supreme File Management</span>
                     </div>
+                    <Switch
+                      checked={enabledTools.fileManagement}
+                      onCheckedChange={() => toggleTool("fileManagement")}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                  </div>
 
-                    {/* Weather Forecast */}
-                    <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
-                      <div className="flex items-center gap-3 flex-1">
-                        <CloudSun className="h-4 w-4" />
-                        <span className="text-sm">Weather Forecast</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 hover:bg-gray-700"
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setWeatherModalOpen(true);
-                          }}
-                        >
-                          <Settings2 className="h-3.5 w-3.5" />
-                        </Button>
-                        <Switch
-                          checked={enabledTools.weatherForecast}
-                          onCheckedChange={() => toggleTool("weatherForecast")}
-                          className="data-[state=checked]:bg-purple-600"
-                        />
-                      </div>
+                  {/* Weather Forecast */}
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
+                    <div className="flex items-center gap-3 flex-1">
+                      <CloudSun className="h-4 w-4" />
+                      <span className="text-sm">Weather Forecast</span>
                     </div>
-
-                    {/* EchoMCP */}
-                    <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <Wrench className="h-4 w-4" />
-                        <span className="text-sm">EchoMCP</span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 hover:bg-gray-700"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setWeatherModalOpen(true);
+                        }}
+                      >
+                        <Settings2 className="h-3.5 w-3.5" />
+                      </Button>
                       <Switch
-                        checked={enabledTools.echoMCP}
-                        onCheckedChange={() => toggleTool("echoMCP")}
+                        checked={enabledTools.weatherForecast}
+                        onCheckedChange={() => toggleTool("weatherForecast")}
                         className="data-[state=checked]:bg-purple-600"
                       />
                     </div>
                   </div>
-                </PopoverContent>
-              </Popover>
+
+                  {/* EchoMCP */}
+                  <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <Wrench className="h-4 w-4" />
+                      <span className="text-sm">EchoMCP</span>
+                    </div>
+                    <Switch
+                      checked={enabledTools.echoMCP}
+                      onCheckedChange={() => toggleTool("echoMCP")}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <Textarea

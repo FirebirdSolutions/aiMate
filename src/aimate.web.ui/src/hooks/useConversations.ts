@@ -45,6 +45,8 @@ export function useConversations(workspaceId?: string) {
           lastMessageAt: new Date(Date.now() - 3600000).toISOString(),
           messageCount: 24,
           isPinned: true,
+          isArchived: false,
+          modelId: 'gpt-4',
           tags: ['development', 'planning'],
           createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
           updatedAt: new Date(Date.now() - 3600000).toISOString(),
@@ -56,6 +58,8 @@ export function useConversations(workspaceId?: string) {
           lastMessageAt: new Date(Date.now() - 7200000).toISOString(),
           messageCount: 12,
           isPinned: false,
+          isArchived: false,
+          modelId: 'gpt-3.5-turbo',
           tags: ['testing', 'safety'],
           createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
           updatedAt: new Date(Date.now() - 7200000).toISOString(),
@@ -67,6 +71,8 @@ export function useConversations(workspaceId?: string) {
           lastMessageAt: new Date(Date.now() - 14400000).toISOString(),
           messageCount: 8,
           isPinned: false,
+          isArchived: false,
+          modelId: null,
           tags: ['api', 'backend'],
           createdAt: new Date(Date.now() - 86400000).toISOString(),
           updatedAt: new Date(Date.now() - 14400000).toISOString(),
@@ -78,6 +84,8 @@ export function useConversations(workspaceId?: string) {
           lastMessageAt: new Date(Date.now() - 21600000).toISOString(),
           messageCount: 5,
           isPinned: false,
+          isArchived: false,
+          modelId: 'claude-3-opus',
           tags: ['demo', 'ui'],
           createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
           updatedAt: new Date(Date.now() - 21600000).toISOString(),
@@ -89,6 +97,8 @@ export function useConversations(workspaceId?: string) {
           lastMessageAt: new Date(Date.now() - 28800000).toISOString(),
           messageCount: 18,
           isPinned: false,
+          isArchived: false,
+          modelId: null,
           tags: ['react', 'learning'],
           createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
           updatedAt: new Date(Date.now() - 28800000).toISOString(),
@@ -100,6 +110,8 @@ export function useConversations(workspaceId?: string) {
           lastMessageAt: new Date(Date.now() - 43200000).toISOString(),
           messageCount: 15,
           isPinned: false,
+          isArchived: false,
+          modelId: 'gpt-4',
           tags: ['typescript', 'code-quality'],
           createdAt: new Date(Date.now() - 86400000 * 6).toISOString(),
           updatedAt: new Date(Date.now() - 43200000).toISOString(),
@@ -111,6 +123,8 @@ export function useConversations(workspaceId?: string) {
           lastMessageAt: new Date(Date.now() - 57600000).toISOString(),
           messageCount: 32,
           isPinned: true,
+          isArchived: false,
+          modelId: 'claude-3-sonnet',
           tags: ['safety', 'architecture'],
           createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
           updatedAt: new Date(Date.now() - 57600000).toISOString(),
@@ -122,12 +136,14 @@ export function useConversations(workspaceId?: string) {
           lastMessageAt: new Date(Date.now() - 72000000).toISOString(),
           messageCount: 9,
           isPinned: false,
+          isArchived: false,
+          modelId: null,
           tags: ['nz', 'resources'],
           createdAt: new Date(Date.now() - 86400000 * 8).toISOString(),
           updatedAt: new Date(Date.now() - 72000000).toISOString(),
         },
       ];
-      
+
       // Add more mock conversations for pagination testing
       for (let i = 9; i <= 50; i++) {
         mockConvs.push({
@@ -137,12 +153,14 @@ export function useConversations(workspaceId?: string) {
           lastMessageAt: new Date(Date.now() - (86400000 * i)).toISOString(),
           messageCount: Math.floor(Math.random() * 30) + 1,
           isPinned: false,
+          isArchived: false,
+          modelId: null,
           tags: ['test'],
           createdAt: new Date(Date.now() - (86400000 * i)).toISOString(),
           updatedAt: new Date(Date.now() - (86400000 * i)).toISOString(),
         });
       }
-      
+
       setConversations(mockConvs);
       globalConversationsCache = mockConvs;
       setHasMore(mockConvs.length >= pageSize);
@@ -183,6 +201,8 @@ export function useConversations(workspaceId?: string) {
         lastMessageAt: new Date().toISOString(),
         messageCount: 0,
         isPinned: false,
+        isArchived: false,
+        modelId: data.modelId || null,
         tags: data.tags || [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -206,11 +226,11 @@ export function useConversations(workspaceId?: string) {
   // ============================================================================
 
   const updateConversation = useCallback(async (
-    conversationId: string, 
+    conversationId: string,
     updates: Partial<ConversationDto>
   ) => {
     // Optimistic update
-    setConversations(prev => prev.map(conv => 
+    setConversations(prev => prev.map(conv =>
       conv.id === conversationId ? { ...conv, ...updates } : conv
     ));
 
@@ -278,7 +298,7 @@ export function useConversations(workspaceId?: string) {
     if (!conv) return;
 
     // Optimistic update
-    setConversations(prev => prev.map(c => 
+    setConversations(prev => prev.map(c =>
       c.id === conversationId ? { ...c, isPinned: !c.isPinned } : c
     ));
 
@@ -305,7 +325,7 @@ export function useConversations(workspaceId?: string) {
 
   const searchConversations = useCallback(async (query: string) => {
     if (AppConfig.isOfflineMode()) {
-      return conversations.filter(conv => 
+      return conversations.filter(conv =>
         conv.title.toLowerCase().includes(query.toLowerCase()) ||
         conv.tags?.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
       );
@@ -324,7 +344,7 @@ export function useConversations(workspaceId?: string) {
   // ============================================================================
 
   const exportConversation = useCallback(async (
-    conversationId: string, 
+    conversationId: string,
     format: 'json' | 'markdown' | 'pdf' = 'json'
   ) => {
     if (AppConfig.isOfflineMode()) {
@@ -366,22 +386,22 @@ export function useConversations(workspaceId?: string) {
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading) return;
-    
+
     console.log('[useConversations] Loading more conversations, page:', page + 1);
-    
+
     if (AppConfig.isOfflineMode()) {
       // In offline mode, all conversations are already loaded
       setHasMore(false);
       return;
     }
-    
+
     try {
       setLoading(true);
       const data = await conversationsService.getConversations(workspaceId, {
         page: page + 1,
         pageSize,
       });
-      
+
       setConversations(prev => [...prev, ...data]);
       setPage(prev => prev + 1);
       setHasMore(data.length >= pageSize);
@@ -398,7 +418,7 @@ export function useConversations(workspaceId?: string) {
     loading,
     error,
     hasMore,
-    
+
     // Actions
     refresh: () => loadConversations(workspaceId),
     loadMore,

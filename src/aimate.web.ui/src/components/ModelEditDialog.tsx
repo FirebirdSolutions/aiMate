@@ -24,8 +24,8 @@ import { Switch } from "./ui/switch";
 import { Separator } from "./ui/separator";
 import { ChevronDown, ChevronUp, Download, Loader2, Zap, CheckCircle2, XCircle } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-import { testConnection } from "../api/attachments";
-import { toast } from "sonner@2.0.3";
+// import { testConnection } from "../api/attachments"; // Module doesn't exist yet
+import { toast } from "sonner";
 
 interface Model {
   id: string;
@@ -174,20 +174,18 @@ export function ModelEditDialog({
     setConnectionStatus("idle");
 
     try {
-      const result = await testConnection(
-        formData.connection || "OpenAI",
-        apiKey,
-        endpoint || undefined,
-        formData.id
-      );
+      // TODO: Implement testConnection when module is available
+      // const result = await testConnection(
+      //   formData.connection || "OpenAI",
+      //   apiKey,
+      //   endpoint || undefined,
+      //   formData.id
+      // );
 
-      if (result.success && result.data) {
-        setConnectionStatus("success");
-        toast.success(`Connection successful! Latency: ${result.data.latency}ms`);
-      } else {
-        setConnectionStatus("error");
-        toast.error(result.error || "Connection test failed");
-      }
+      // Mock success for now
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setConnectionStatus("success");
+      toast.success("Connection test not yet implemented - showing mock success");
     } catch (error) {
       setConnectionStatus("error");
       toast.error("Connection test failed");
@@ -225,31 +223,28 @@ export function ModelEditDialog({
           <div className="flex px-6 gap-1 min-w-max">
             <button
               onClick={() => setActiveTab("general")}
-              className={`flex items-center gap-2 px-4 py-2.5 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
-                activeTab === "general"
-                  ? "border-purple-500 text-purple-600 dark:text-purple-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2.5 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${activeTab === "general"
+                ? "border-purple-500 text-purple-600 dark:text-purple-400"
+                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
             >
               General
             </button>
             <button
               onClick={() => setActiveTab("params")}
-              className={`flex items-center gap-2 px-4 py-2.5 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
-                activeTab === "params"
-                  ? "border-purple-500 text-purple-600 dark:text-purple-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2.5 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${activeTab === "params"
+                ? "border-purple-500 text-purple-600 dark:text-purple-400"
+                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
             >
               Model Params
             </button>
             <button
               onClick={() => setActiveTab("advanced")}
-              className={`flex items-center gap-2 px-4 py-2.5 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
-                activeTab === "advanced"
-                  ? "border-purple-500 text-purple-600 dark:text-purple-400"
-                  : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2.5 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${activeTab === "advanced"
+                ? "border-purple-500 text-purple-600 dark:text-purple-400"
+                : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                }`}
             >
               Advanced Params
             </button>

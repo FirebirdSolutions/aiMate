@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Facebook, Twitter, Linkedin, Mail, Link, MessageCircle } from "lucide-react";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface ShareModalProps {
   open: boolean;

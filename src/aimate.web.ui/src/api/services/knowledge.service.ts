@@ -184,6 +184,71 @@ class KnowledgeService {
   async getTags(): Promise<string[]> {
     return apiClient.get<string[]>('/knowledge/tags');
   }
+
+
+  // ============================================================================
+  // DOCUMENTS (RAG)
+  // ============================================================================
+
+  /**
+   * Get knowledge documents
+   */
+  async getDocuments(workspaceId?: string): Promise<any[]> {
+    const query = workspaceId ? `?workspaceId=${workspaceId}` : '';
+    return apiClient.get<any[]>(`/knowledge/documents${query}`);
+  }
+
+  /**
+   * Upload knowledge document
+   */
+  async uploadDocument(file: File, data?: { workspaceId?: string; tags?: string[] }): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (data?.workspaceId) formData.append('workspaceId', data.workspaceId);
+    if (data?.tags) formData.append('tags', JSON.stringify(data.tags));
+
+    return apiClient.post<any>('/knowledge/documents', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  }
+
+  /**
+   * Delete knowledge document
+   */
+  async deleteDocument(id: string): Promise<ApiSuccessResponse> {
+    return apiClient.delete<ApiSuccessResponse>(`/knowledge/documents/${id}`);
+  }
+
+  /**
+   * Update knowledge document
+   */
+  async updateDocument(id: string, updates: any): Promise<any> {
+    return apiClient.put<any>(`/knowledge/documents/${id}`, updates);
+  }
+
+  /**
+   * Search knowledge documents
+   */
+  async searchDocuments(query: string, workspaceId?: string): Promise<any[]> {
+    const wsQuery = workspaceId ? `&workspaceId=${workspaceId}` : '';
+    return apiClient.get<any[]>(`/knowledge/documents/search?q=${encodeURIComponent(query)}${wsQuery}`);
+  }
+
+  /**
+   * Reprocess knowledge document
+   */
+  async reprocessDocument(id: string): Promise<ApiSuccessResponse> {
+    return apiClient.post<ApiSuccessResponse>(`/knowledge/documents/${id}/reprocess`);
+  }
+
+  /**
+   * Get document chunks
+   */
+  async getDocumentChunks(id: string): Promise<any[]> {
+    return apiClient.get<any[]>(`/knowledge/documents/${id}/chunks`);
+  }
 }
 
 export const knowledgeService = new KnowledgeService();

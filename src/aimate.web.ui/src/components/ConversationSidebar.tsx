@@ -40,7 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 export interface Conversation {
   id: string;
@@ -106,7 +106,7 @@ export function ConversationSidebar({
     { id: "2", name: "Mobile App", description: "iOS and Android app development", createdAt: new Date(2024, 1, 3) },
     { id: "3", name: "Marketing Campaign", description: "Q1 marketing initiatives", createdAt: new Date(2024, 2, 20) },
   ]);
-  
+
   const formatDate = (date: Date) => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
@@ -184,11 +184,10 @@ export function ConversationSidebar({
   const renderConversationItem = (conversation: Conversation) => (
     <div
       key={conversation.id}
-      className={`group relative rounded-lg transition-colors ${
-        activeConversationId === conversation.id
+      className={`group relative rounded-lg transition-colors ${activeConversationId === conversation.id
           ? "bg-gray-100 dark:bg-gray-800"
           : "hover:bg-gray-50 dark:hover:bg-gray-900"
-      }`}
+        }`}
     >
       {renamingId === conversation.id ? (
         <div className="p-3 flex items-center gap-2">
@@ -254,14 +253,14 @@ export function ConversationSidebar({
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent 
-              side="right" 
-              align="start" 
+            <PopoverContent
+              side="right"
+              align="start"
               className="w-48 p-1"
               onInteractOutside={(e) => showcaseMode && e.preventDefault()}
             >
               <div className="space-y-1">
-                <button 
+                <button
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
                   onClick={() => {
                     setShareConversationId(conversation.id);
@@ -271,14 +270,14 @@ export function ConversationSidebar({
                   <Share className="h-4 w-4" />
                   <span>Share</span>
                 </button>
-                <button 
+                <button
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
                   onClick={() => handleDownload(conversation.id)}
                 >
                   <Download className="h-4 w-4" />
                   <span>Download</span>
                 </button>
-                <button 
+                <button
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
                   onClick={() => {
                     setRenameValue(conversation.title);
@@ -288,7 +287,7 @@ export function ConversationSidebar({
                   <Edit className="h-4 w-4" />
                   <span>Rename</span>
                 </button>
-                <button 
+                <button
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
                   onClick={() => handlePin(conversation.id)}
                 >
@@ -297,7 +296,7 @@ export function ConversationSidebar({
                 </button>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button 
+                    <button
                       className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left cursor-pointer"
                     >
                       <FolderInput className="h-4 w-4" />
@@ -305,9 +304,9 @@ export function ConversationSidebar({
                       <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent 
-                    side="right" 
-                    align="start" 
+                  <PopoverContent
+                    side="right"
+                    align="start"
                     className="w-64 p-0 bg-gray-900 dark:bg-gray-900 text-white border-gray-700"
                     onInteractOutside={(e) => showcaseMode && e.preventDefault()}
                   >
@@ -336,14 +335,14 @@ export function ConversationSidebar({
                     </ScrollArea>
                   </PopoverContent>
                 </Popover>
-                <button 
+                <button
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
                   onClick={() => handleArchive(conversation.id)}
                 >
                   <Archive className="h-4 w-4" />
                   <span>Archive</span>
                 </button>
-                <button 
+                <button
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left text-red-600 dark:text-red-400"
                   onClick={() => setDeleteConfirmId(conversation.id)}
                 >
@@ -364,8 +363,8 @@ export function ConversationSidebar({
   return (
     <>
       <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
-      <AdminModal 
-        open={adminOpen} 
+      <AdminModal
+        open={adminOpen}
         onOpenChange={setAdminOpen}
         enabledModels={enabledModels}
         onToggleModel={onToggleModel}
@@ -381,292 +380,292 @@ export function ConversationSidebar({
         mode={projectModalMode}
         onCreateProject={handleCreateProject}
       />
-      
+
       <div className="flex flex-col h-full bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800">
-      {/* Logo and Close Button */}
-      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-purple-500" />
-          <span className="text-xl font-bold text-gray-900 dark:text-white">
-            aimate
-          </span>
+        {/* Logo and Close Button */}
+        <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-6 w-6 text-purple-500" />
+            <span className="text-xl font-bold text-gray-900 dark:text-white">
+              aimate
+            </span>
+          </div>
+          {onClose && (
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-4 w-4" />
+            </Button>
+          )}
         </div>
-        {onClose && (
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-4 w-4" />
+
+        {/* Navigation Links */}
+        <nav className="flex-shrink-0 p-3 space-y-1 border-b border-gray-200 dark:border-gray-800">
+          <Button
+            onClick={onNewConversation}
+            variant="ghost"
+            className="w-full justify-start gap-3"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Start a new chat
           </Button>
-        )}
-      </div>
-
-      {/* Navigation Links */}
-      <nav className="flex-shrink-0 p-3 space-y-1 border-b border-gray-200 dark:border-gray-800">
-        <Button
-          onClick={onNewConversation}
-          variant="ghost"
-          className="w-full justify-start gap-3"
-        >
-          <MessageSquare className="h-4 w-4" />
-          Start a new chat
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3"
-          onClick={() => setSearchOpen(true)}
-        >
-          <Search className="h-4 w-4" />
-          Search
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3"
-          onClick={() => setNotesOpen(true)}
-        >
-          <FileText className="h-4 w-4" />
-          Notes
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3"
-          onClick={() => setKnowledgeOpen(true)}
-        >
-          <Brain className="h-4 w-4" />
-          Knowledge
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3"
-          onClick={() => setFilesOpen(true)}
-        >
-          <File className="h-4 w-4" />
-          Files
-        </Button>
-        <Collapsible open={projectsExpanded} onOpenChange={setProjectsExpanded}>
-          <CollapsibleTrigger asChild>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3"
-            >
-              <FolderKanban className="h-4 w-4" />
-              Projects
-              {projectsExpanded ? (
-                <ChevronDown className="h-4 w-4 ml-auto" />
-              ) : (
-                <ChevronRight className="h-4 w-4 ml-auto" />
-              )}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-1 mt-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start gap-3 pl-10 text-sm"
-              onClick={handleNewProject}
-            >
-              <Plus className="h-3 w-3" />
-              New Project
-            </Button>
-            {projects.map((project) => (
-              <div key={project.id} className="relative group">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start gap-3 pl-10 text-sm pr-8 overflow-hidden"
-                  onClick={() => handleViewProject(project)}
-                >
-                  <FolderKanban className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{truncateText(project.name, 20)}</span>
-                </Button>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical className="h-3 w-3" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent 
-                    side="right" 
-                    align="start" 
-                    className="w-40 p-1"
-                    onInteractOutside={(e) => showcaseMode && e.preventDefault()}
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3"
+            onClick={() => setSearchOpen(true)}
+          >
+            <Search className="h-4 w-4" />
+            Search
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3"
+            onClick={() => setNotesOpen(true)}
+          >
+            <FileText className="h-4 w-4" />
+            Notes
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3"
+            onClick={() => setKnowledgeOpen(true)}
+          >
+            <Brain className="h-4 w-4" />
+            Knowledge
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3"
+            onClick={() => setFilesOpen(true)}
+          >
+            <File className="h-4 w-4" />
+            Files
+          </Button>
+          <Collapsible open={projectsExpanded} onOpenChange={setProjectsExpanded}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3"
+              >
+                <FolderKanban className="h-4 w-4" />
+                Projects
+                {projectsExpanded ? (
+                  <ChevronDown className="h-4 w-4 ml-auto" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 ml-auto" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1 mt-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start gap-3 pl-10 text-sm"
+                onClick={handleNewProject}
+              >
+                <Plus className="h-3 w-3" />
+                New Project
+              </Button>
+              {projects.map((project) => (
+                <div key={project.id} className="relative group">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start gap-3 pl-10 text-sm pr-8 overflow-hidden"
+                    onClick={() => handleViewProject(project)}
                   >
-                    <div className="space-y-1">
-                      <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left">
-                        <Archive className="h-4 w-4" />
-                        <span>Archive</span>
-                      </button>
-                      <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left text-red-600 dark:text-red-400">
-                        <Trash2 className="h-4 w-4" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-      </nav>
-
-      {/* Conversations Section with ScrollArea */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        <ScrollArea className="flex-1">
-        <div className="p-2 space-y-4">
-          {conversations.length === 0 ? (
-            <div className="text-center py-8 px-4 text-sm text-gray-500 dark:text-gray-400">
-              No conversations yet. Start a new chat!
-            </div>
-          ) : (
-            <>
-              {/* Pinned Conversations */}
-              {pinnedList.length > 0 && (
-                <div className="space-y-1">
-                  <div className="px-2 py-1">
-                    <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400">Pinned</h2>
-                  </div>
-                  {pinnedList.map(renderConversationItem)}
+                    <FolderKanban className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{truncateText(project.name, 20)}</span>
+                  </Button>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-3 w-3" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      side="right"
+                      align="start"
+                      className="w-40 p-1"
+                      onInteractOutside={(e) => showcaseMode && e.preventDefault()}
+                    >
+                      <div className="space-y-1">
+                        <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left">
+                          <Archive className="h-4 w-4" />
+                          <span>Archive</span>
+                        </button>
+                        <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left text-red-600 dark:text-red-400">
+                          <Trash2 className="h-4 w-4" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-              )}
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        </nav>
 
-              {/* Recent Conversations */}
-              {recentList.length > 0 && (
-                <div className="space-y-1">
+        {/* Conversations Section with ScrollArea */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <ScrollArea className="flex-1">
+            <div className="p-2 space-y-4">
+              {conversations.length === 0 ? (
+                <div className="text-center py-8 px-4 text-sm text-gray-500 dark:text-gray-400">
+                  No conversations yet. Start a new chat!
+                </div>
+              ) : (
+                <>
+                  {/* Pinned Conversations */}
                   {pinnedList.length > 0 && (
-                    <div className="px-2 py-1">
-                      <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400">Recent</h2>
+                    <div className="space-y-1">
+                      <div className="px-2 py-1">
+                        <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400">Pinned</h2>
+                      </div>
+                      {pinnedList.map(renderConversationItem)}
                     </div>
                   )}
-                  {recentList.map(renderConversationItem)}
-                </div>
+
+                  {/* Recent Conversations */}
+                  {recentList.length > 0 && (
+                    <div className="space-y-1">
+                      {pinnedList.length > 0 && (
+                        <div className="px-2 py-1">
+                          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400">Recent</h2>
+                        </div>
+                      )}
+                      {recentList.map(renderConversationItem)}
+                    </div>
+                  )}
+                </>
               )}
-            </>
-          )}
-          
-          {/* Lazy Load Trigger */}
-          {onLoadMore && (
-            <LazyLoadTrigger
-              onLoadMore={onLoadMore}
-              hasMore={hasMore}
-              loading={loading}
-            />
-          )}
+
+              {/* Lazy Load Trigger */}
+              {onLoadMore && (
+                <LazyLoadTrigger
+                  onLoadMore={onLoadMore}
+                  hasMore={hasMore}
+                  loading={loading}
+                />
+              )}
+            </div>
+          </ScrollArea>
         </div>
-        </ScrollArea>
-      </div>
 
-      {/* User Footer */}
-      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-800 p-3">
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 h-auto py-2 px-3"
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" />
-                <AvatarFallback className="bg-purple-500 text-white">JD</AvatarFallback>
-              </Avatar>
-              <div className="flex-1 text-left overflow-hidden">
-                <div className="text-sm font-medium truncate">John Doe</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  john.doe@example.com
+        {/* User Footer */}
+        <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-800 p-3">
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 h-auto py-2 px-3"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=user" />
+                  <AvatarFallback className="bg-purple-500 text-white">JD</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 text-left overflow-hidden">
+                  <div className="text-sm font-medium truncate">John Doe</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    john.doe@example.com
+                  </div>
                 </div>
-              </div>
-              <ChevronUp className="h-4 w-4 text-gray-500" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            side="top"
-            align="start"
-            className="w-56"
-            sideOffset={8}
-            onInteractOutside={(e) => showcaseMode && e.preventDefault()}
-          >
-            <DropdownMenuItem 
-              className="gap-2 cursor-pointer"
-              onClick={() => setSettingsOpen(true)}
+                <ChevronUp className="h-4 w-4 text-gray-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              side="top"
+              align="start"
+              className="w-56"
+              sideOffset={8}
+              onInteractOutside={(e) => showcaseMode && e.preventDefault()}
             >
-              <Settings className="h-4 w-4" />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="gap-2 cursor-pointer"
-              onClick={() => setArchivedOpen(true)}
-            >
-              <Archive className="h-4 w-4" />
-              Archived
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="gap-2 cursor-pointer"
-              onClick={() => setAdminOpen(true)}
-            >
-              <ShieldCheck className="h-4 w-4" />
-              Admin Panel
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              className="gap-2 cursor-pointer"
-              onClick={() => setAboutOpen(true)}
-            >
-              <Info className="h-4 w-4" />
-              About
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 cursor-pointer text-red-600 dark:text-red-400">
-              <LogOut className="h-4 w-4" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onClick={() => setSettingsOpen(true)}
+              >
+                <Settings className="h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onClick={() => setArchivedOpen(true)}
+              >
+                <Archive className="h-4 w-4" />
+                Archived
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onClick={() => setAdminOpen(true)}
+              >
+                <ShieldCheck className="h-4 w-4" />
+                Admin Panel
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onClick={() => setAboutOpen(true)}
+              >
+                <Info className="h-4 w-4" />
+                About
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="gap-2 cursor-pointer text-red-600 dark:text-red-400">
+                <LogOut className="h-4 w-4" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Share Modal */}
+        <ShareModal
+          open={shareModalOpen}
+          onOpenChange={setShareModalOpen}
+          conversationTitle={conversations.find(c => c.id === shareConversationId)?.title}
+        />
+
+        {/* Files Modal */}
+        <FilesModal
+          open={filesOpen}
+          onOpenChange={setFilesOpen}
+        />
+
+        {/* Archived Modal */}
+        <ArchivedModal
+          open={archivedOpen}
+          onOpenChange={setArchivedOpen}
+        />
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this conversation.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (deleteConfirmId) {
+                    onDeleteConversation(deleteConfirmId);
+                    setDeleteConfirmId(null);
+                  }
+                }}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-
-      {/* Share Modal */}
-      <ShareModal 
-        open={shareModalOpen} 
-        onOpenChange={setShareModalOpen}
-        conversationTitle={conversations.find(c => c.id === shareConversationId)?.title}
-      />
-
-      {/* Files Modal */}
-      <FilesModal 
-        open={filesOpen}
-        onOpenChange={setFilesOpen}
-      />
-
-      {/* Archived Modal */}
-      <ArchivedModal 
-        open={archivedOpen}
-        onOpenChange={setArchivedOpen}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this conversation.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteConfirmId(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteConfirmId) {
-                  onDeleteConversation(deleteConfirmId);
-                  setDeleteConfirmId(null);
-                }
-              }}
-              className="bg-red-500 hover:bg-red-600"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
     </>
   );
 }

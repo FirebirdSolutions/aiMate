@@ -162,6 +162,23 @@ class FilesService {
     if (fileType.includes('text')) return '📃';
     return '📎';
   }
+
+  /**
+   * Upload image from URL
+   */
+  async uploadImageFromUrl(
+    url: string,
+    options?: {
+      conversationId?: string;
+      workspaceId?: string;
+    }
+  ): Promise<FileDto> {
+    const workspaceId = options?.workspaceId || 'default';
+    return apiClient.post<FileDto>(`/workspaces/${workspaceId}/files/upload-url`, {
+      url,
+      conversationId: options?.conversationId
+    });
+  }
 }
 
 export const filesService = new FilesService();

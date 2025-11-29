@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Bot, User, Edit2, Check, X, RotateCw, Sparkles, Copy, Volume2, Info, ThumbsUp, ThumbsDown, Play, Share2, Send, Brain } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import {
   Popover,
   PopoverContent,
@@ -21,7 +21,7 @@ import { ShareModal } from "./ShareModal";
 import { StructuredPanel } from "./StructuredPanel";
 
 interface ChatMessageProps {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp: string;
   structuredContent?: any;
@@ -45,7 +45,7 @@ export function ChatMessage({
   const [ratingOpen, setRatingOpen] = useState(false);
   const [ratingType, setRatingType] = useState<"up" | "down">("up");
   const [shareOpen, setShareOpen] = useState(false);
-  
+
   // Mock performance metrics
   const performanceMetrics = {
     tokensPerSecond: 12.27,
@@ -66,33 +66,33 @@ export function ChatMessage({
     setEditedContent(content);
     setIsEditing(false);
   };
-  
+
   const handleEditClick = () => {
     logUIEvent('Edit button clicked', 'ui:chat:message:edit:start', { role });
     setIsEditing(true);
   };
-  
+
   const handleRegenerateClick = () => {
     logUIEvent('Regenerate message clicked', 'ui:chat:message:regenerate', { role });
     if (onRegenerate) onRegenerate();
   };
-  
+
   const handleInfoClick = () => {
     logUIEvent('Message info opened', 'ui:chat:message:info', { role });
     setInfoOpen(!infoOpen);
   };
-  
+
   const handleShareClick = () => {
     logUIEvent('Share message clicked', 'ui:chat:message:share', { role });
     setShareOpen(true);
   };
-  
+
   const handleRatingClick = (type: 'up' | 'down') => {
     logUIEvent(`Message rated: ${type}`, 'ui:chat:message:rating', { role, rating: type });
     setRatingType(type);
     setRatingOpen(true);
   };
-  
+
   const handleBrainClick = () => {
     logUIEvent('Brain/Knowledge button clicked', 'ui:chat:message:brain', { role });
     setBrainTooltipOpen(true);
@@ -122,7 +122,7 @@ export function ChatMessage({
         textArea.select();
         const successful = document.execCommand('copy');
         document.body.removeChild(textArea);
-        
+
         if (successful) {
           setCopyTooltipOpen(true);
           setTimeout(() => setCopyTooltipOpen(false), 2000);
@@ -175,272 +175,271 @@ export function ChatMessage({
       />
       <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"} group`}>
         <Avatar className="h-8 w-8 shrink-0 hidden md:flex">
-        {isUser ? (
-          <AvatarFallback className="bg-gray-600 dark:bg-gray-700">
-            <User className="h-4 w-4 text-white" />
-          </AvatarFallback>
-        ) : (
-          <AvatarFallback className="bg-gray-600 dark:bg-gray-700">
-            <Sparkles className="h-4 w-4 text-white" />
-          </AvatarFallback>
-        )}
-      </Avatar>
+          {isUser ? (
+            <AvatarFallback className="bg-gray-600 dark:bg-gray-700">
+              <User className="h-4 w-4 text-white" />
+            </AvatarFallback>
+          ) : (
+            <AvatarFallback className="bg-gray-600 dark:bg-gray-700">
+              <Sparkles className="h-4 w-4 text-white" />
+            </AvatarFallback>
+          )}
+        </Avatar>
 
-      <div className={`flex flex-col max-w-[95%] md:max-w-[80%] ${isUser ? "items-end" : "items-start"}`}>
-        {isEditing ? (
-          <div className="w-full space-y-2">
-            <Textarea
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              className="min-h-[100px]"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={handleSaveEdit}
-                className="gap-2"
-              >
-                <Send className="h-3 w-3" />
-                Submit
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCancelEdit}
-                className="gap-2"
-              >
-                <X className="h-3 w-3" />
-                Cancel
-              </Button>
+        <div className={`flex flex-col max-w-[95%] md:max-w-[80%] ${isUser ? "items-end" : "items-start"}`}>
+          {isEditing ? (
+            <div className="w-full space-y-2">
+              <Textarea
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="min-h-[100px]"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleSaveEdit}
+                  className="gap-2"
+                >
+                  <Send className="h-3 w-3" />
+                  Submit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                  className="gap-2"
+                >
+                  <X className="h-3 w-3" />
+                  Cancel
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <>
-            <div
-              className={`rounded-2xl px-3 py-2 ${
-                isUser
+          ) : (
+            <>
+              <div
+                className={`rounded-2xl px-3 py-2 ${isUser
                   ? "bg-gray-700 dark:bg-gray-700 text-white"
                   : "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
-              }`}
-            >
-              {isUser ? (
-                <p className="whitespace-pre-wrap break-words">{content}</p>
-              ) : (
-                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2">
-                  <ReactMarkdown
-                    components={{
-                      code: ({ node, inline, className, children, ...props }: any) => {
-                        // Hide structured content code blocks
-                        const codeString = String(children);
-                        if (!inline && codeString.includes('```structured')) {
-                          return null;
-                        }
-                        if (!inline && className === 'language-structured') {
-                          return null;
-                        }
-                        
-                        return inline ? (
-                          <code
-                            className="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm"
-                            {...props}
-                          >
-                            {children}
-                          </code>
-                        ) : (
-                          <code
-                            className="block bg-gray-200 dark:bg-gray-700 p-3 rounded text-sm overflow-x-auto"
-                            {...props}
-                          >
-                            {children}
-                          </code>
-                        );
-                      },
+                  }`}
+              >
+                {isUser ? (
+                  <p className="whitespace-pre-wrap break-words">{content}</p>
+                ) : (
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2">
+                    <ReactMarkdown
+                      components={{
+                        code: ({ node, inline, className, children, ...props }: any) => {
+                          // Hide structured content code blocks
+                          const codeString = String(children);
+                          if (!inline && codeString.includes('```structured')) {
+                            return null;
+                          }
+                          if (!inline && className === 'language-structured') {
+                            return null;
+                          }
+
+                          return inline ? (
+                            <code
+                              className="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm"
+                              {...props}
+                            >
+                              {children}
+                            </code>
+                          ) : (
+                            <code
+                              className="block bg-gray-200 dark:bg-gray-700 p-3 rounded text-sm overflow-x-auto"
+                              {...props}
+                            >
+                              {children}
+                            </code>
+                          );
+                        },
+                      }}
+                    >
+                      {structuredContent ? content.replace(/```structured[\s\S]*?```/g, '').trim() : content}
+                    </ReactMarkdown>
+                  </div>
+                )}
+              </div>
+
+              {/* Structured Content */}
+              {structuredContent && (
+                <div className="w-full mt-2">
+                  <StructuredPanel
+                    data={structuredContent}
+                    onAction={(action, rowData) => {
+                      toast.info(`Action: ${action.title} (Tool: ${action.tool})`);
+                      console.log('Structured action:', action, rowData);
                     }}
-                  >
-                    {structuredContent ? content.replace(/```structured[\s\S]*?```/g, '').trim() : content}
-                  </ReactMarkdown>
+                  />
                 </div>
               )}
-            </div>
 
-            {/* Structured Content */}
-            {structuredContent && (
-              <div className="w-full mt-2">
-                <StructuredPanel 
-                  data={structuredContent} 
-                  onAction={(action, rowData) => {
-                    toast.info(`Action: ${action.title} (Tool: ${action.tool})`);
-                    console.log('Structured action:', action, rowData);
-                  }}
-                />
-              </div>
-            )}
-            
-            {/* Action Icons */}
-            {!isUser ? (
-              <div className="flex items-center gap-1 mt-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  onClick={handleEditClick}
-                  title="Edit"
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-                <Tooltip open={copyTooltipOpen}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                      onClick={handleCopy}
-                      title="Copy"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Copied to clipboard</TooltipContent>
-                </Tooltip>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  onClick={handleReadAloud}
-                  title="Read Aloud"
-                >
-                  <Volume2 className="h-4 w-4" />
-                </Button>
-                <Popover open={infoOpen} onOpenChange={setInfoOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                      title="Info"
-                    >
-                      <Info className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="top" className="w-auto p-3">
-                    <div className="space-y-1">
-                      <h4 className="font-medium text-sm mb-2">Performance Metrics</h4>
-                      <div className="text-sm text-gray-600 dark:text-gray-300 font-mono">
-                        {performanceMetrics.tokensPerSecond} T/s | {performanceMetrics.totalTokens} tokens | {performanceMetrics.timeSeconds} sec
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  onClick={handleLike}
-                  title="Like"
-                >
-                  <ThumbsUp className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  onClick={handleDislike}
-                  title="Dislike"
-                >
-                  <ThumbsDown className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  onClick={handleContinue}
-                  title="Continue"
-                >
-                  <Play className="h-4 w-4" />
-                </Button>
-                {onRegenerate && (
+              {/* Action Icons */}
+              {!isUser ? (
+                <div className="flex items-center gap-1 mt-2">
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    onClick={onRegenerate}
-                    title="Regenerate"
+                    onClick={handleEditClick}
+                    title="Edit"
                   >
-                    <RotateCw className="h-4 w-4" />
+                    <Edit2 className="h-4 w-4" />
                   </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  onClick={handleShare}
-                  title="Share"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
-                <Tooltip open={brainTooltipOpen}>
-                  <TooltipTrigger asChild>
+                  <Tooltip open={copyTooltipOpen}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        onClick={handleCopy}
+                        title="Copy"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Copied to clipboard</TooltipContent>
+                  </Tooltip>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    onClick={handleReadAloud}
+                    title="Read Aloud"
+                  >
+                    <Volume2 className="h-4 w-4" />
+                  </Button>
+                  <Popover open={infoOpen} onOpenChange={setInfoOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        title="Info"
+                      >
+                        <Info className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent side="top" className="w-auto p-3">
+                      <div className="space-y-1">
+                        <h4 className="font-medium text-sm mb-2">Performance Metrics</h4>
+                        <div className="text-sm text-gray-600 dark:text-gray-300 font-mono">
+                          {performanceMetrics.tokensPerSecond} T/s | {performanceMetrics.totalTokens} tokens | {performanceMetrics.timeSeconds} sec
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    onClick={handleLike}
+                    title="Like"
+                  >
+                    <ThumbsUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    onClick={handleDislike}
+                    title="Dislike"
+                  >
+                    <ThumbsDown className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    onClick={handleContinue}
+                    title="Continue"
+                  >
+                    <Play className="h-4 w-4" />
+                  </Button>
+                  {onRegenerate && (
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                      onClick={handleSaveToKnowledge}
-                      title="Save to Knowledge"
+                      onClick={onRegenerate}
+                      title="Regenerate"
                     >
-                      <Brain className="h-4 w-4" />
+                      <RotateCw className="h-4 w-4" />
                     </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Added to knowledge</TooltipContent>
-                </Tooltip>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 mt-1 px-2">
-                <span className="text-xs text-gray-500">{timestamp}</span>
-                {onEdit && (
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => setIsEditing(true)}
+                    className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    onClick={handleShare}
+                    title="Share"
                   >
-                    <Edit2 className="h-3 w-3" />
+                    <Share2 className="h-4 w-4" />
                   </Button>
-                )}
-                <Tooltip open={copyTooltipOpen}>
-                  <TooltipTrigger asChild>
+                  <Tooltip open={brainTooltipOpen}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        onClick={handleSaveToKnowledge}
+                        title="Save to Knowledge"
+                      >
+                        <Brain className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Added to knowledge</TooltipContent>
+                  </Tooltip>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mt-1 px-2">
+                  <span className="text-xs text-gray-500">{timestamp}</span>
+                  {onEdit && (
                     <Button
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={handleCopy}
-                      title="Copy"
+                      onClick={() => setIsEditing(true)}
                     >
-                      <Copy className="h-3 w-3" />
+                      <Edit2 className="h-3 w-3" />
                     </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Copied to clipboard</TooltipContent>
-                </Tooltip>
-                <Tooltip open={brainTooltipOpen}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={handleSaveToKnowledge}
-                      title="Save to Knowledge"
-                    >
-                      <Brain className="h-3 w-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Added to knowledge</TooltipContent>
-                </Tooltip>
-              </div>
-            )}
-          </>
-        )}
+                  )}
+                  <Tooltip open={copyTooltipOpen}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={handleCopy}
+                        title="Copy"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Copied to clipboard</TooltipContent>
+                  </Tooltip>
+                  <Tooltip open={brainTooltipOpen}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={handleSaveToKnowledge}
+                        title="Save to Knowledge"
+                      >
+                        <Brain className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Added to knowledge</TooltipContent>
+                  </Tooltip>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
     </>
   );
 }

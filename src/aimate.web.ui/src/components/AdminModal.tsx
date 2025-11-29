@@ -42,7 +42,7 @@ interface AdminModalProps {
 export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }: AdminModalProps) {
   const { logUIEvent } = useUIEventLogger();
   const { addLog } = useDebug();
-  
+
   useEffect(() => {
     if (open) {
       logUIEvent('Admin Panel opened', 'ui:admin:open');
@@ -274,7 +274,7 @@ function GeneralTab() {
       {debugEnabled && (
         <>
           <Separator />
-          
+
           <div>
             <h3 className="font-semibold mb-3">Debug Configuration</h3>
             <div className="space-y-4">
@@ -314,9 +314,9 @@ function GeneralTab() {
                   className="data-[state=checked]:bg-purple-600"
                 />
               </div>
-              
+
               <Separator />
-              
+
               <div>
                 <Label className="mb-2 block">Log Levels</Label>
                 <div className="space-y-2">
@@ -679,8 +679,8 @@ function InterfaceTab() {
 
       {/* Import/Export Buttons */}
       <div className="flex gap-2">
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="cursor-pointer"
           onClick={() => {
             const input = document.createElement('input');
@@ -707,8 +707,8 @@ function InterfaceTab() {
           <Upload className="h-4 w-4 mr-2" />
           Import Prompt Suggestions
         </Button>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           className="cursor-pointer"
           onClick={() => {
             const element = document.createElement('a');
@@ -744,9 +744,9 @@ function UsersGroupsTab() {
   }));
 
   const [groups, setGroups] = useState([
-    { 
-      id: "1", 
-      name: "Admins", 
+    {
+      id: "1",
+      name: "Admins",
       users: 1,
       maxMessages: "Unlimited",
       canAddTools: true,
@@ -754,9 +754,9 @@ function UsersGroupsTab() {
       canUseWebSearch: true,
       canUseCodeInterpreter: true,
     },
-    { 
-      id: "2", 
-      name: "Power Users", 
+    {
+      id: "2",
+      name: "Power Users",
       users: 1,
       maxMessages: "500/day",
       canAddTools: true,
@@ -764,9 +764,9 @@ function UsersGroupsTab() {
       canUseWebSearch: true,
       canUseCodeInterpreter: false,
     },
-    { 
-      id: "3", 
-      name: "Users", 
+    {
+      id: "3",
+      name: "Users",
       users: 1,
       maxMessages: "100/day",
       canAddTools: false,
@@ -791,9 +791,11 @@ function UsersGroupsTab() {
   const handleSave = (item: any) => {
     if (editType === "user") {
       if (selectedItem) {
-        setUsers(users.map((u) => (u.id === item.id ? item : u)));
+        // setUsers(users.map((u) => (u.id === item.id ? item : u)));
+        console.warn('User editing not yet implemented - users are managed via API');
       } else {
-        setUsers([...users, { ...item, id: Date.now().toString() }]);
+        // setUsers([...users, { ...item, id: Date.now().toString() }]);
+        console.warn('User creation not yet implemented - users are managed via API');
       }
     } else {
       if (selectedItem) {
@@ -807,7 +809,8 @@ function UsersGroupsTab() {
 
   const handleDelete = (id: string) => {
     if (editType === "user") {
-      setUsers(users.filter((u) => u.id !== id));
+      // setUsers(users.filter((u) => u.id !== id));
+      console.warn('User deletion not yet implemented - users are managed via API');
     } else {
       setGroups(groups.filter((g) => g.id !== id));
     }
@@ -1113,8 +1116,8 @@ function GroupForm({ item, onSave }: { item: any; onSave: (item: any) => void })
         <div className="space-y-4">
           <div>
             <Label htmlFor="max-messages">Max Messages</Label>
-            <Select 
-              value={formData.maxMessages} 
+            <Select
+              value={formData.maxMessages}
               onValueChange={(maxMessages) => setFormData({ ...formData, maxMessages })}
             >
               <SelectTrigger className="mt-2">
@@ -1139,7 +1142,7 @@ function GroupForm({ item, onSave }: { item: any; onSave: (item: any) => void })
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="can-add-tools">Add Tools</Label>
-            <Switch 
+            <Switch
               id="can-add-tools"
               checked={formData.canAddTools}
               onCheckedChange={(canAddTools) => setFormData({ ...formData, canAddTools })}
@@ -1149,7 +1152,7 @@ function GroupForm({ item, onSave }: { item: any; onSave: (item: any) => void })
 
           <div className="flex items-center justify-between">
             <Label htmlFor="can-create-projects">Create Projects</Label>
-            <Switch 
+            <Switch
               id="can-create-projects"
               checked={formData.canCreateProjects}
               onCheckedChange={(canCreateProjects) => setFormData({ ...formData, canCreateProjects })}
@@ -1159,7 +1162,7 @@ function GroupForm({ item, onSave }: { item: any; onSave: (item: any) => void })
 
           <div className="flex items-center justify-between">
             <Label htmlFor="can-use-websearch">Use Web Search</Label>
-            <Switch 
+            <Switch
               id="can-use-websearch"
               checked={formData.canUseWebSearch}
               onCheckedChange={(canUseWebSearch) => setFormData({ ...formData, canUseWebSearch })}
@@ -1169,7 +1172,7 @@ function GroupForm({ item, onSave }: { item: any; onSave: (item: any) => void })
 
           <div className="flex items-center justify-between">
             <Label htmlFor="can-use-code">Use Code Interpreter</Label>
-            <Switch 
+            <Switch
               id="can-use-code"
               checked={formData.canUseCodeInterpreter}
               onCheckedChange={(canUseCodeInterpreter) => setFormData({ ...formData, canUseCodeInterpreter })}
@@ -1179,7 +1182,7 @@ function GroupForm({ item, onSave }: { item: any; onSave: (item: any) => void })
 
           <div className="flex items-center justify-between">
             <Label htmlFor="can-upload">Upload Files</Label>
-            <Switch 
+            <Switch
               id="can-upload"
               checked={formData.canUploadFiles}
               onCheckedChange={(canUploadFiles) => setFormData({ ...formData, canUploadFiles })}
@@ -1189,7 +1192,7 @@ function GroupForm({ item, onSave }: { item: any; onSave: (item: any) => void })
 
           <div className="flex items-center justify-between">
             <Label htmlFor="can-knowledge">Access Knowledge Base</Label>
-            <Switch 
+            <Switch
               id="can-knowledge"
               checked={formData.canAccessKnowledge}
               onCheckedChange={(canAccessKnowledge) => setFormData({ ...formData, canAccessKnowledge })}
@@ -1627,9 +1630,9 @@ function PluginsTab() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedPlugin, setSelectedPlugin] = useState<any>(null);
   const [plugins, setPlugins] = useState([
-    { 
-      id: "web-search", 
-      name: "Web Search", 
+    {
+      id: "web-search",
+      name: "Web Search",
       icon: Search,
       description: "Search the web for real-time information",
       enabled: false,
@@ -1638,9 +1641,9 @@ function PluginsTab() {
         { name: "max_results", type: "number", value: "10", required: false },
       ]
     },
-    { 
-      id: "code-interpreter", 
-      name: "Code Interpreter", 
+    {
+      id: "code-interpreter",
+      name: "Code Interpreter",
       icon: Code,
       description: "Execute Python code and analyze data",
       enabled: true,
@@ -1648,17 +1651,17 @@ function PluginsTab() {
         { name: "timeout", type: "number", value: "30", required: false },
       ]
     },
-    { 
-      id: "file-management", 
-      name: "Supreme File Management", 
+    {
+      id: "file-management",
+      name: "Supreme File Management",
       icon: Wrench,
       description: "Advanced file operations and management",
       enabled: false,
       parameters: []
     },
-    { 
-      id: "weather-forecast", 
-      name: "Weather Forecast", 
+    {
+      id: "weather-forecast",
+      name: "Weather Forecast",
       icon: CloudSun,
       description: "Get weather forecasts and conditions",
       enabled: false,
@@ -1667,9 +1670,9 @@ function PluginsTab() {
         { name: "units", type: "string", value: "metric", required: false },
       ]
     },
-    { 
-      id: "echo-mcp", 
-      name: "EchoMCP", 
+    {
+      id: "echo-mcp",
+      name: "EchoMCP",
       icon: Wrench,
       description: "Model Context Protocol integration",
       enabled: true,
@@ -1729,10 +1732,10 @@ function PluginsTab() {
       action: `${plugin?.name}: ${newEnabled ? 'enabled' : 'disabled'}`,
       category: `plugin:${id}:toggle`,
       api: 'api/v1/admin/plugins',
-      payload: { 
-        pluginId: id, 
+      payload: {
+        pluginId: id,
         enabled: newEnabled,
-        parameters: plugin?.parameters 
+        parameters: plugin?.parameters
       },
       type: 'info'
     });
@@ -1781,10 +1784,10 @@ function PluginsTab() {
                       >
                         <Settings className="h-4 w-4" />
                       </Button>
-                      <Switch 
-                        checked={plugin.enabled} 
+                      <Switch
+                        checked={plugin.enabled}
                         onCheckedChange={() => togglePlugin(plugin.id)}
-                        className="data-[state=checked]:bg-purple-600" 
+                        className="data-[state=checked]:bg-purple-600"
                       />
                     </div>
                   </div>
@@ -1986,7 +1989,7 @@ function MCPTab() {
 
         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <p className="text-sm text-blue-800 dark:text-blue-200">
-            <strong>About MCP:</strong> The Model Context Protocol allows AI models to interact with external tools and services. 
+            <strong>About MCP:</strong> The Model Context Protocol allows AI models to interact with external tools and services.
             Configure connectors to extend your AI assistant's capabilities.
           </p>
         </div>
@@ -2035,8 +2038,8 @@ function DocumentsTab() {
 
           <div className="flex items-center justify-between">
             <Label>PDF Extract Images</Label>
-            <Switch 
-              checked={pdfExtractImages} 
+            <Switch
+              checked={pdfExtractImages}
               onCheckedChange={setPdfExtractImages}
               className="data-[state=checked]:bg-purple-600"
             />
@@ -2044,8 +2047,8 @@ function DocumentsTab() {
 
           <div className="flex items-center justify-between">
             <Label>Bypass Embedding</Label>
-            <Switch 
-              checked={bypassEmbedding} 
+            <Switch
+              checked={bypassEmbedding}
               onCheckedChange={setBypassEmbedding}
               className="data-[state=checked]:bg-purple-600"
             />
@@ -2109,8 +2112,8 @@ function DocumentsTab() {
           <div className="space-y-2">
             <Label>Embedding Model</Label>
             <div className="flex gap-2">
-              <Input 
-                value={embeddingModel} 
+              <Input
+                value={embeddingModel}
                 onChange={(e) => setEmbeddingModel(e.target.value)}
                 className="flex-1"
               />
@@ -2130,8 +2133,8 @@ function DocumentsTab() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label>Full Context Mode</Label>
-            <Switch 
-              checked={fullContextMode} 
+            <Switch
+              checked={fullContextMode}
               onCheckedChange={setFullContextMode}
               className="data-[state=checked]:bg-purple-600"
             />
@@ -2139,8 +2142,8 @@ function DocumentsTab() {
 
           <div className="flex items-center justify-between">
             <Label>Hybrid Search</Label>
-            <Switch 
-              checked={hybridSearch} 
+            <Switch
+              checked={hybridSearch}
               onCheckedChange={setHybridSearch}
               className="data-[state=checked]:bg-purple-600"
             />

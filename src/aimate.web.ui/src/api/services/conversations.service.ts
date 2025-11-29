@@ -11,8 +11,10 @@ class ConversationsService {
   /**
    * Get all conversations for a workspace
    */
-  async getConversations(workspaceId?: string): Promise<ConversationDto[]> {
-    const params = workspaceId ? { workspaceId } : {};
+  async getConversations(workspaceId?: string, options?: { page?: number; pageSize?: number }): Promise<ConversationDto[]> {
+    const params: any = workspaceId ? { workspaceId } : {};
+    if (options?.page) params.page = options.page;
+    if (options?.pageSize) params.pageSize = options.pageSize;
     return apiClient.get<ConversationDto[]>('/conversations', params);
   }
 
