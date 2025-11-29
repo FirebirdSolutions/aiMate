@@ -45,7 +45,7 @@ src/aimate.web.ui/
 │   ├── api/                   # API layer
 │   │   ├── client.ts          # Axios instance with JWT & SSE
 │   │   ├── types.ts           # 90+ TypeScript interfaces
-│   │   └── services/          # API service layer (16 files)
+│   │   └── services/          # API service layer (15 files)
 │   │       ├── admin.service.ts
 │   │       ├── auth.service.ts
 │   │       ├── chat.service.ts
@@ -59,7 +59,6 @@ src/aimate.web.ui/
 │   │       ├── search.service.ts
 │   │       ├── settings.service.ts
 │   │       ├── usage.service.ts
-│   │       ├── workspace.service.ts
 │   │       ├── workspaces.service.ts
 │   │       └── index.ts
 │   ├── components/            # React components (flat structure)
@@ -156,7 +155,7 @@ api.interceptors.request.use((config) => {
 });
 ```
 
-#### 2. Service Files (16 Total)
+#### 2. Service Files (15 Total)
 
 Each service file handles a specific domain:
 
@@ -167,7 +166,7 @@ Each service file handles a specific domain:
 | `chat.service.ts` | Chat & streaming | `sendMessage()`, `streamMessage()`, `regenerateResponse()` |
 | `connections.service.ts` | BYOK connections | `getConnections()`, `testConnection()`, `createConnection()` |
 | `conversations.service.ts` | Conversations | `getConversations()`, `createConversation()`, `deleteConversation()` |
-| `feedback.service.ts` | Message feedback | `submitFeedback()`, `getFeedback()`, `rateMesage()` |
+| `feedback.service.ts` | Message feedback | `submitFeedback()`, `getFeedback()`, `rateMessage()` |
 | `files.service.ts` | File management | `uploadFile()`, `getFiles()`, `deleteFile()` |
 | `knowledge.service.ts` | RAG documents | `uploadDocument()`, `searchDocuments()`, `getChunks()` |
 | `messages.service.ts` | Message CRUD | `getMessages()`, `updateMessage()`, `deleteMessage()` |
@@ -175,8 +174,7 @@ Each service file handles a specific domain:
 | `search.service.ts` | Search | `searchConversations()`, `searchMessages()` |
 | `settings.service.ts` | User settings | `getSettings()`, `updateSettings()` |
 | `usage.service.ts` | Analytics | `getUsageStats()`, `getModelStats()`, `exportCSV()` |
-| `workspace.service.ts` | Single workspace ops | `getWorkspace()`, `updateWorkspace()` |
-| `workspaces.service.ts` | Workspace list | `getWorkspaces()`, `createWorkspace()`, `deleteWorkspace()` |
+| `workspaces.service.ts` | Workspace management | `getWorkspaces()`, `createWorkspace()`, `deleteWorkspace()` |
 | `index.ts` | Barrel exports | Re-exports all services |
 
 #### 3. API Response Format

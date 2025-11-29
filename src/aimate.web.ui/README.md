@@ -66,7 +66,7 @@ src/
 ├── api/                    # API layer
 │   ├── client.ts           # Axios instance with JWT & SSE
 │   ├── types.ts            # 90+ TypeScript interfaces
-│   └── services/           # 16 service files
+│   └── services/           # 15 service files
 ├── components/             # React components (35 custom + 48 UI)
 │   ├── ui/                 # shadcn/ui components
 │   └── figma/              # Figma integration

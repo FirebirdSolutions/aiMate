@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] - November 2025
+
+### Removed
+- `workspace.service.ts` - Unused duplicate service (functionality covered by `workspaces.service.ts` and `conversations.service.ts`)
+- `App_Connected.tsx` - Legacy alternative App implementation (unused)
+
+### Fixed
+- `ConversationDto.id` type changed from `number` to `string` for consistency with codebase usage
+- `ConversationDto.workspaceId` type changed from `number` to `string` for consistency
+- Service count corrected from 16 to 15 in documentation
+
+---
+
 ## [1.0.0] - November 2025
 
 ### Added
@@ -39,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Debug components (DebugContext, DebugPanel)
 - Mode indicators (Offline, Showcase)
 
-#### API Service Layer (16 Services)
+#### API Service Layer (15 Services)
 - `admin.service.ts` - Admin dashboard operations
 - `auth.service.ts` - Authentication & JWT management
 - `chat.service.ts` - Real-time chat with streaming
@@ -53,8 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `search.service.ts` - Full-text search
 - `settings.service.ts` - User preferences
 - `usage.service.ts` - Analytics & billing
-- `workspace.service.ts` - Single workspace operations
-- `workspaces.service.ts` - Workspace list management
+- `workspaces.service.ts` - Workspace management
 
 #### React Hooks (9 Hooks)
 - `useAdmin` - Admin panel data management
