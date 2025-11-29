@@ -257,6 +257,39 @@ export function useAdmin() {
     }
   }, [loadModels, adminSettings]);
 
+  // Add multiple models from a connection (for offline LM server testing)
+  const addModelsFromConnection = useCallback((modelsToAdd: Array<{ id: string; name: string; connectionName: string }>) => {
+    if (!AppConfig.isOfflineMode()) {
+      console.warn('[useAdmin] addModelsFromConnection is only available in offline mode');
+      return;
+    }
+
+    // Filter out models that already exist
+    const existingIds = new Set(adminSettings.settings.models.map(m => m.id));
+    const newModels = modelsToAdd.filter(m => !existingIds.has(m.id));
+
+    if (newModels.length === 0) {
+      console.log('[useAdmin] All models already exist');
+      return;
+    }
+
+    // Add to AdminSettingsContext
+    const newAdminModels = newModels.map(m => ({
+      id: m.id,
+      name: m.name,
+      color: 'text-cyan-500',
+      description: `From ${m.connectionName}`,
+      connection: m.connectionName,
+    }));
+    adminSettings.updateModels([...adminSettings.settings.models, ...newAdminModels]);
+
+    // Also update local state
+    const newModelDtos = newAdminModels.map(toModelDto);
+    setModels(prev => [...prev, ...newModelDtos]);
+
+    console.log(`[useAdmin] Added ${newModels.length} models from connection`);
+  }, [adminSettings]);
+
   // ============================================================================
   // CONNECTIONS
   // ============================================================================
@@ -705,7 +738,8 @@ export function useAdmin() {
     createModel,
     updateModel,
     deleteModel,
-    
+    addModelsFromConnection,
+
     // Connections
     toggleConnection,
     createConnection,

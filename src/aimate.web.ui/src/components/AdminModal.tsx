@@ -1209,7 +1209,7 @@ function ConnectionsTab() {
   const { addLog } = useDebug();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState<any>(null);
-  const { connections, toggleConnection, createConnection, updateConnection, deleteConnection: deleteConnectionApi, testConnection } = useAdmin();
+  const { connections, toggleConnection, createConnection, updateConnection, deleteConnection: deleteConnectionApi, testConnection, addModelsFromConnection } = useAdmin();
 
   // Map ConnectionDto to dialog Connection format
   const mapToDialogConnection = (conn: any) => ({
@@ -1334,46 +1334,59 @@ function ConnectionsTab() {
         connection={selectedConnection}
         onSave={handleSave}
         onDelete={selectedConnection ? handleDelete : undefined}
+        onAddModelsToList={(models) => {
+          addModelsFromConnection(models);
+          addLog({
+            action: `Added ${models.length} models to Models list`,
+            category: 'admin:models:bulk-add',
+            payload: { models: models.map(m => m.id) },
+            type: 'success'
+          });
+        }}
       />
-      <div className="space-y-6">
-        {/* OpenAI API Section */}
+      <div className="space-y-4">
+        {/* OpenAI-Compatible Connections */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">OpenAI API</h3>
-            <Switch
-              checked={connections[0]?.enabled}
-              onCheckedChange={() => toggleConnection("1")}
-              className="data-[state=checked]:bg-purple-600"
-            />
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold">OpenAI-Compatible Connections</h3>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleAdd}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Connection
+            </Button>
           </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            Connect to any OpenAI-compatible API: LM Studio, Ollama, OpenRouter, LiteLLM, OpenAI, Anthropic (via proxy), and more.
+          </p>
           <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-              <span className="text-sm">
-                Manage OpenAI API Connections
-              </span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-                onClick={handleAdd}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            {connections
-              .filter((c) => c.provider === "OpenAI")
-              .map((connection) => (
+            {connections.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <p className="text-sm">No connections configured.</p>
+                <p className="text-xs mt-1">Click "Add Connection" to get started.</p>
+              </div>
+            ) : (
+              connections.map((connection) => (
                 <div
                   key={connection.id}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
                 >
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{connection.name}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{connection.apiKeyPrefix}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{connection.name}</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-500">
+                        {connection.provider || 'Custom'}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                      {connection.url || 'No URL configured'}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                     <Switch
-                      checked={connection.isActive}
+                      checked={connection.isActive ?? connection.enabled}
                       onCheckedChange={() => handleToggle(connection.id)}
                       className="data-[state=checked]:bg-purple-600"
                     />
@@ -1387,118 +1400,9 @@ function ConnectionsTab() {
                     </Button>
                   </div>
                 </div>
-              ))}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Ollama API Section */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Ollama API</h3>
-            <Switch className="data-[state=checked]:bg-purple-600" />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-              <span className="text-sm">
-                Manage Ollama API Connections
-              </span>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-                onClick={handleAdd}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-              <span className="text-sm">http://10.0.0.50:1234/v1</span>
-              <div className="flex items-center gap-2">
-                <Button size="icon" variant="ghost" className="h-8 w-8">
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="ghost" className="h-8 w-8">
-                  <Settings className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <p className="text-sm text-purple-500 dark:text-purple-400 px-3">
-              Trouble accessing Ollama?{" "}
-              <button className="underline">Click here for help.</button>
-            </p>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Direct Connections Section - LM Server / Custom */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Direct Connections (LM Server)</h3>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8"
-              onClick={handleAdd}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            Connect to LM Studio, Ollama, or any OpenAI-compatible API endpoint.
-          </p>
-          <div className="space-y-2">
-            {connections.map((connection) => (
-              <div
-                key={connection.id}
-                className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium">{connection.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {(connection as any).url || connection.apiKeyPrefix || 'No URL configured'}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Switch
-                    checked={connection.isActive ?? connection.enabled}
-                    onCheckedChange={() => handleToggle(connection.id)}
-                    className="data-[state=checked]:bg-purple-600"
-                  />
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8"
-                    onClick={() => handleEdit(connection)}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            {connections.length === 0 && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                No connections configured. Click + to add one.
-              </p>
+              ))
             )}
           </div>
-        </div>
-
-        <Separator />
-
-        {/* Cache Base Model List */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Cache Base Model List</h3>
-            <Switch className="data-[state=checked]:bg-purple-600" />
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Base Model List Cache speeds up access by fetching base models only
-            at startup or on settings save—faster, but may not show recent base
-            model changes.
-          </p>
         </div>
       </div>
     </>
