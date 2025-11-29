@@ -51,6 +51,7 @@ interface ConnectionEditDialogProps {
   onDelete?: (id: string) => void;
   onTestConnection?: (url: string, apiKey?: string) => Promise<ConnectionTestResult>;
   onFetchModels?: (url: string, apiKey?: string) => Promise<string[]>;
+  onAddModelsToList?: (models: Array<{ id: string; name: string; connectionName: string }>) => void;
 }
 
 export function ConnectionEditDialog({
@@ -61,6 +62,7 @@ export function ConnectionEditDialog({
   onDelete,
   onTestConnection,
   onFetchModels,
+  onAddModelsToList,
 }: ConnectionEditDialogProps) {
   const [formData, setFormData] = useState<Connection>(
     connection || {
@@ -83,6 +85,7 @@ export function ConnectionEditDialog({
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [testMessage, setTestMessage] = useState("");
   const [fetchingModels, setFetchingModels] = useState(false);
+  const [addingToList, setAddingToList] = useState(false);
 
   // Reset form data when connection changes
   useEffect(() => {
@@ -282,6 +285,38 @@ export function ConnectionEditDialog({
     }
   };
 
+  // Add fetched models to the global Models list
+  const handleAddModelsToList = async () => {
+    if (!formData.modelIds.length) {
+      setTestMessage('No models to add. Fetch models first.');
+      setTestStatus('error');
+      return;
+    }
+
+    if (!onAddModelsToList) {
+      setTestMessage('Cannot add models (handler not available)');
+      setTestStatus('error');
+      return;
+    }
+
+    setAddingToList(true);
+    try {
+      const modelsToAdd = formData.modelIds.map(id => ({
+        id,
+        name: id,
+        connectionName: formData.name || 'Unknown Connection',
+      }));
+      onAddModelsToList(modelsToAdd);
+      setTestMessage(`Added ${modelsToAdd.length} models to the Models list`);
+      setTestStatus('success');
+    } catch (err) {
+      setTestMessage(`Failed to add models: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setTestStatus('error');
+    } finally {
+      setAddingToList(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 flex flex-col">
@@ -422,33 +457,55 @@ export function ConnectionEditDialog({
             <Separator />
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <Label>Model IDs</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleFetchModels}
-                  disabled={fetchingModels || !formData.url}
-                >
-                  {fetchingModels ? (
-                    <>
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      Fetching...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-3 w-3 mr-1" />
-                      Fetch from Server
-                    </>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleFetchModels}
+                    disabled={fetchingModels || !formData.url}
+                  >
+                    {fetchingModels ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        Fetching...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Fetch
+                      </>
+                    )}
+                  </Button>
+                  {onAddModelsToList && formData.modelIds.length > 0 && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleAddModelsToList}
+                      disabled={addingToList}
+                    >
+                      {addingToList ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add to Models
+                        </>
+                      )}
+                    </Button>
                   )}
-                </Button>
+                </div>
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Click "Fetch from Server" to auto-populate models from the LM server, or add manually below.
+                Fetch models from server, then click "Add to Models" to make them available in the chat.
               </p>
 
               {formData.modelIds.length > 0 && (
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div className="space-y-1 max-h-32 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded p-2">
                   {formData.modelIds.map((modelId, index) => (
                     <div
                       key={index}
