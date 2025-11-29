@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Settings, Palette, Link2, User, Sparkles, BarChart3 } from "lucide-react";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
+import { useUsage } from "../hooks/useUsage";
 import {
   Select,
   SelectContent,
@@ -23,7 +24,7 @@ import {
 } from "./ui/table";
 import { useTheme } from "./ThemeProvider";
 import { toast } from "sonner";
-import { useDebug } from "./DebugContext";
+import { useDebug, useUIEventLogger } from "./DebugContext";
 import { useUserSettings } from "../context/UserSettingsContext";
 import { UsageDetailsDialog } from "./UsageDetailsDialog";
 import { BaseModal } from "./BaseModal";
@@ -35,21 +36,25 @@ interface SettingsModalProps {
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const { addLog } = useDebug();
+  const { logUIEvent } = useUIEventLogger();
 
   useEffect(() => {
     if (open) {
+      logUIEvent('Settings Modal opened', 'ui:settings:open');
       addLog({
         action: 'User Settings opened',
+        category: 'settings:open',
         api: 'api/v1/GetUserSettings',
         type: 'info'
       });
     }
-  }, [open, addLog]);
+  }, [open, addLog, logUIEvent]);
 
   const handleSave = () => {
     toast.success("User settings saved!");
     addLog({
       action: 'Settings Saved',
+      category: 'settings:save',
       api: 'api/v1/SaveUserSettings',
       type: 'success'
     });
@@ -113,7 +118,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
 function GeneralTab() {
   const { settings, updateGeneral } = useUserSettings();
-  const general = settings.general;
+  const general = settings.general || {};
 
   return (
     <div className="space-y-4">
@@ -171,9 +176,10 @@ function GeneralTab() {
 }
 
 function InterfaceTab() {
+  const { addLog } = useDebug();
   const { theme, setTheme, fontSize, setFontSize, colorTheme, setColorTheme } = useTheme();
   const { settings, updateInterface } = useUserSettings();
-  const iface = settings.interface;
+  const iface = settings.interface || {};
   const [localTheme, setLocalTheme] = useState(theme);
   const [localFontSize, setLocalFontSize] = useState(fontSize);
   const [localColorTheme, setLocalColorTheme] = useState(colorTheme);
@@ -189,6 +195,39 @@ function InterfaceTab() {
   useEffect(() => {
     setColorTheme(localColorTheme);
   }, [localColorTheme, setColorTheme]);
+
+  const handleTimestampsToggle = (checked: boolean) => {
+    updateInterface({ showTimestamps: checked });
+    addLog({
+      action: `Show timestamps: ${checked ? 'enabled' : 'disabled'}`,
+      category: 'settings:interface:timestamps',
+      api: 'api/v1/settings/interface',
+      payload: { showTimestamps: checked },
+      type: 'info'
+    });
+  };
+
+  const handleSyntaxHighlightingToggle = (checked: boolean) => {
+    updateInterface({ syntaxHighlighting: checked });
+    addLog({
+      action: `Syntax highlighting: ${checked ? 'enabled' : 'disabled'}`,
+      category: 'settings:interface:syntax',
+      api: 'api/v1/settings/interface',
+      payload: { syntaxHighlighting: checked },
+      type: 'info'
+    });
+  };
+
+  const handleMarkdownToggle = (checked: boolean) => {
+    updateInterface({ markdownSupport: checked });
+    addLog({
+      action: `Markdown support: ${checked ? 'enabled' : 'disabled'}`,
+      category: 'settings:interface:markdown',
+      api: 'api/v1/settings/interface',
+      payload: { markdownSupport: checked },
+      type: 'info'
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -255,7 +294,7 @@ function InterfaceTab() {
             <Switch
               id="timestamps"
               checked={iface.showTimestamps}
-              onCheckedChange={(v) => updateInterface({ showTimestamps: v })}
+              onCheckedChange={handleTimestampsToggle}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -270,7 +309,7 @@ function InterfaceTab() {
             <Switch
               id="code-syntax"
               checked={iface.syntaxHighlighting}
-              onCheckedChange={(v) => updateInterface({ syntaxHighlighting: v })}
+              onCheckedChange={handleSyntaxHighlightingToggle}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -285,7 +324,7 @@ function InterfaceTab() {
             <Switch
               id="markdown"
               checked={iface.markdownSupport}
-              onCheckedChange={(v) => updateInterface({ markdownSupport: v })}
+              onCheckedChange={handleMarkdownToggle}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -297,7 +336,7 @@ function InterfaceTab() {
 
 function ConnectionsTab() {
   const { settings, updateConnections } = useUserSettings();
-  const conn = settings.connections;
+  const conn = settings.connections || {};
 
   return (
     <div className="space-y-4">
@@ -351,7 +390,7 @@ function ConnectionsTab() {
 
 function PersonalisationTab() {
   const { settings, updatePersonalisation } = useUserSettings();
-  const pers = settings.personalisation;
+  const pers = settings.personalisation || {};
 
   return (
     <div className="space-y-4">
@@ -429,7 +468,7 @@ function PersonalisationTab() {
 
 function AccountTab() {
   const { settings, updateAccount, resetSettings } = useUserSettings();
-  const account = settings.account;
+  const account = settings.account || {};
 
   const handleResetSettings = () => {
     resetSettings();
@@ -589,51 +628,31 @@ function AccountTab() {
 
 function UsageTab() {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const { stats, loading } = useUsage();
   
-  // Mock usage data by model with cost tracking
-  const usageData = [
-    {
-      model: "GPT-4",
-      connection: "OpenAI",
-      messages: 2847,
-      tokensIn: 458924,
-      tokensOut: 312567,
-      totalTokens: 771491,
-      cost: 23.14,
-      color: "text-purple-500"
-    },
-    {
-      model: "Claude 3 Opus",
-      connection: "Anthropic",
-      messages: 892,
-      tokensIn: 187623,
-      tokensOut: 112907,
-      totalTokens: 300530,
-      cost: 9.01,
-      color: "text-orange-500"
-    },
-    {
-      model: "GPT-4 Turbo",
-      connection: "OpenAI",
-      messages: 1523,
-      tokensIn: 298167,
-      tokensOut: 187919,
-      totalTokens: 486086,
-      cost: 9.72,
-      color: "text-blue-500"
-    },
-  ];
+  if (loading || !stats) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <p className="text-gray-500 dark:text-gray-400">Loading usage data...</p>
+      </div>
+    );
+  }
 
-  const totalMessages = usageData.reduce((sum, item) => sum + item.messages, 0);
-  const totalTokens = usageData.reduce((sum, item) => sum + item.totalTokens, 0);
-  const totalCost = usageData.reduce((sum, item) => sum + item.cost, 0);
+  const totalMessages = stats.totalMessages;
+  const totalTokens = stats.totalTokens;
+  const totalCost = stats.totalCost;
+  
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-NZ', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
   return (
     <div className="space-y-4">
       <div>
         <h3 className="font-semibold mb-3">Current Billing Period</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          Nov 1, 2025 - Nov 30, 2025
+          {formatDate(stats.billingPeriodStart)} - {formatDate(stats.billingPeriodEnd)}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -674,14 +693,14 @@ function UsageTab() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {usageData.map((item) => (
+              {stats.usageByModel?.map((item) => (
                 <TableRow key={item.model}>
                   <TableCell className="font-medium">
-                    <span className={item.color}>{item.model}</span>
+                    <span style={{ color: item.color }}>{item.model}</span>
                   </TableCell>
                   <TableCell>{item.connection}</TableCell>
                   <TableCell className="text-right">{item.messages.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{(item.totalTokens / 1000).toFixed(1)}K</TableCell>
+                  <TableCell className="text-right">{(item.tokens / 1000).toFixed(1)}K</TableCell>
                   <TableCell className="text-right">${item.cost.toFixed(2)}</TableCell>
                 </TableRow>
               ))}

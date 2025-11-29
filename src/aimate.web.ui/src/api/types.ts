@@ -1,407 +1,796 @@
+/**
+ * aiMate REST API TypeScript Definitions
+ * 
+ * Complete type definitions for the aiMate REST API v1
+ * Matches the backend DTOs exactly for type safety across the stack
+ */
+
 // ============================================================================
-// User & Authentication Types
+// COMMON TYPES
 // ============================================================================
 
-export interface User {
+export interface ApiErrorResponse {
+  error: {
+    message: string;
+    type: string;
+    code: string;
+    details?: Record<string, string[]>;
+  };
+}
+
+export interface ApiSuccessResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface PaginationParams {
+  page?: number;
+  perPage?: number;
+  limit?: number;
+}
+
+// ============================================================================
+// AUTHENTICATION & API KEYS
+// ============================================================================
+
+export interface ApiKeyDto {
   id: string;
-  email: string;
+  userId: string;
   name: string;
-  role: string;
-  permissions: string[];
-  createdAt?: string;
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface LoginResponse {
-  token: string;
-  refreshToken?: string;
-  user: User;
-  expiresAt: string;
-}
-
-export interface ApiKey {
-  id: string;
-  name: string;
-  key: string;
+  hashedKey: string;
   createdAt: string;
-  expiresAt?: string;
-  lastUsed?: string;
+  lastUsedAt: string | null;
+  isRevoked: boolean;
+  requestsPerMinute: number;
+  requestsPerDay: number;
 }
 
-// ============================================================================
-// Workspace & Conversation Types
-// ============================================================================
-
-export interface Workspace {
-  id: string;
+export interface CreateApiKeyDto {
+  userId: string;
   name: string;
   description?: string;
-  type: string;
-  personality?: string;
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
 }
 
-export interface Conversation {
+export interface ApiKeyResponseDto {
   id: string;
-  workspaceId: string;
-  title: string;
-  model?: string;
-  messageCount: number;
-  lastMessageAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  isArchived?: boolean;
-}
-
-export interface Message {
-  id: string;
-  conversationId: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  metadata?: {
-    model?: string;
-    tokens?: number;
-    finishReason?: string;
-    [key: string]: any;
-  };
-  attachments?: Attachment[];
+  apiKey: string; // Only returned once!
   createdAt: string;
 }
 
 // ============================================================================
-// Chat Completion Types (OpenAI-compatible)
+// CHAT API
 // ============================================================================
 
-export interface ChatCompletionMessage {
-  role: 'user' | 'assistant' | 'system';
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
 export interface ChatCompletionRequest {
   model: string;
-  messages: ChatCompletionMessage[];
+  messages: ChatMessage[];
   temperature?: number;
-  maxTokens?: number;
+  max_tokens?: number;
+  top_p?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
   stream?: boolean;
-  topP?: number;
-  frequencyPenalty?: number;
-  presencePenalty?: number;
-  stop?: string | string[];
 }
 
 export interface ChatCompletionChoice {
   index: number;
-  message: ChatCompletionMessage;
-  finishReason: string;
+  message: ChatMessage;
+  finish_reason: 'stop' | 'length' | 'content_filter' | null;
 }
 
 export interface ChatCompletionUsage {
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
 }
 
 export interface ChatCompletionResponse {
   id: string;
-  object: string;
+  object: 'chat.completion';
   created: number;
   model: string;
   choices: ChatCompletionChoice[];
   usage: ChatCompletionUsage;
 }
 
+export interface StreamChunkDelta {
+  content?: string;
+  role?: string;
+}
+
+export interface StreamChunkChoice {
+  index: number;
+  delta: StreamChunkDelta;
+  finish_reason: 'stop' | 'length' | 'content_filter' | null;
+}
+
 export interface StreamChunk {
   id: string;
-  object: string;
+  object: 'chat.completion.chunk';
   created: number;
   model: string;
-  choices: Array<{
-    index: number;
-    delta: {
-      role?: string;
-      content?: string;
-    };
-    finishReason?: string;
-  }>;
+  choices: StreamChunkChoice[];
 }
 
 // ============================================================================
-// Knowledge & Files
+// WORKSPACES & CONVERSATIONS
 // ============================================================================
 
-export interface KnowledgeItem {
-  id: string;
-  title: string;
-  content: string;
-  type: string;
-  tags: string[];
-  source?: string;
-  metadata?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
-}
-
-export interface FileItem {
-  id: string;
-  name: string;
-  size: number;
-  mimeType: string;
-  url?: string;
-  path?: string;
-  uploadedAt: string;
-  userId: string;
-}
-
-export interface Attachment {
-  id: string;
-  type: 'file' | 'note' | 'knowledge' | 'webpage' | 'chat';
-  referenceId: string;
-  name?: string;
-  metadata?: any;
-  createdAt?: string;
-}
-
-// ============================================================================
-// Notes
-// ============================================================================
-
-export interface Note {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
-}
-
-// ============================================================================
-// Projects
-// ============================================================================
-
-export interface Project {
+export interface WorkspaceDto {
   id: string;
   name: string;
   description?: string;
-  type?: string;
+  type: 'Project' | 'Research' | 'Support' | 'Personal' | 'Other';
+  personality: string;
   createdAt: string;
   updatedAt: string;
-  userId: string;
+}
+
+export interface CreateWorkspaceDto {
+  name: string;
+  description?: string;
+  type: 'Project' | 'Research' | 'Support' | 'Personal' | 'Other';
+  personality?: string;
+}
+
+export interface UpdateWorkspaceDto {
+  name?: string;
+  description?: string;
+  personality?: string;
+}
+
+export interface ConversationDto {
+  id: number;
+  workspaceId: number;
+  title: string;
+  modelId: string | null;
+  isPinned: boolean;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+}
+
+export interface CreateConversationDto {
+  title: string;
+}
+
+export interface UpdateConversationDto {
+  title?: string;
+  modelId?: string;
+  isPinned?: boolean;
+  isArchived?: boolean;
 }
 
 // ============================================================================
-// Settings
+// FEEDBACK
 // ============================================================================
 
-export interface UserSettings {
-  id?: string;
-  userId?: string;
-  theme: 'light' | 'dark' | 'system';
-  colorTheme: 'purple' | 'blue' | 'green' | 'orange' | 'pink' | 'cyan';
-  fontSize: 'small' | 'medium' | 'large';
-  defaultModel?: string;
-  defaultWorkspace?: string;
+export interface FeedbackTag {
+  key: string;
+  value: string;
+  color: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
+}
+
+export interface FeedbackDto {
+  id: string;
+  messageId: string;
+  userId: string;
+  rating: number;
+  textFeedback?: string;
+  tags: FeedbackTag[];
+  modelId: string;
+  responseTimeMs: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFeedbackDto {
+  userId: string;
+  rating: number;
+  textFeedback?: string;
+  tags?: FeedbackTag[];
+  modelId: string;
+  responseTimeMs: number;
+}
+
+export interface UpdateFeedbackDto {
+  rating?: number;
+  textFeedback?: string;
+}
+
+export interface FeedbackStatsDto {
+  modelId: string;
+  totalFeedback: number;
+  averageRating: number;
+  ratingDistribution: Record<string, number>;
+  averageResponseTime: number;
+  positivePercentage: number;
+  negativePercentage: number;
+  neutralPercentage: number;
+}
+
+export interface FeedbackTemplateOptionDto {
+  value: string;
+  color: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
+  icon: string;
+  displayOrder: number;
+}
+
+export interface FeedbackTemplateDto {
+  id: string;
+  category: string;
+  label: string;
+  description: string;
+  isActive: boolean;
+  isRequired?: boolean;
+  options: FeedbackTemplateOptionDto[];
+  createdAt?: string;
+}
+
+export interface CreateFeedbackTemplateDto {
+  category: string;
+  label: string;
+  description: string;
+  options: FeedbackTemplateOptionDto[];
+  isRequired?: boolean;
+}
+
+// ============================================================================
+// KNOWLEDGE BASE
+// ============================================================================
+
+export interface KnowledgeArticleDto {
+  id: string;
+  title: string;
+  content: string;
+  type: 'Documentation' | 'Article' | 'Tutorial' | 'Guide' | 'Reference';
+  category: string;
+  tags: string[];
+  visibility: 'Public' | 'Private' | 'Organization';
+  isPublished: boolean;
+  isFeatured: boolean;
+  viewCount: number;
+  referenceCount: number;
+  createdAt: string;
+  updatedAt: string;
+  lastViewedAt?: string;
+}
+
+export interface CreateKnowledgeArticleDto {
+  title: string;
+  content: string;
+  type: 'Documentation' | 'Article' | 'Tutorial' | 'Guide' | 'Reference';
+  category: string;
+  tags: string[];
+  visibility: 'Public' | 'Private' | 'Organization';
+  isPublished: boolean;
+  isFeatured: boolean;
+}
+
+export interface KnowledgeAnalyticsDto {
+  totalArticles: number;
+  totalViews: number;
+  totalReferences: number;
+  mostViewed: Array<{ id: string; title: string; viewCount: number }>;
+  mostReferenced: Array<{ id: string; title: string; referenceCount: number }>;
+  tagCounts: Record<string, number>;
+}
+
+export interface SemanticSearchRequest {
+  query: string;
+  limit?: number;
+  threshold?: number;
+}
+
+export interface SemanticSearchResult {
+  id: string;
+  title: string;
+  content: string;
+  score: number;
+  relevance: 'high' | 'medium' | 'low';
+}
+
+export interface SemanticSearchResponse {
+  results: SemanticSearchResult[];
+  totalResults: number;
+  queryTime: number;
+}
+
+// ============================================================================
+// NOTES
+// ============================================================================
+
+export interface NoteDto {
+  id: string;
+  title: string;
+  content: string;
+  contentType: 'Plain' | 'Markdown' | 'RichText';
+  tags: string[];
+  collection?: string;
+  category?: string;
+  color?: string;
+  ownerId: string;
+  visibility: 'Private' | 'Shared' | 'Public';
+  isFavorite: boolean;
+  isPinned: boolean;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNoteDto {
+  title: string;
+  content: string;
+  contentType?: 'Plain' | 'Markdown' | 'RichText';
+  tags?: string[];
+  collection?: string;
+  category?: string;
+  color?: string;
+}
+
+export interface UpdateNoteDto {
+  title?: string;
+  content?: string;
+  tags?: string[];
+  collection?: string;
+  category?: string;
+  color?: string;
+  isFavorite?: boolean;
+  isPinned?: boolean;
+  isArchived?: boolean;
+}
+
+// ============================================================================
+// PROJECTS
+// ============================================================================
+
+export interface ProjectDto {
+  id: string;
+  key: string;
+  name: string;
+  description?: string;
+  ownerId: string;
+  owner: string;
+  ownerEmail: string;
+  status: 'Planning' | 'In Progress' | 'On Hold' | 'Completed' | 'Cancelled';
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  budget?: number;
+  startDate?: string;
+  dueDate?: string;
+  progressPercent: number;
+  tags: string[];
+  teamMembers: string[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProjectDto {
+  key: string;
+  name: string;
+  description?: string;
+  owner: string;
+  ownerEmail: string;
+  status: 'Planning' | 'In Progress' | 'On Hold' | 'Completed' | 'Cancelled';
+  priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  budget?: number;
+  startDate?: string;
+  dueDate?: string;
+  progressPercent?: number;
+  tags?: string[];
+  teamMembers?: string[];
+  notes?: string;
+}
+
+export interface UpdateProjectDto {
+  name?: string;
+  description?: string;
+  status?: 'Planning' | 'In Progress' | 'On Hold' | 'Completed' | 'Cancelled';
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical';
+  budget?: number;
+  startDate?: string;
+  dueDate?: string;
+  progressPercent?: number;
+  tags?: string[];
+  teamMembers?: string[];
+  notes?: string;
+}
+
+// ============================================================================
+// SETTINGS
+// ============================================================================
+
+export interface NotificationSettings {
+  email: boolean;
+  push: boolean;
+  inApp: boolean;
+}
+
+export interface UserSettingsDto {
+  username: string;
+  email: string;
+  userTier: 'Free' | 'BYOK' | 'Developer' | 'Enterprise';
+  theme: 'light' | 'dark' | 'auto';
+  notifications: NotificationSettings;
+  language: string;
+  timezone: string;
+  defaultModel: string;
+  defaultPersonality: string;
+  autoSaveInterval: number;
+  showLineNumbers: boolean;
+  fontSize: number;
+  fontFamily: string;
+}
+
+export interface UpdateSettingsDto {
+  theme?: 'light' | 'dark' | 'auto';
+  notifications?: NotificationSettings;
   language?: string;
-  notifications?: boolean;
+  timezone?: string;
+  defaultModel?: string;
+  defaultPersonality?: string;
+  autoSaveInterval?: number;
+  showLineNumbers?: boolean;
+  fontSize?: number;
+  fontFamily?: string;
+}
+
+// ============================================================================
+// USAGE ANALYTICS
+// ============================================================================
+
+export interface UsageByModel {
+  model: string;
+  connection: string;
+  messages: number;
+  tokens: number;
+  cost: number;
+  color: string;
+}
+
+export interface UsageStatsDto {
+  totalMessages: number;
+  totalTokens: number;
+  totalCost: number;
+  billingPeriodStart: string;
+  billingPeriodEnd: string;
+  usageByModel: UsageByModel[];
+}
+
+// ============================================================================
+// ADMIN
+// ============================================================================
+
+export interface AdminDashboardDto {
+  totalUsers: number;
+  activeUsers: number;
+  totalWorkspaces: number;
+  totalConversations: number;
+  totalMessages: number;
+  systemHealth: 'Healthy' | 'Degraded' | 'Critical';
+  uptime: number;
+  lastBackup: string;
+  totalTokensUsed: number;
+  totalCostTracked: number;
+}
+
+export interface ModelDto {
+  id: string;
+  name: string;
+  provider: string;
+  isActive: boolean;
+  isAvailable?: boolean;
+  contextWindow: number;
+  maxTokens?: number;
+  costPer1kInputTokens?: number;
+  costPer1kOutputTokens?: number;
+  capabilities?: string[];
+  usageCount?: number;
+  lastUsed?: string;
+  color?: string;
+}
+
+export interface McpServerDto {
+  id: string;
+  name: string;
+  description: string;
+  isActive: boolean;
+  status: 'Connected' | 'Disconnected' | 'Error';
+  lastConnected?: string;
+  tools: string[];
+  version: string;
+}
+
+export interface LogEntryDto {
+  timestamp: string;
+  level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'CRITICAL';
+  source: string;
+  message: string;
+  details?: Record<string, any>;
+}
+
+// ============================================================================
+// FILES & ATTACHMENTS
+// ============================================================================
+
+export interface FileDto {
+  id: string;
+  workspaceId: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  description?: string;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  updatedAt?: string;
+}
+
+export interface FileUploadResponse {
+  id: string;
+  workspaceId: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  description?: string;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
+export interface AttachmentDto {
+  id: string;
+  fileName: string;
+  url: string;
+  uploadedAt: string;
+}
+
+export interface UpdateFileDto {
+  description?: string;
+}
+
+// ============================================================================
+// SEARCH
+// ============================================================================
+
+export interface SearchResultDto<T = any> {
+  results: T[];
+  totalResults: number;
+}
+
+export interface ConversationSearchResult {
+  id: number;
+  title: string;
+  workspaceId: string;
+  relevance: number;
+}
+
+export interface MessageSearchResult {
+  id: string;
+  content: string;
+  conversationId: string;
+  createdAt: string;
+  relevance: number;
+}
+
+export interface KnowledgeSearchResult {
+  id: string;
+  title: string;
+  content?: string;
+}
+
+export interface GlobalSearchResultDto {
+  conversations: ConversationSearchResult[];
+  messages: MessageSearchResult[];
+  knowledge: KnowledgeSearchResult[];
+}
+
+// ============================================================================
+// TOOLS & MCP
+// ============================================================================
+
+export interface ToolParameter {
+  type: 'string' | 'integer' | 'number' | 'boolean' | 'array' | 'object';
+  description: string;
+  required: boolean;
+  default?: any;
+}
+
+export interface ToolDto {
+  name: string;
+  description: string;
+  category: string;
+  parameters: Record<string, ToolParameter>;
+}
+
+export interface ToolExecutionRequest {
+  tool: string;
+  parameters: Record<string, any>;
+}
+
+export interface ToolExecutionResponse {
+  success: boolean;
+  toolName: string;
+  result: any;
+  executionTime: number;
+  timestamp: string;
+}
+
+// ============================================================================
+// CODE MANAGEMENT
+// ============================================================================
+
+export interface CodeFileDto {
+  id: string;
+  fileName: string;
+  language: string;
+  path: string;
+  content: string;
+  size?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCodeFileDto {
+  fileName: string;
+  language: string;
+  content: string;
+  path?: string;
+}
+
+export interface CompileRequest {
+  code: string;
+  language: string;
+}
+
+export interface CompileMessage {
+  line?: number;
+  column?: number;
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+}
+
+export interface CompileResponse {
+  success: boolean;
+  messages: CompileMessage[];
+  warnings: CompileMessage[];
+  errors: CompileMessage[];
+  compiledCode?: string;
+}
+
+// ============================================================================
+// PLUGINS
+// ============================================================================
+
+export interface PluginSettingSchema {
+  type: 'select' | 'number' | 'string' | 'boolean';
+  options?: string[];
+  min?: number;
+  max?: number;
+  description: string;
+}
+
+export interface PluginDto {
+  id: string;
+  name: string;
+  version: string;
+  description: string;
+  isEnabled: boolean;
+  author: string;
+  settings: Record<string, any>;
+}
+
+export interface PluginSettingsDto {
+  schema: Record<string, PluginSettingSchema>;
+  values: Record<string, any>;
+}
+
+export interface UpdatePluginSettingsDto {
   [key: string]: any;
 }
 
 // ============================================================================
-// API Connections
+// CONNECTIONS (BYOK)
 // ============================================================================
 
-export interface Connection {
+export interface ConnectionDto {
   id: string;
+  provider: 'OpenAI' | 'Anthropic' | 'Google' | 'Azure' | 'Custom';
   name: string;
-  type: 'openai' | 'anthropic' | 'azure' | 'custom';
-  endpoint: string;
+  isActive: boolean;
+  apiKeyPrefix: string;
+  createdAt: string;
+  lastUsed?: string;
+  models: string[];
+  updatedAt?: string;
+}
+
+export interface CreateConnectionDto {
+  provider: 'OpenAI' | 'Anthropic' | 'Google' | 'Azure' | 'Custom';
+  name: string;
+  apiKey: string;
+  isActive: boolean;
+}
+
+export interface UpdateConnectionDto {
+  name?: string;
+  isActive?: boolean;
   apiKey?: string;
-  enabled: boolean;
-  isDefault?: boolean;
-  metadata?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
 }
 
-export interface ConnectionTestResult {
+export interface ConnectionTestResponse {
   success: boolean;
   message: string;
-  latency?: number;
-  error?: string;
-}
-
-// ============================================================================
-// Models
-// ============================================================================
-
-export interface Model {
-  id: string;
-  name: string;
   provider: string;
-  description?: string;
-  contextWindow?: number;
-  maxTokens?: number;
-  pricing?: {
-    input: number;
-    output: number;
-  };
-  capabilities?: string[];
-  isAvailable: boolean;
+  availableModels: string[];
 }
 
 // ============================================================================
-// Plugins & Tools
+// ORGANIZATIONS & GROUPS
 // ============================================================================
 
-export interface Plugin {
+export interface OrganizationDto {
   id: string;
   name: string;
   description?: string;
-  type: string;
-  enabled: boolean;
-  configuration?: Record<string, any>;
+  memberCount: number;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Tool {
-  id: string;
+export interface CreateOrganizationDto {
   name: string;
   description?: string;
-  type: string;
-  enabled: boolean;
-  configuration?: Record<string, any>;
 }
 
-// ============================================================================
-// Usage & Analytics
-// ============================================================================
-
-export interface UsageRecord {
+export interface GroupDto {
   id: string;
-  userId: string;
-  model: string;
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-  cost?: number;
-  timestamp: string;
-}
-
-export interface UsageSummary {
-  totalTokens: number;
-  totalCost: number;
-  requestCount: number;
-  period: string;
-  breakdown?: {
-    model: string;
-    tokens: number;
-    cost: number;
-    requests: number;
-  }[];
-}
-
-// ============================================================================
-// Search
-// ============================================================================
-
-export interface SearchQuery {
-  query: string;
-  filters?: {
-    type?: string[];
-    dateFrom?: string;
-    dateTo?: string;
-    userId?: string;
-  };
-  limit?: number;
-  offset?: number;
-}
-
-export interface SearchResult {
-  id: string;
-  type: 'conversation' | 'message' | 'note' | 'knowledge' | 'file';
-  title: string;
-  content: string;
-  snippet?: string;
-  score: number;
-  metadata?: Record<string, any>;
+  organizationId: string;
+  name: string;
+  description?: string;
+  memberCount: number;
   createdAt: string;
 }
 
-export interface SearchResponse {
-  results: SearchResult[];
-  total: number;
-  query: string;
-  executionTime: number;
+export interface CreateGroupDto {
+  organizationId: string;
+  name: string;
+  description?: string;
 }
 
 // ============================================================================
-// Feedback
+// STRUCTURED CONTENT
 // ============================================================================
 
-export interface Feedback {
+export interface StructuredContentFieldSchema {
+  name: string;
+  type: 'text' | 'richtext' | 'number' | 'boolean' | 'array' | 'date';
+  required: boolean;
+  description?: string;
+}
+
+export interface StructuredContentTemplateDto {
   id: string;
-  messageId?: string;
-  rating: number;
-  comment?: string;
-  type: string;
-  userId: string;
-  createdAt: string;
+  name: string;
+  category: string;
+  description: string;
+  fields: StructuredContentFieldSchema[];
 }
 
-// ============================================================================
-// Common Response Wrapper
-// ============================================================================
+export interface ParseStructuredContentRequest {
+  templateId: string;
+  data: Record<string, any>;
+}
 
-export interface ApiResponse<T> {
+export interface ParseStructuredContentResponse {
   success: boolean;
-  data?: T;
-  error?: {
-    code: string;
-    message: string;
-    details?: any;
-  };
-  metadata?: {
-    timestamp: string;
-    requestId?: string;
-    page?: number;
-    pageSize?: number;
-    total?: number;
-  };
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-}
-
-// ============================================================================
-// Error Types
-// ============================================================================
-
-export interface ApiError {
-  code: string;
-  message: string;
-  details?: any;
-  statusCode?: number;
-}
-
-// ============================================================================
-// Structured Content Types
-// ============================================================================
-
-export interface StructuredContent {
-  type: 'table' | 'form' | 'keyvalue' | 'list' | 'chart';
-  data: any;
-  metadata?: Record<string, any>;
+  parsed: Record<string, any>;
 }

@@ -1,72 +1,109 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-// General Settings
-interface GeneralSettings {
-  language: string;
-  notifications: string;
-  systemPrompt: string;
-}
-
-// Interface Settings (chat display options - theme is handled by ThemeProvider)
-interface InterfaceSettings {
-  showTimestamps: boolean;
-  syntaxHighlighting: boolean;
-  markdownSupport: boolean;
-}
-
-// Connection Settings
-interface ConnectionSettings {
-  openaiApiKey: string;
-  anthropicApiKey: string;
-  ollamaBaseUrl: string;
-}
-
-// Personalisation Settings
-interface PersonalisationSettings {
-  creativityLevel: string;
-  responseStyle: string;
-  customInstructions: string;
-  rememberContext: boolean;
-}
-
-// Account Settings
-interface AccountSettings {
-  email: string;
-  username: string;
-  allowAnalytics: boolean;
-  personalization: boolean;
-}
-
-// Combined User Settings
 interface UserSettings {
-  general: GeneralSettings;
-  interface: InterfaceSettings;
-  connections: ConnectionSettings;
-  personalisation: PersonalisationSettings;
-  account: AccountSettings;
+  general?: {
+    language?: string;
+    notifications?: string;
+    defaultModel?: string;
+    systemPrompt?: string;
+  };
+  interface?: {
+    theme?: string;
+    density?: string;
+    fontSize?: string;
+    messageGrouping?: boolean;
+    expandCodeBlocks?: boolean;
+    showTimestamps?: boolean;
+    syntaxHighlighting?: boolean;
+    markdownSupport?: boolean;
+  };
+  chat?: {
+    enterToSend?: boolean;
+    autoPlayTTS?: boolean;
+    suggestions?: boolean;
+    contextWindow?: string;
+  };
+  voice?: {
+    voiceInput?: boolean;
+    voiceOutput?: boolean;
+    voiceModel?: string;
+    speechRate?: number;
+  };
+  privacy?: {
+    analytics?: boolean;
+    crashReports?: boolean;
+    saveHistory?: boolean;
+  };
+  connections?: {
+    openaiApiKey?: string;
+    anthropicApiKey?: string;
+    ollamaBaseUrl?: string;
+  };
+  personalisation?: {
+    creativityLevel?: string;
+    responseStyle?: string;
+    customInstructions?: string;
+    rememberContext?: boolean;
+  };
+  account?: {
+    email?: string;
+    username?: string;
+    allowAnalytics?: boolean;
+    personalization?: boolean;
+  };
+  [key: string]: any;
 }
 
-// Default values
+interface UserSettingsContextType {
+  settings: UserSettings;
+  updateGeneral: (updates: Partial<UserSettings['general']>) => void;
+  updateInterface: (updates: Partial<UserSettings['interface']>) => void;
+  updateConnections: (updates: Partial<UserSettings['connections']>) => void;
+  updatePersonalisation: (updates: Partial<UserSettings['personalisation']>) => void;
+  updateAccount: (updates: Partial<UserSettings['account']>) => void;
+  resetSettings: () => void;
+}
+
+const UserSettingsContext = createContext<UserSettingsContextType | undefined>(undefined);
+
 const defaultSettings: UserSettings = {
   general: {
     language: 'en-gb',
-    notifications: 'off',
-    systemPrompt: `[Culture]
-Location: New Zealand/Aotearoa (Land of the Long White Cloud)
-Population: Kiwis/New Zealanders
-Style: Laid back and friendly, less formal
-Currency: NZD
-Language: New Zealand English (Colour vs Color, Homogenise vs Homogenize)`,
+    notifications: 'all',
+    defaultModel: 'gpt-4',
+    systemPrompt: '',
   },
   interface: {
+    theme: 'system',
+    density: 'comfortable',
+    fontSize: 'medium',
+    messageGrouping: true,
+    expandCodeBlocks: false,
     showTimestamps: true,
     syntaxHighlighting: true,
     markdownSupport: true,
   },
+  chat: {
+    enterToSend: true,
+    autoPlayTTS: false,
+    suggestions: true,
+    contextWindow: '4k',
+  },
+  voice: {
+    voiceInput: false,
+    voiceOutput: false,
+    voiceModel: 'alloy',
+    speechRate: 1.0,
+  },
+  privacy: {
+    analytics: true,
+    crashReports: true,
+    saveHistory: true,
+  },
   connections: {
     openaiApiKey: '',
     anthropicApiKey: '',
-    ollamaBaseUrl: '',
+    ollamaBaseUrl: 'http://localhost:11434',
   },
   personalisation: {
     creativityLevel: 'balanced',
@@ -75,98 +112,54 @@ Language: New Zealand English (Colour vs Color, Homogenise vs Homogenize)`,
     rememberContext: true,
   },
   account: {
-    email: 'rich@example.com',
-    username: 'rich',
+    email: '',
+    username: '',
     allowAnalytics: true,
     personalization: true,
   },
 };
 
-const STORAGE_KEY = 'aimate-user-settings';
-
-interface UserSettingsContextType {
-  settings: UserSettings;
-  updateGeneral: (updates: Partial<GeneralSettings>) => void;
-  updateInterface: (updates: Partial<InterfaceSettings>) => void;
-  updateConnections: (updates: Partial<ConnectionSettings>) => void;
-  updatePersonalisation: (updates: Partial<PersonalisationSettings>) => void;
-  updateAccount: (updates: Partial<AccountSettings>) => void;
-  resetSettings: () => void;
-}
-
-const UserSettingsContext = createContext<UserSettingsContextType | undefined>(undefined);
-
 export function UserSettingsProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<UserSettings>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Merge with defaults to handle any new fields
-        return {
-          ...defaultSettings,
-          ...parsed,
-          general: { ...defaultSettings.general, ...parsed.general },
-          interface: { ...defaultSettings.interface, ...parsed.interface },
-          connections: { ...defaultSettings.connections, ...parsed.connections },
-          personalisation: { ...defaultSettings.personalisation, ...parsed.personalisation },
-          account: { ...defaultSettings.account, ...parsed.account },
-        };
-      }
-    } catch (e) {
-      console.error('Failed to load user settings:', e);
-    }
-    return defaultSettings;
-  });
+  const [settings, setSettings] = useState<UserSettings>(defaultSettings);
 
-  // Persist to localStorage whenever settings change
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    } catch (e) {
-      console.error('Failed to save user settings:', e);
-    }
-  }, [settings]);
-
-  const updateGeneral = useCallback((updates: Partial<GeneralSettings>) => {
-    setSettings(prev => ({
+  const updateGeneral = (updates: Partial<UserSettings['general']>) => {
+    setSettings((prev) => ({
       ...prev,
       general: { ...prev.general, ...updates },
     }));
-  }, []);
+  };
 
-  const updateInterface = useCallback((updates: Partial<InterfaceSettings>) => {
-    setSettings(prev => ({
+  const updateInterface = (updates: Partial<UserSettings['interface']>) => {
+    setSettings((prev) => ({
       ...prev,
       interface: { ...prev.interface, ...updates },
     }));
-  }, []);
+  };
 
-  const updateConnections = useCallback((updates: Partial<ConnectionSettings>) => {
-    setSettings(prev => ({
+  const updateConnections = (updates: Partial<UserSettings['connections']>) => {
+    setSettings((prev) => ({
       ...prev,
       connections: { ...prev.connections, ...updates },
     }));
-  }, []);
+  };
 
-  const updatePersonalisation = useCallback((updates: Partial<PersonalisationSettings>) => {
-    setSettings(prev => ({
+  const updatePersonalisation = (updates: Partial<UserSettings['personalisation']>) => {
+    setSettings((prev) => ({
       ...prev,
       personalisation: { ...prev.personalisation, ...updates },
     }));
-  }, []);
+  };
 
-  const updateAccount = useCallback((updates: Partial<AccountSettings>) => {
-    setSettings(prev => ({
+  const updateAccount = (updates: Partial<UserSettings['account']>) => {
+    setSettings((prev) => ({
       ...prev,
       account: { ...prev.account, ...updates },
     }));
-  }, []);
+  };
 
-  const resetSettings = useCallback(() => {
+  const resetSettings = () => {
     setSettings(defaultSettings);
-    localStorage.removeItem(STORAGE_KEY);
-  }, []);
+  };
 
   return (
     <UserSettingsContext.Provider
@@ -192,13 +185,3 @@ export function useUserSettings() {
   }
   return context;
 }
-
-// Export types for use in components
-export type {
-  UserSettings,
-  GeneralSettings,
-  InterfaceSettings,
-  ConnectionSettings,
-  PersonalisationSettings,
-  AccountSettings,
-};

@@ -1,75 +1,26 @@
-import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
+import { useState, useEffect, useMemo } from "react";
+import { FileText, Globe, FileType, Video, Headphones, Code, Image as ImageIcon, Search, Filter, Plus, Download, ExternalLink, Trash2, Eye, EyeOff, X, ChevronDown, Grid3x3, List, FolderOpen, Tag, Clock, User, Hash, Sparkles, Calendar, TrendingUp, Layers, ArrowUpDown, Check, BarChart3, Brain, File, GitBranch, Link2, Upload, Settings, Share2, History, Loader2, Star, Zap } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { 
-  Brain, 
-  Plus, 
-  Trash2, 
-  FileText, 
-  Globe, 
-  File, 
-  Sparkles,
-  Search,
-  Filter,
-  Tag,
-  FolderOpen,
-  Upload,
-  History,
-  BarChart3,
-  Link2,
-  MessageSquare,
-  ChevronRight,
-  Clock,
-  Users,
-  Eye,
-  Edit,
-  Star,
-  TrendingUp,
-  Zap,
-  Download,
-  Share2,
-  GitBranch,
-  Settings,
-  Loader2
-} from "lucide-react";
-import { ScrollArea } from "./ui/scroll-area";
 import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 import { Badge } from "./ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "./ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Checkbox } from "./ui/checkbox";
+import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "./ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { ScrollArea } from "./ui/scroll-area";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { Progress } from "./ui/progress";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { useDebug } from "./DebugContext";
 import { toast } from "sonner";
-import * as API from "../utils/api-stubs";
+import { knowledgeService } from "../api/services";
 import { useSwipeGesture } from "../utils/useSwipeGesture";
 
 interface KnowledgeItem {
@@ -184,33 +135,90 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
 
   const loadKnowledge = async () => {
     setLoading(true);
-    const response = await API.getKnowledge();
-    if (response.success && response.data) {
-      const formattedItems: KnowledgeItem[] = response.data.map(item => ({
-        id: item.id,
-        title: item.title,
-        type: item.type as KnowledgeItem["type"],
-        date: item.date,
-        tags: item.tags || [],
-        summary: item.summary,
-        entities: item.entities,
-        collection: item.collection,
-        size: item.size,
-        usageCount: item.usageCount || 0,
-        lastUsed: item.lastUsed,
-        source: item.source,
-        version: item.version || 1,
-        updatedBy: item.updatedBy
-      }));
-      setItems(formattedItems);
-      addLog({
-        action: 'Loaded Knowledge',
-        api: response.metadata?.endpoint || '/api/v1/GetKnowledge',
-        payload: response.data,
-        type: 'success'
-      });
-    }
+    
+    // Use mock data in offline mode (simulating knowledge items)
+    const mockItems: KnowledgeItem[] = [
+      {
+        id: '1',
+        title: 'React Best Practices Guide',
+        type: 'Document',
+        date: 'Nov 20, 2025',
+        tags: ['react', 'javascript', 'frontend'],
+        summary: 'Comprehensive guide covering React patterns, hooks, performance optimization, and common pitfalls.',
+        entities: ['React', 'Hooks', 'Components'],
+        collection: 'Frontend Development',
+        size: '2.4 MB',
+        usageCount: 12,
+        lastUsed: 'Nov 25, 2025',
+        source: 'docs.react.dev',
+        version: 3,
+      },
+      {
+        id: '2',
+        title: 'NZ Mental Health Resources',
+        type: 'Web',
+        date: 'Nov 15, 2025',
+        tags: ['health', 'nz', 'crisis'],
+        summary: 'Curated list of verified New Zealand mental health support services and crisis hotlines.',
+        entities: ['1737', 'Lifeline', 'Youthline'],
+        collection: 'Meeting Notes',
+        size: '180 KB',
+        usageCount: 45,
+        lastUsed: 'Nov 26, 2025',
+        source: 'health.govt.nz',
+        version: 2,
+      },
+      {
+        id: '3',
+        title: 'TypeScript Advanced Types',
+        type: 'PDF',
+        date: 'Oct 30, 2025',
+        tags: ['typescript', 'types', 'programming'],
+        summary: 'Deep dive into TypeScript utility types, conditional types, and type inference.',
+        entities: ['TypeScript', 'Generics', 'Type System'],
+        collection: 'Frontend Development',
+        size: '1.8 MB',
+        usageCount: 8,
+        lastUsed: 'Nov 22, 2025',
+      },
+      {
+        id: '4',
+        title: 'API Security Checklist',
+        type: 'Document',
+        date: 'Nov 10, 2025',
+        tags: ['security', 'api', 'backend'],
+        summary: 'Essential security practices for REST APIs including authentication, rate limiting, and input validation.',
+        entities: ['JWT', 'OAuth', 'CORS'],
+        collection: 'API Documentation',
+        size: '450 KB',
+        usageCount: 23,
+        lastUsed: 'Nov 24, 2025',
+        version: 4,
+      },
+      {
+        id: '5',
+        title: 'UI Design System Tokens',
+        type: 'Code',
+        date: 'Nov 5, 2025',
+        tags: ['design', 'tokens', 'css'],
+        summary: 'Design tokens for colors, typography, spacing, and component styles.',
+        entities: ['Tailwind', 'CSS Variables', 'Design Tokens'],
+        collection: 'Design Specs',
+        size: '125 KB',
+        usageCount: 34,
+        lastUsed: 'Nov 27, 2025',
+      },
+    ];
+    
+    setItems(mockItems);
     setLoading(false);
+    
+    addLog({
+      action: 'Loaded Knowledge',
+      api: '/api/v1/knowledge',
+      payload: mockItems,
+      type: 'success'
+    });
   };
 
   const loadCollections = () => {

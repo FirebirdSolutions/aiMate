@@ -11,7 +11,6 @@ import { Search } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
-import { Separator } from "./ui/separator";
 
 interface SearchModalProps {
   open: boolean;

@@ -12,172 +12,57 @@ import { DebugProvider, useDebug } from "./components/DebugContext";
 import { AuthProvider } from "./context/AuthContext";
 import { AdminSettingsProvider } from "./context/AdminSettingsContext";
 import { UserSettingsProvider } from "./context/UserSettingsContext";
+import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import { ScrollArea } from "./components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTitle } from "./components/ui/sheet";
 import { Sparkles } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
-import { chatStreamClient } from "./api/chat";
-import { getAvailableModels, isSimulatedModel, AvailableModel, SIMULATED_MODEL } from "./api/models";
-import { ChatCompletionMessage } from "./api/types";
+import { toast } from "sonner@2.0.3";
 
-// Create a client for React Query
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
       retry: 1,
       refetchOnWindowFocus: false,
     },
   },
 });
 
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: string;
-  structuredContent?: any;
-}
-
-interface ConversationData {
-  id: string;
-  messages: Message[];
-  title: string;
-  createdAt: Date;
-}
-
-const mockResponses = [
-  "I'm here to help! What would you like to know? Here are some **key points**:\n\n- I can answer questions\n- Provide explanations\n- Help with code like `console.log('hello')`\n\nLet me know how I can assist!",
-  "That's a great question. Let me think about that...\n\n```javascript\nconst answer = 'Here is some sample code';\nconsole.log(answer);\n```",
-  "I'd be happy to help you with that. Here's what I think:\n\n1. First consideration\n2. Second point\n3. Final thought",
-  "Thanks for asking! Based on what you've mentioned, here are my insights:\n\n- **Important**: Take note of this\n- *Consideration*: Keep this in mind\n- Regular point here",
-  "Interesting! Let me provide some insights on that with a code example:\n\n```python\ndef example():\n    return \"This is Python code\"\n```\n\nHope this helps!",
-  "I understand what you're asking. Here's my response with *formatted* text and **bold** sections.",
-];
-
-const mockConversations: ConversationData[] = [
-  {
-    id: "1",
-    title: "How do I center a div in CSS?",
-    createdAt: new Date(Date.now() - 1000 * 60 * 30), // 30 mins ago
-    messages: [
-      {
-        id: "1-1",
-        role: "user",
-        content: "How do I center a div in CSS?",
-        timestamp: "2:30 PM",
-      },
-      {
-        id: "1-2",
-        role: "assistant",
-        content: "Great question! There are several ways to center a div in CSS. Here are the most common methods:\n\n**Using Flexbox (Modern & Recommended):**\n```css\n.container {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n```\n\n**Using Grid:**\n```css\n.container {\n  display: grid;\n  place-items: center;\n}\n```\n\n**Traditional Method:**\n```css\n.centered {\n  margin: 0 auto;\n  width: 50%; /* Must have a width */\n}\n```\n\nThe flexbox method is usually the best choice for modern projects!",
-        timestamp: "2:31 PM",
-      },
-      {
-        id: "1-3",
-        role: "user",
-        content: "Thanks! What if I want to center it vertically as well?",
-        timestamp: "2:32 PM",
-      },
-      {
-        id: "1-4",
-        role: "assistant",
-        content: "Perfect follow-up! The **Flexbox method** I showed you actually centers both horizontally AND vertically when you use both properties:\n\n```css\n.container {\n  display: flex;\n  justify-content: center;  /* Horizontal */\n  align-items: center;      /* Vertical */\n  height: 100vh;            /* Full viewport height */\n}\n```\n\nYou can also use the **Grid** method which is even simpler:\n```css\n.container {\n  display: grid;\n  place-items: center;\n  height: 100vh;\n}\n```\n\nBoth achieve perfect centering in just a few lines! 🎯",
-        timestamp: "2:32 PM",
-      },
-    ],
-  },
-  {
-    id: "2",
-    title: "Explain React hooks",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    messages: [
-      {
-        id: "2-1",
-        role: "user",
-        content: "Can you explain React hooks to me?",
-        timestamp: "12:15 PM",
-      },
-      {
-        id: "2-2",
-        role: "assistant",
-        content: "Of course! **React Hooks** are functions that let you use React features in functional components. Here are the most important ones:\n\n**useState** - Manages component state:\n```jsx\nconst [count, setCount] = useState(0);\n```\n\n**useEffect** - Handles side effects:\n```jsx\nuseEffect(() => {\n  // Code runs after render\n  document.title = `Count: ${count}`;\n}, [count]); // Dependencies array\n```\n\n**useRef** - Creates mutable references:\n```jsx\nconst inputRef = useRef(null);\n```\n\n**Key Benefits:**\n- ✅ Cleaner code than class components\n- ✅ Easier to reuse stateful logic\n- ✅ Better code organization\n\nWould you like me to explain any specific hook in detail?",
-        timestamp: "12:16 PM",
-      },
-    ],
-  },
-];
-
-function App() {
-  const [conversations, setConversations] = useState<ConversationData[]>(mockConversations);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>("1");
-  const [isTyping, setIsTyping] = useState(false);
+function ChatApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("simulated");
-  const [availableModels, setAvailableModels] = useState<AvailableModel[]>([SIMULATED_MODEL]);
-  const [enabledModels, setEnabledModels] = useState<Record<string, boolean>>({
-    "simulated": true,
-  });
+  const [selectedModel, setSelectedModel] = useState<string>("gpt-4-turbo");
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  
   const { addLog } = useDebug();
-
-  // Fetch available models from backend on mount
-  useEffect(() => {
-    const fetchModels = async () => {
-      try {
-        addLog({
-          action: 'Fetching available models',
-          api: 'api/v1/admin/models',
-          type: 'info'
-        });
-        const models = await getAvailableModels();
-        setAvailableModels(models);
-
-        // Enable all fetched models by default
-        const enabled: Record<string, boolean> = {};
-        models.forEach(m => {
-          enabled[m.id] = true;
-        });
-        setEnabledModels(enabled);
-
-        addLog({
-          action: 'Models loaded',
-          api: 'api/v1/admin/models',
-          payload: { count: models.length, models: models.map(m => m.name) },
-          type: 'success'
-        });
-      } catch (error) {
-        addLog({
-          action: 'Failed to fetch models',
-          api: 'api/v1/admin/models',
-          payload: { error: String(error) },
-          type: 'error'
-        });
-        // Keep simulated as fallback
-        setAvailableModels([SIMULATED_MODEL]);
-        setEnabledModels({ simulated: true });
-      }
-    };
-    fetchModels();
-  }, [addLog]);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  const activeConversation = conversations.find(
-    (conv) => conv.id === activeConversationId
-  );
-  const messages = activeConversation?.messages || [];
-
-  const scrollToBottom = () => {
+  
+  // Get all our data from context
+  const { chat, conversations, workspaces, admin } = useAppData();
+  
+  // Load messages when conversation changes
+  useEffect(() => {
+    if (activeConversationId) {
+      chat.loadMessages(activeConversationId);
+      addLog({
+        action: 'Loading messages',
+        category: 'chat:messages',
+        api: 'api/v1/chat/messages',
+        payload: { conversationId: activeConversationId },
+        type: 'info'
+      });
+    }
+  }, [activeConversationId, chat.loadMessages, addLog]);
+  
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  };
+  }, [chat.messages, chat.streaming]);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
-
-  // Auto-close sidebar on window resize below breakpoint
+  // Handle responsive sidebar
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024 && sidebarOpen) {
@@ -189,461 +74,192 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, [sidebarOpen]);
 
-  const getTimestamp = () => {
-    const now = new Date();
-    return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
+  // ============================================================================
+  // HANDLERS
+  // ============================================================================
 
-  const generateConversationTitle = (firstMessage: string) => {
-    return firstMessage.length > 50
-      ? firstMessage.substring(0, 50) + "..."
-      : firstMessage;
-  };
-
-  const createNewConversation = () => {
-    const newConv: ConversationData = {
-      id: Date.now().toString(),
-      messages: [],
-      title: "New Conversation",
-      createdAt: new Date(),
-    };
-    setConversations((prev) => [newConv, ...prev]);
-    setActiveConversationId(newConv.id);
-    setMobileSidebarOpen(false);
-    
-    addLog({
-      action: 'New conversation created',
-      api: 'api/v1/conversations/create',
-      payload: { conversationId: newConv.id },
-      type: 'success'
-    });
+  const handleNewConversation = async () => {
+    try {
+      const newConv = await conversations.createConversation({
+        title: "New Conversation",
+        workspaceId: workspaces.currentWorkspace?.id,
+      });
+      
+      setActiveConversationId(newConv.id);
+      setMobileSidebarOpen(false);
+      
+      addLog({
+        action: 'New conversation created',
+        api: 'api/v1/conversations',
+        payload: { conversationId: newConv.id },
+        type: 'success'
+      });
+      
+      toast.success("New conversation created");
+    } catch (err) {
+      console.error('Failed to create conversation:', err);
+      toast.error("Failed to create conversation");
+    }
   };
 
   const handleSendMessage = async (content: string) => {
-    if (!activeConversationId) {
-      createNewConversation();
-      // Wait for state to update, then send message
-      setTimeout(() => handleSendMessage(content), 10);
-      return;
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content,
-      timestamp: getTimestamp(),
-    };
-
-    addLog({
-      action: 'User message sent',
-      api: 'api/v1/chat/sendMessage',
-      payload: { message: content, conversationId: activeConversationId },
-      type: 'info'
-    });
-
-    setConversations((prev) =>
-      prev.map((conv) => {
-        if (conv.id === activeConversationId) {
-          const updatedMessages = [...conv.messages, userMessage];
-          const title =
-            conv.messages.length === 0
-              ? generateConversationTitle(content)
-              : conv.title;
-          return { ...conv, messages: updatedMessages, title };
-        }
-        return conv;
-      })
-    );
-
-    setIsTyping(true);
-
-    // Use real API for non-simulated models
-    if (!isSimulatedModel(selectedModel)) {
+    // Determine which conversation to use
+    let targetConversationId = activeConversationId;
+    
+    if (!targetConversationId) {
+      // Create new conversation first
       try {
-        // Build messages array for API request
-        const currentConv = conversations.find(c => c.id === activeConversationId);
-        const apiMessages: ChatCompletionMessage[] = [
-          ...(currentConv?.messages || []).map(m => ({
-            role: m.role as 'user' | 'assistant' | 'system',
-            content: m.content,
-          })),
-          { role: 'user' as const, content },
-        ];
-
-        addLog({
-          action: 'Calling real API',
-          api: 'api/v1/chat/completions',
-          payload: { model: selectedModel, messageCount: apiMessages.length },
-          type: 'info'
+        const newConv = await conversations.createConversation({
+          title: content.substring(0, 50) + (content.length > 50 ? "..." : ""),
+          workspaceId: workspaces.currentWorkspace?.id,
         });
-
-        const response = await chatStreamClient.createCompletion({
-          model: selectedModel,
-          messages: apiMessages,
-          temperature: 0.7,
-          maxTokens: 4096,
-        });
-
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: response.choices[0]?.message?.content || "No response received.",
-          timestamp: getTimestamp(),
-        };
-
-        setConversations((prev) =>
-          prev.map((conv) =>
-            conv.id === activeConversationId
-              ? { ...conv, messages: [...conv.messages, aiMessage] }
-              : conv
-          )
-        );
-        setIsTyping(false);
-
-        addLog({
-          action: 'AI response received',
-          api: 'api/v1/chat/completions',
-          payload: {
-            messageLength: aiMessage.content.length,
-            model: response.model,
-            usage: response.usage,
-          },
-          type: 'success'
-        });
-        return;
-      } catch (error) {
-        addLog({
-          action: 'API call failed',
-          api: 'api/v1/chat/completions',
-          payload: { error: String(error) },
-          type: 'error'
-        });
-
-        // Show error message to user
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: `**Error:** Failed to get response from ${selectedModel}. ${error instanceof Error ? error.message : 'Please check your connection settings.'}`,
-          timestamp: getTimestamp(),
-        };
-
-        setConversations((prev) =>
-          prev.map((conv) =>
-            conv.id === activeConversationId
-              ? { ...conv, messages: [...conv.messages, errorMessage] }
-              : conv
-          )
-        );
-        setIsTyping(false);
+        setActiveConversationId(newConv.id);
+        targetConversationId = newConv.id;
+      } catch (err) {
+        toast.error("Failed to create conversation");
         return;
       }
     }
 
-    // Simulated model - use mock responses
-    addLog({
-      action: 'Using simulated response',
-      payload: { model: 'simulated', note: 'No real API call - mock response' },
-      type: 'info'
-    });
+    try {
+      addLog({
+        action: 'Sending message',
+        api: 'api/v1/chat/send',
+        payload: { message: content, conversationId: targetConversationId, model: selectedModel },
+        type: 'info'
+      });
 
-    setTimeout(() => {
-      let aiMessage: Message;
-
-      // Check for structured content triggers
-      const lowerContent = content.trim().toLowerCase();
-
-      if (lowerContent === "gettable") {
-        const structuredData = {
-          type: "panel.table",
-          title: "Active Projects",
-          columns: ["Key", "Name", "Owner", "Tasks"],
-          rows: [
-            ["CF", "ChoonForge", "rich", 12],
-            ["AM", "aiMate", "rich", 8],
-            ["WA", "WebApp Builder", "john", 24],
-            ["DS", "Design System", "jane", 15],
-            ["AP", "API Gateway", "bob", 32],
-            ["DB", "Database Migration", "alice", 7],
-            ["ML", "ML Pipeline", "rich", 19],
-            ["UI", "UI Component Library", "sarah", 11],
-            ["BE", "Backend Services", "mike", 28],
-            ["FE", "Frontend Framework", "emma", 5]
-          ],
-          rowActions: [
-            {
-              type: "action.callTool",
-              title: "Open",
-              tool: "project.get",
-              args: {
-                key: "$row[0]"
-              }
-            }
-          ],
-          actions: [
-            {
-              type: "action.callTool",
-              title: "New Project",
-              tool: "project.newForm"
-            }
-          ],
-          items: null,
-          itemsList: null,
-          fields: null,
-          submit: null,
-          onSuccess: null
-        };
-
-        aiMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: `Projects loaded.\n\n\`\`\`structured\n${JSON.stringify(structuredData)}\n\`\`\``,
-          timestamp: getTimestamp(),
-          structuredContent: structuredData,
-        };
-      } else if (lowerContent === "getlist") {
-        const structuredData = {
-          type: "panel.list",
-          title: "Frequently Asked Questions",
-          items: [
-            {
-              title: "How do I reset my password?",
-              content: "Click on the 'Forgot Password' link on the login page. Enter your email address, and we'll send you instructions to reset your password."
-            },
-            {
-              title: "Can I export my chat history?",
-              content: "Yes! Go to Settings > Data & Privacy > Export Data. You can download your entire chat history in JSON format."
-            },
-            {
-              title: "What models are available?",
-              content: "We offer multiple AI models including GPT-4, GPT-4 Turbo, Claude 3 Opus, Claude 3 Sonnet, and our specialized Structured GPT for data visualization."
-            },
-            {
-              title: "How do I enable dark mode?",
-              content: "Dark mode is enabled by default. You can toggle between light and dark mode in Settings > Appearance > Theme."
-            },
-            {
-              title: "Can I use this on mobile?",
-              content: "Absolutely! Our interface is fully responsive and works seamlessly on mobile devices, tablets, and desktops."
-            },
-            {
-              title: "How do I create a new project?",
-              content: "Navigate to the Projects section in the sidebar, then click the 'New Project' button. Fill in the project details and click Save."
-            }
-          ]
-        };
-        
-        aiMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: `FAQs loaded.\n\n\`\`\`structured\n${JSON.stringify(structuredData)}\n\`\`\``,
-          timestamp: getTimestamp(),
-          structuredContent: structuredData,
-        };
-      } else if (lowerContent === "getkv") {
-        const structuredData = {
-          type: "panel.kv",
-          title: "Project Details",
-          kvPairs: [
-            { key: "Project Key", value: "CF" },
-            { key: "Project Name", value: "ChoonForge" },
-            { key: "Owner", value: "rich" },
-            { key: "Total Tasks", value: "12" },
-            { key: "Status", value: "Active" },
-            { key: "Created Date", value: "2024-01-15" },
-            { key: "Last Updated", value: "2024-03-10" },
-            { key: "Priority", value: "High" },
-            { key: "Budget", value: "$50,000" },
-            { key: "Completion", value: "65%" }
-          ]
-        };
-        
-        aiMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: `Project details loaded.\n\n\`\`\`structured\n${JSON.stringify(structuredData)}\n\`\`\``,
-          timestamp: getTimestamp(),
-          structuredContent: structuredData,
-        };
-      } else if (lowerContent === "getform") {
-        const structuredData = {
-          type: "panel.form",
-          title: "Edit Project: ChoonForge",
-          fields: [
-            { name: "projectKey", label: "Project Key", type: "text", value: "CF", required: true },
-            { name: "projectName", label: "Project Name", type: "text", value: "ChoonForge", required: true },
-            { name: "owner", label: "Owner", type: "text", value: "rich", required: true },
-            { name: "email", label: "Email", type: "email", value: "rich@example.com", required: true },
-            { name: "status", label: "Status", type: "text", value: "Active", required: false },
-            { name: "priority", label: "Priority", type: "text", value: "High", required: false },
-            { name: "budget", label: "Budget", type: "text", value: "$50,000", required: false },
-            { name: "description", label: "Description", type: "textarea", value: "A comprehensive project management system with advanced features for team collaboration.", required: false }
-          ],
-          submit: {
-            type: "action.callTool",
-            title: "Save",
-            tool: "project.update",
-            args: {}
-          }
-        };
-        
-        aiMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: `Project form loaded.\n\n\`\`\`structured\n${JSON.stringify(structuredData)}\n\`\`\``,
-          timestamp: getTimestamp(),
-          structuredContent: structuredData,
-        };
-      } else {
-        aiMessage = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content:
-            mockResponses[Math.floor(Math.random() * mockResponses.length)],
-          timestamp: getTimestamp(),
-        };
-      }
-
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === activeConversationId
-            ? { ...conv, messages: [...conv.messages, aiMessage] }
-            : conv
-        )
-      );
-      setIsTyping(false);
+      await chat.sendMessage(content, {
+        conversationId: targetConversationId,
+        workspaceId: workspaces.currentWorkspace?.id,
+        model: selectedModel,
+      });
 
       addLog({
-        action: 'Simulated response generated',
-        payload: { messageLength: aiMessage.content.length, isSimulated: true },
+        action: 'Message sent successfully',
+        api: 'api/v1/chat/send',
         type: 'success'
       });
-    }, 1000 + Math.random() * 1000);
-  };
-
-  const handleEditMessage = (messageId: string, newContent: string) => {
-    if (!activeConversationId) return;
-
-    setConversations((prev) =>
-      prev.map((conv) => {
-        if (conv.id === activeConversationId) {
-          const messageIndex = conv.messages.findIndex((m) => m.id === messageId);
-          if (messageIndex === -1) return conv;
-
-          const updatedMessages = [...conv.messages];
-          updatedMessages[messageIndex] = {
-            ...updatedMessages[messageIndex],
-            content: newContent,
-          };
-
-          // Remove all messages after the edited one
-          const truncatedMessages = updatedMessages.slice(0, messageIndex + 1);
-
-          return { ...conv, messages: truncatedMessages };
-        }
-        return conv;
-      })
-    );
-
-    // Regenerate AI response
-    setTimeout(() => {
-      handleRegenerateResponse();
-    }, 500);
-  };
-
-  const handleRegenerateResponse = () => {
-    if (!activeConversationId) return;
-
-    const conversation = conversations.find((c) => c.id === activeConversationId);
-    if (!conversation || conversation.messages.length === 0) return;
-
-    // Remove last AI message if exists
-    setConversations((prev) =>
-      prev.map((conv) => {
-        if (conv.id === activeConversationId) {
-          const messages = [...conv.messages];
-          if (messages[messages.length - 1]?.role === "assistant") {
-            messages.pop();
-          }
-          return { ...conv, messages };
-        }
-        return conv;
-      })
-    );
-
-    setIsTyping(true);
-
-    // Generate new response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: Date.now().toString(),
-        role: "assistant",
-        content:
-          mockResponses[Math.floor(Math.random() * mockResponses.length)],
-        timestamp: getTimestamp(),
-      };
-
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === activeConversationId
-            ? { ...conv, messages: [...conv.messages, aiMessage] }
-            : conv
-        )
-      );
-      setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
-  };
-
-  const handleDeleteConversation = (id: string) => {
-    setConversations((prev) => prev.filter((conv) => conv.id !== id));
-    if (activeConversationId === id) {
-      const remaining = conversations.filter((conv) => conv.id !== id);
-      setActiveConversationId(remaining.length > 0 ? remaining[0].id : null);
+      
+      // Update conversation title if this is the first message
+      const conv = conversations.conversations.find(c => c.id === targetConversationId);
+      if (conv && conv.messageCount === 0) {
+        await conversations.updateConversation(targetConversationId, {
+          title: content.substring(0, 50) + (content.length > 50 ? "..." : ""),
+        });
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error('Failed to send message:', err);
+        addLog({
+          action: 'Failed to send message',
+          api: 'api/v1/chat/send',
+          payload: { error: String(err) },
+          type: 'error'
+        });
+        toast.error("Failed to send message");
+      }
     }
+  };
+
+  const handleEditMessage = async (messageId: string, newContent: string) => {
+    try {
+      await chat.editMessage(messageId, newContent);
+      toast.success("Message updated");
+      
+      // Regenerate response after editing
+      setTimeout(() => {
+        handleRegenerateResponse();
+      }, 100);
+    } catch (err) {
+      console.error('Failed to edit message:', err);
+      toast.error("Failed to edit message");
+    }
+  };
+
+  const handleRegenerateResponse = async () => {
+    if (!chat.messages.length) return;
     
-    addLog({
-      action: 'Conversation deleted',
-      api: 'api/v1/conversations/delete',
-      payload: { conversationId: id },
-      type: 'warning'
-    });
+    // Find the last assistant message
+    const lastAssistantMsg = [...chat.messages].reverse().find(m => m.role === 'assistant');
+    if (!lastAssistantMsg) return;
+
+    try {
+      addLog({
+        action: 'Regenerating response',
+        api: 'api/v1/chat/regenerate',
+        payload: { messageId: lastAssistantMsg.id },
+        type: 'info'
+      });
+
+      await chat.regenerateMessage(lastAssistantMsg.id);
+      
+      toast.success("Response regenerated");
+    } catch (err) {
+      console.error('Failed to regenerate:', err);
+      toast.error("Failed to regenerate response");
+    }
   };
 
-  const handleRenameConversation = (id: string, newTitle: string) => {
-    setConversations((prev) =>
-      prev.map((conv) =>
-        conv.id === id ? { ...conv, title: newTitle } : conv
-      )
-    );
+  const handleDeleteConversation = async (id: string) => {
+    try {
+      await conversations.deleteConversation(id);
+      
+      if (activeConversationId === id) {
+        const remaining = conversations.conversations.filter(c => c.id !== id);
+        setActiveConversationId(remaining.length > 0 ? remaining[0].id : null);
+      }
+      
+      addLog({
+        action: 'Conversation deleted',
+        api: 'api/v1/conversations',
+        payload: { conversationId: id },
+        type: 'warning'
+      });
+      
+      toast.success("Conversation deleted");
+    } catch (err) {
+      console.error('Failed to delete conversation:', err);
+      toast.error("Failed to delete conversation");
+    }
   };
 
-  const handleCloneConversation = (id: string) => {
-    const conversation = conversations.find((conv) => conv.id === id);
-    if (conversation) {
-      const clonedConv: ConversationData = {
-        id: Date.now().toString(),
-        messages: [...conversation.messages],
-        title: `${conversation.title} (Copy)`,
-        createdAt: new Date(),
-      };
-      setConversations((prev) => [clonedConv, ...prev]);
-      setActiveConversationId(clonedConv.id);
+  const handleRenameConversation = async (id: string, newTitle: string) => {
+    try {
+      await conversations.updateConversation(id, { title: newTitle });
+      toast.success("Conversation renamed");
+    } catch (err) {
+      console.error('Failed to rename conversation:', err);
+      toast.error("Failed to rename conversation");
+    }
+  };
+
+  const handleCloneConversation = async (id: string) => {
+    try {
+      const conv = conversations.conversations.find(c => c.id === id);
+      if (!conv) return;
+      
+      const cloned = await conversations.createConversation({
+        title: `${conv.title} (Copy)`,
+        workspaceId: conv.workspaceId,
+        tags: conv.tags,
+      });
+      
+      setActiveConversationId(cloned.id);
       
       addLog({
         action: 'Conversation cloned',
-        api: 'api/v1/conversations/clone',
-        payload: { originalId: id, clonedId: clonedConv.id, messageCount: conversation.messages.length },
+        api: 'api/v1/conversations',
+        payload: { originalId: id, clonedId: cloned.id },
         type: 'success'
       });
+      
+      toast.success("Conversation duplicated");
+    } catch (err) {
+      console.error('Failed to clone conversation:', err);
+      toast.error("Failed to duplicate conversation");
     }
   };
-
-  const conversationList: Conversation[] = conversations.map((conv) => ({
-    id: conv.id,
-    title: conv.title,
-    lastMessage:
-      conv.messages[conv.messages.length - 1]?.content || "No messages yet",
-    timestamp: conv.createdAt,
-  }));
 
   const toggleSidebar = () => {
     if (window.innerWidth < 768) {
@@ -653,25 +269,42 @@ function App() {
     }
   };
 
-  const handleToggleModel = (modelId: string) => {
-    setEnabledModels((prev) => {
-      const newState = { ...prev, [modelId]: !prev[modelId] };
-      // If disabling the currently selected model, switch to first enabled model
-      if (modelId === selectedModel && !newState[modelId]) {
-        const firstEnabled = Object.keys(newState).find(key => newState[key]);
-        if (firstEnabled) {
-          setSelectedModel(firstEnabled);
-        }
-      }
-      return newState;
-    });
+  // ============================================================================
+  // PREPARE DATA FOR UI
+  // ============================================================================
+
+  const conversationList: Conversation[] = conversations.conversations.map((conv) => ({
+    id: conv.id,
+    title: conv.title,
+    lastMessage: `${conv.messageCount} messages`,
+    timestamp: new Date(conv.lastMessageAt || conv.createdAt),
+  }));
+
+  // Get available models from admin or use default
+  const availableModels = admin?.models || [];
+  const enabledModels = availableModels.reduce((acc, model) => {
+    acc[model.id] = model.isActive || false;
+    return acc;
+  }, {} as Record<string, boolean>);
+
+  const handleToggleModel = async (modelId: string) => {
+    if (!admin) return;
+    
+    try {
+      await admin.toggleModel(modelId);
+      toast.success("Model status updated");
+    } catch (err) {
+      console.error('Failed to toggle model:', err);
+      toast.error("Failed to update model");
+    }
   };
 
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
   return (
-    <ThemeProvider defaultTheme="dark">
-      <DebugProvider>
-        <Toaster />
-        <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
       {/* Desktop Sidebar */}
       {sidebarOpen && (
         <div className="hidden md:block w-80 shrink-0">
@@ -679,12 +312,15 @@ function App() {
             conversations={conversationList}
             activeConversationId={activeConversationId}
             onSelectConversation={setActiveConversationId}
-            onNewConversation={createNewConversation}
+            onNewConversation={handleNewConversation}
             onDeleteConversation={handleDeleteConversation}
             onRenameConversation={handleRenameConversation}
             onCloneConversation={handleCloneConversation}
             enabledModels={enabledModels}
             onToggleModel={handleToggleModel}
+            hasMore={conversations.hasMore}
+            onLoadMore={conversations.loadMore}
+            loading={conversations.loading}
           />
         </div>
       )}
@@ -700,13 +336,16 @@ function App() {
               setActiveConversationId(id);
               setMobileSidebarOpen(false);
             }}
-            onNewConversation={createNewConversation}
+            onNewConversation={handleNewConversation}
             onDeleteConversation={handleDeleteConversation}
             onRenameConversation={handleRenameConversation}
             onCloneConversation={handleCloneConversation}
             onClose={() => setMobileSidebarOpen(false)}
             enabledModels={enabledModels}
             onToggleModel={handleToggleModel}
+            hasMore={conversations.hasMore}
+            onLoadMore={conversations.loadMore}
+            loading={conversations.loading}
           />
         </SheetContent>
       </Sheet>
@@ -714,55 +353,59 @@ function App() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0">
         <ChatHeader
-          onNewChat={createNewConversation}
+          onNewChat={handleNewConversation}
           onToggleSidebar={toggleSidebar}
           sidebarOpen={sidebarOpen || mobileSidebarOpen}
           selectedModel={selectedModel}
           onModelChange={setSelectedModel}
           enabledModels={enabledModels}
-          availableModels={availableModels}
+          availableModels={availableModels.map(m => ({
+            id: m.id,
+            name: m.name,
+            provider: m.provider,
+            contextWindow: m.contextWindow,
+            capabilities: m.capabilities,
+          }))}
         />
 
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
-            {messages.length === 0 ? (
+            {chat.messages.length === 0 && !chat.loading ? (
               <EmptyState onSendMessage={handleSendMessage} />
             ) : (
               <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-                {messages.map((message, index) => (
-                  <ChatMessage
-                    key={message.id}
-                    role={message.role}
-                    content={message.content}
-                    timestamp={message.timestamp}
-                    structuredContent={message.structuredContent}
-                    onEdit={
-                      message.role === "user"
-                        ? (newContent) => handleEditMessage(message.id, newContent)
-                        : undefined
-                    }
-                    onRegenerate={
-                      message.role === "assistant" &&
-                      index === messages.length - 1 &&
-                      !isTyping
-                        ? handleRegenerateResponse
-                        : undefined
-                    }
-                  />
-                ))}
+                {chat.messages.map((message, index) => (
+                    <ChatMessage
+                      key={message.id}
+                      role={message.role}
+                      content={message.content}
+                      timestamp={message.timestamp}
+                      structuredContent={message.structuredContent}
+                      onEdit={
+                        message.role === "user"
+                          ? (newContent) => handleEditMessage(message.id, newContent)
+                          : undefined
+                      }
+                      onRegenerate={
+                        message.role === "assistant" &&
+                        index === chat.messages.length - 1 &&
+                        !chat.streaming
+                          ? handleRegenerateResponse
+                          : undefined
+                      }
+                    />
+                  ))}
 
-                {isTyping && (
+                {chat.streaming && (
                   <div className="flex gap-3 items-center">
-                    <div className="relative h-8 w-8 shrink-0 rounded-full bg-gradient-to-r from-purple-600 to-blue-500 flex items-center justify-center animate-pulse">
-                      <Sparkles className="h-4 w-4 text-white" />
-                      <div className="absolute inset-0 rounded-full bg-purple-400 opacity-75 animate-ping"></div>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-4 h-4 text-white" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">AI is thinking</span>
+                    <div className="flex-1 bg-white dark:bg-gray-900 rounded-2xl px-4 py-3 border border-gray-200 dark:border-gray-800">
                       <div className="flex gap-1">
-                        <span className="w-1 h-1 bg-gray-400 dark:bg-gray-600 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                        <span className="w-1 h-1 bg-gray-400 dark:bg-gray-600 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                        <span className="w-1 h-1 bg-gray-400 dark:bg-gray-600 rounded-full animate-bounce"></span>
+                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                       </div>
                     </div>
                   </div>
@@ -774,36 +417,38 @@ function App() {
           </ScrollArea>
         </div>
 
-        <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <ChatInput onSend={handleSendMessage} disabled={isTyping} />
-          </div>
-        </div>
+        <ChatInput
+          onSend={handleSendMessage}
+          disabled={chat.streaming}
+        />
         
         <DebugPanel />
       </div>
+
+      <ShowcaseModeIndicator />
     </div>
-      </DebugProvider>
-    </ThemeProvider>
   );
 }
 
-function AppWrapper() {
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AdminSettingsProvider>
-          <UserSettingsProvider>
-            <ThemeProvider defaultTheme="dark">
-              <DebugProvider>
-                <App />
-              </DebugProvider>
-            </ThemeProvider>
-          </UserSettingsProvider>
-        </AdminSettingsProvider>
-      </AuthProvider>
+      <ThemeProvider defaultTheme="dark">
+        <DebugProvider>
+          <AuthProvider>
+            <AdminSettingsProvider>
+              <UserSettingsProvider>
+                <AppDataProvider isAdmin={true}>
+                  <Toaster />
+                  <ChatApp />
+                </AppDataProvider>
+              </UserSettingsProvider>
+            </AdminSettingsProvider>
+          </AuthProvider>
+        </DebugProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
 
-export default AppWrapper;
+export default App;

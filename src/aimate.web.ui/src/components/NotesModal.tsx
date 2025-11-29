@@ -1,29 +1,14 @@
 import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
+import { FileText, Plus, Pencil, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
-import { FileText, Plus, Pencil, Trash2 } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "./ui/alert-dialog";
-import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
+import { toast } from "sonner@2.0.3";
 import { useDebug } from "./DebugContext";
-import * as API from "../utils/api-stubs";
+import { getNotes } from "../api/notes";
 
 interface Note {
   id: string;
@@ -55,7 +40,7 @@ export function NotesModal({ open, onOpenChange }: NotesModalProps) {
 
   const loadNotes = async () => {
     setLoading(true);
-    const response = await API.getNotes();
+    const response = await getNotes();
     if (response.success && response.data) {
       // Convert API format to component format
       const formattedNotes = response.data.map(note => ({

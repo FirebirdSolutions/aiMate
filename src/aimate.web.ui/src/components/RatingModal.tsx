@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "sonner@2.0.3";
 import { BaseDialog } from "./BaseDialog";
 
 interface RatingModalProps {

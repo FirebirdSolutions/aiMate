@@ -14,6 +14,7 @@ import { KnowledgeModal } from "./KnowledgeModal";
 import { ShareModal } from "./ShareModal";
 import { FilesModal } from "./FilesModal";
 import { ArchivedModal } from "./ArchivedModal";
+import { LazyLoadTrigger } from "./LazyLoadTrigger";
 import { Input } from "./ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import {
@@ -39,7 +40,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { toast } from "sonner";
+import { toast } from "sonner@2.0.3";
 
 export interface Conversation {
   id: string;
@@ -59,6 +60,9 @@ interface ConversationSidebarProps {
   onClose?: () => void;
   enabledModels?: Record<string, boolean>;
   onToggleModel?: (modelId: string) => void;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
+  loading?: boolean;
 }
 
 export function ConversationSidebar({
@@ -72,6 +76,9 @@ export function ConversationSidebar({
   onClose,
   enabledModels,
   onToggleModel,
+  hasMore = false,
+  onLoadMore,
+  loading = false,
 }: ConversationSidebarProps) {
   const { theme, setTheme } = useTheme();
   const { showcaseMode } = useDebug();
@@ -109,6 +116,12 @@ export function ConversationSidebar({
     if (days === 1) return "Yesterday";
     if (days < 7) return `${days} days ago`;
     return date.toLocaleDateString();
+  };
+
+  // Truncate text based on max character limit
+  const truncateText = (text: string, maxLength: number = 28) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   };
 
   const handleNewProject = () => {
@@ -223,8 +236,8 @@ export function ConversationSidebar({
             <div className="flex items-start gap-2">
               <MessageSquare className="h-4 w-4 mt-1 shrink-0 text-gray-500" />
               <div className="flex-1 min-w-0">
-                <div className="font-medium truncate">
-                  {conversation.title}
+                <div className="text-sm whitespace-nowrap overflow-hidden">
+                  {truncateText(conversation.title, 28)}
                 </div>
               </div>
             </div>
@@ -457,11 +470,11 @@ export function ConversationSidebar({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-start gap-3 pl-10 text-sm pr-8"
+                  className="w-full justify-start gap-3 pl-10 text-sm pr-8 overflow-hidden"
                   onClick={() => handleViewProject(project)}
                 >
-                  <FolderKanban className="h-3 w-3" />
-                  {project.name}
+                  <FolderKanban className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{truncateText(project.name, 20)}</span>
                 </Button>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -530,6 +543,15 @@ export function ConversationSidebar({
                 </div>
               )}
             </>
+          )}
+          
+          {/* Lazy Load Trigger */}
+          {onLoadMore && (
+            <LazyLoadTrigger
+              onLoadMore={onLoadMore}
+              hasMore={hasMore}
+              loading={loading}
+            />
           )}
         </div>
         </ScrollArea>

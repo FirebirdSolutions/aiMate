@@ -18,7 +18,8 @@ import {
 import { SettingsModal } from "./SettingsModal";
 import { AboutModal } from "./AboutModal";
 import { HelpModal } from "./HelpModal";
-import { useDebug } from "./DebugContext";
+import { OfflineModeIndicator } from "./OfflineModeIndicator";
+import { useDebug, useUIEventLogger } from "./DebugContext";
 
 interface ModelOption {
   id: string;
@@ -48,11 +49,22 @@ export function ChatHeader({
   availableModels,
 }: ChatHeaderProps) {
   const { showcaseMode } = useDebug();
+  const { logUIEvent } = useUIEventLogger();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [modelSelectOpen, setModelSelectOpen] = useState(false);
+  
+  const handleNewChat = () => {
+    logUIEvent('New chat clicked', 'ui:chat:new');
+    onNewChat();
+  };
+  
+  const handleToggleSidebar = () => {
+    logUIEvent(`Sidebar ${sidebarOpen ? 'closed' : 'opened'}`, 'ui:sidebar:toggle', { open: !sidebarOpen });
+    if (onToggleSidebar) onToggleSidebar();
+  };
 
   // Use provided models or fall back to static list
   const defaultModels: ModelOption[] = [
@@ -79,7 +91,7 @@ export function ChatHeader({
             <Button
               variant="ghost"
               size="icon"
-              onClick={onToggleSidebar}
+              onClick={handleToggleSidebar}
               className="shrink-0"
             >
               {sidebarOpen ? (
@@ -111,10 +123,12 @@ export function ChatHeader({
           </div>
           
           <div className="flex items-center gap-2">
+            <OfflineModeIndicator />
+            
             <Button
               variant="ghost"
               size="sm"
-              onClick={onNewChat}
+              onClick={handleNewChat}
               className="gap-2 hidden sm:flex"
             >
               <MessageSquare className="h-4 w-4" />

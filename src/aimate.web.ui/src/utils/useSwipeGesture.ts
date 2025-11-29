@@ -6,11 +6,14 @@ interface SwipeGestureOptions {
   threshold?: number;
 }
 
-export function useSwipeGesture(options: SwipeGestureOptions) {
-  const { onSwipeLeft, onSwipeRight, threshold = 50 } = options;
+export function useSwipeGesture({
+  onSwipeLeft,
+  onSwipeRight,
+  threshold = 50,
+}: SwipeGestureOptions) {
+  const ref = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
-  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const element = ref.current;
@@ -28,12 +31,10 @@ export function useSwipeGesture(options: SwipeGestureOptions) {
       const diff = touchStartX.current - touchEndX.current;
       
       if (Math.abs(diff) > threshold) {
-        if (diff > 0 && onSwipeLeft) {
-          // Swiped left
-          onSwipeLeft();
-        } else if (diff < 0 && onSwipeRight) {
-          // Swiped right
-          onSwipeRight();
+        if (diff > 0) {
+          onSwipeLeft?.();
+        } else {
+          onSwipeRight?.();
         }
       }
     };

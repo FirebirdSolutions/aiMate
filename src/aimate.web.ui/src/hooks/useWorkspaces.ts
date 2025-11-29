@@ -1,200 +1,354 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { workspacesApi } from '../api/workspaces';
-import { useAuth } from '../context/AuthContext';
-import { Workspace, Conversation } from '../api/types';
-import { toast } from 'sonner';
-
 /**
- * Hook for managing workspaces
+ * Workspaces Hook
+ * 
+ * Manages workspace creation, switching, and organization
  */
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { workspacesService, WorkspaceDto, CreateWorkspaceDto } from '../api/services';
+import { AppConfig } from '../utils/config';
+
+// Module-level cache to persist data across StrictMode remounts
+let globalWorkspacesInitialized = false;
+let globalWorkspacesCache: WorkspaceDto[] = [];
+let globalCurrentWorkspaceCache: WorkspaceDto | null = null;
+
 export function useWorkspaces() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const [workspaces, setWorkspaces] = useState<WorkspaceDto[]>(() => globalWorkspacesCache);
+  const [currentWorkspace, setCurrentWorkspace] = useState<WorkspaceDto | null>(() => globalCurrentWorkspaceCache);
+  const [loading, setLoading] = useState(!globalWorkspacesInitialized);
+  const [error, setError] = useState<string | null>(null);
+  const isInitializedRef = useRef(globalWorkspacesInitialized);
 
-  // Get all workspaces for the current user
-  const {
-    data: workspaces,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['workspaces', user?.id],
-    queryFn: () => workspacesApi.getWorkspaces(user!.id),
-    enabled: !!user,
-  });
+  // ============================================================================
+  // LOAD WORKSPACES
+  // ============================================================================
 
-  // Create workspace mutation
-  const createWorkspace = useMutation({
-    mutationFn: (data: Partial<Workspace>) => workspacesApi.createWorkspace(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      toast.success('Workspace created successfully');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to create workspace: ${error.message}`);
-    },
-  });
+  const loadWorkspaces = useCallback(async () => {
+    if (AppConfig.isOfflineMode()) {
+      // Skip reload if already initialized in offline mode
+      // Use global flag to survive StrictMode remounts
+      if (globalWorkspacesInitialized) {
+        console.log('[useWorkspaces] Skipping reload - already initialized');
+        return;
+      }
 
-  // Update workspace mutation
-  const updateWorkspace = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Workspace> }) =>
-      workspacesApi.updateWorkspace(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      toast.success('Workspace updated');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to update workspace: ${error.message}`);
-    },
-  });
+      console.log('[useWorkspaces] Loading workspaces...');
+      
+      // Use mock workspaces in offline mode
+      const mockWorkspaces: WorkspaceDto[] = [
+        {
+          id: 'ws-default',
+          name: 'Personal',
+          description: 'My personal workspace',
+          icon: '🏠',
+          color: '#8B5CF6',
+          isDefault: true,
+          conversationCount: 15,
+          createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 'ws-work',
+          name: 'Work',
+          description: 'Professional projects and tasks',
+          icon: '💼',
+          color: '#3B82F6',
+          isDefault: false,
+          conversationCount: 8,
+          createdAt: new Date(Date.now() - 86400000 * 20).toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 'ws-research',
+          name: 'Research',
+          description: 'Research and learning',
+          icon: '🔬',
+          color: '#10B981',
+          isDefault: false,
+          conversationCount: 12,
+          createdAt: new Date(Date.now() - 86400000 * 15).toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+        {
+          id: 'ws-aimate',
+          name: 'aiMate Development',
+          description: 'Building aiMate.nz',
+          icon: '🚀',
+          color: '#F59E0B',
+          isDefault: false,
+          conversationCount: 24,
+          createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ];
+      setWorkspaces(mockWorkspaces);
+      setCurrentWorkspace(mockWorkspaces[0]);
+      setLoading(false);
+      isInitializedRef.current = true;
+      globalWorkspacesInitialized = true;
+      return;
+    }
 
-  // Delete workspace mutation
-  const deleteWorkspace = useMutation({
-    mutationFn: (workspaceId: string) => workspacesApi.deleteWorkspace(workspaceId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
-      toast.success('Workspace deleted');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to delete workspace: ${error.message}`);
-    },
-  });
+    try {
+      setLoading(true);
+      const data = await workspacesService.getWorkspaces();
+      setWorkspaces(data);
+      
+      // Set default workspace as current if none selected
+      const defaultWs = data.find(ws => ws.isDefault) || data[0];
+      setCurrentWorkspace(prev => {
+        // Only set if no current workspace exists
+        return prev || defaultWs || null;
+      });
+      
+      setError(null);
+      isInitializedRef.current = true;
+      globalWorkspacesInitialized = true;
+    } catch (err) {
+      console.error('[useWorkspaces] Failed to load workspaces:', err);
+      setError('Failed to load workspaces');
+      setWorkspaces([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ============================================================================
+  // CREATE WORKSPACE
+  // ============================================================================
+
+  const createWorkspace = useCallback(async (data: CreateWorkspaceDto) => {
+    if (AppConfig.isOfflineMode()) {
+      const newWorkspace: WorkspaceDto = {
+        id: `ws-${Date.now()}`,
+        name: data.name,
+        description: data.description,
+        icon: data.icon || '📁',
+        color: data.color || '#8B5CF6',
+        isDefault: false,
+        conversationCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setWorkspaces(prev => [...prev, newWorkspace]);
+      return newWorkspace;
+    }
+
+    try {
+      const workspace = await workspacesService.createWorkspace(data);
+      setWorkspaces(prev => [...prev, workspace]);
+      return workspace;
+    } catch (err) {
+      console.error('[useWorkspaces] Failed to create workspace:', err);
+      throw err;
+    }
+  }, []);
+
+  // ============================================================================
+  // UPDATE WORKSPACE
+  // ============================================================================
+
+  const updateWorkspace = useCallback(async (
+    workspaceId: string, 
+    updates: Partial<WorkspaceDto>
+  ) => {
+    // Optimistic update
+    setWorkspaces(prev => prev.map(ws => 
+      ws.id === workspaceId ? { ...ws, ...updates } : ws
+    ));
+    
+    setCurrentWorkspace(prev => 
+      prev?.id === workspaceId ? { ...prev, ...updates } : prev
+    );
+
+    if (AppConfig.isOfflineMode()) {
+      return;
+    }
+
+    try {
+      await workspacesService.updateWorkspace(workspaceId, updates);
+    } catch (err) {
+      console.error('[useWorkspaces] Failed to update workspace:', err);
+      await loadWorkspaces(); // Revert
+      throw err;
+    }
+  }, [loadWorkspaces]);
+
+  // ============================================================================
+  // DELETE WORKSPACE
+  // ============================================================================
+
+  const deleteWorkspace = useCallback(async (workspaceId: string) => {
+    // Optimistic update
+    let deletedWorkspaceWasCurrent = false;
+    setWorkspaces(prev => {
+      const filtered = prev.filter(ws => ws.id !== workspaceId);
+      return filtered;
+    });
+    
+    // Switch to default workspace if deleting current
+    setCurrentWorkspace(prev => {
+      if (prev?.id === workspaceId) {
+        deletedWorkspaceWasCurrent = true;
+        return null; // Will be set by the next setState
+      }
+      return prev;
+    });
+    
+    if (deletedWorkspaceWasCurrent) {
+      setWorkspaces(prev => {
+        const defaultWs = prev.find(ws => ws.isDefault);
+        if (defaultWs) {
+          setCurrentWorkspace(defaultWs);
+        }
+        return prev;
+      });
+    }
+
+    if (AppConfig.isOfflineMode()) {
+      return;
+    }
+
+    try {
+      await workspacesService.deleteWorkspace(workspaceId);
+    } catch (err) {
+      console.error('[useWorkspaces] Failed to delete workspace:', err);
+      await loadWorkspaces(); // Revert
+      throw err;
+    }
+  }, [loadWorkspaces]);
+
+  // ============================================================================
+  // SWITCH WORKSPACE
+  // ============================================================================
+
+  const switchWorkspace = useCallback(async (workspaceId: string) => {
+    setWorkspaces(prev => {
+      const workspace = prev.find(ws => ws.id === workspaceId);
+      if (workspace) {
+        setCurrentWorkspace(workspace);
+        
+        // Store in localStorage for persistence
+        try {
+          localStorage.setItem('aiMate:currentWorkspace', workspaceId);
+        } catch (err) {
+          console.error('[useWorkspaces] Failed to store current workspace:', err);
+        }
+      }
+      return prev;
+    });
+  }, []);
+
+  // ============================================================================
+  // SET DEFAULT WORKSPACE
+  // ============================================================================
+
+  const setDefaultWorkspace = useCallback(async (workspaceId: string) => {
+    if (AppConfig.isOfflineMode()) {
+      setWorkspaces(prev => prev.map(ws => ({
+        ...ws,
+        isDefault: ws.id === workspaceId,
+      })));
+      return;
+    }
+
+    try {
+      await workspacesService.setDefaultWorkspace(workspaceId);
+      await loadWorkspaces();
+    } catch (err) {
+      console.error('[useWorkspaces] Failed to set default workspace:', err);
+      throw err;
+    }
+  }, [loadWorkspaces]);
+
+  // ============================================================================
+  // DUPLICATE WORKSPACE
+  // ============================================================================
+
+  const duplicateWorkspace = useCallback(async (workspaceId: string) => {
+    if (AppConfig.isOfflineMode()) {
+      let duplicate: WorkspaceDto | undefined;
+      setWorkspaces(prev => {
+        const original = prev.find(ws => ws.id === workspaceId);
+        if (!original) return prev;
+        
+        duplicate = {
+          ...original,
+          id: `ws-${Date.now()}`,
+          name: `${original.name} (Copy)`,
+          isDefault: false,
+          conversationCount: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        return [...prev, duplicate];
+      });
+      return duplicate;
+    }
+
+    try {
+      const duplicated = await workspacesService.duplicateWorkspace(workspaceId);
+      setWorkspaces(prev => [...prev, duplicated]);
+      return duplicated;
+    } catch (err) {
+      console.error('[useWorkspaces] Failed to duplicate workspace:', err);
+      throw err;
+    }
+  }, []);
+
+  // ============================================================================
+  // INITIALIZATION
+  // ============================================================================
+
+  useEffect(() => {
+    loadWorkspaces();
+  }, [loadWorkspaces]);
+
+  // Restore last workspace from localStorage
+  useEffect(() => {
+    if (workspaces.length > 0 && !currentWorkspace) {
+      try {
+        const savedWorkspaceId = localStorage.getItem('aiMate:currentWorkspace');
+        if (savedWorkspaceId) {
+          const savedWorkspace = workspaces.find(ws => ws.id === savedWorkspaceId);
+          if (savedWorkspace) {
+            setCurrentWorkspace(savedWorkspace);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('[useWorkspaces] Failed to restore workspace:', err);
+      }
+      
+      // Fallback to default workspace
+      const defaultWs = workspaces.find(ws => ws.isDefault) || workspaces[0];
+      setCurrentWorkspace(defaultWs);
+    }
+  }, [workspaces, currentWorkspace]);
+
+  // Sync module-level cache whenever workspaces or currentWorkspace change
+  useEffect(() => {
+    globalWorkspacesCache = workspaces;
+  }, [workspaces]);
+
+  useEffect(() => {
+    globalCurrentWorkspaceCache = currentWorkspace;
+  }, [currentWorkspace]);
 
   return {
-    workspaces: workspaces || [],
-    isLoading,
+    workspaces,
+    currentWorkspace,
+    loading,
     error,
-    createWorkspace: createWorkspace.mutate,
-    updateWorkspace: updateWorkspace.mutate,
-    deleteWorkspace: deleteWorkspace.mutate,
-    isCreating: createWorkspace.isPending,
-    isUpdating: updateWorkspace.isPending,
-    isDeleting: deleteWorkspace.isPending,
-  };
-}
-
-/**
- * Hook for managing conversations in a workspace
- */
-export function useConversations(workspaceId: string | null) {
-  const queryClient = useQueryClient();
-
-  // Get all conversations in the workspace
-  const {
-    data: conversations,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['conversations', workspaceId],
-    queryFn: () => workspacesApi.getConversations(workspaceId!),
-    enabled: !!workspaceId,
-  });
-
-  // Create conversation mutation
-  const createConversation = useMutation({
-    mutationFn: (data: { title: string; model?: string }) =>
-      workspacesApi.createConversation(workspaceId!, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations', workspaceId] });
-      toast.success('Conversation created');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to create conversation: ${error.message}`);
-    },
-  });
-
-  // Update conversation mutation
-  const updateConversation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Conversation> }) =>
-      workspacesApi.updateConversation(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations', workspaceId] });
-      toast.success('Conversation updated');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to update conversation: ${error.message}`);
-    },
-  });
-
-  // Delete conversation mutation
-  const deleteConversation = useMutation({
-    mutationFn: (conversationId: string) =>
-      workspacesApi.deleteConversation(conversationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations', workspaceId] });
-      toast.success('Conversation deleted');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to delete conversation: ${error.message}`);
-    },
-  });
-
-  // Archive conversation mutation
-  const archiveConversation = useMutation({
-    mutationFn: (conversationId: string) =>
-      workspacesApi.archiveConversation(conversationId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations', workspaceId] });
-      toast.success('Conversation archived');
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to archive conversation: ${error.message}`);
-    },
-  });
-
-  return {
-    conversations: conversations || [],
-    isLoading,
-    error,
-    createConversation: createConversation.mutate,
-    updateConversation: updateConversation.mutate,
-    deleteConversation: deleteConversation.mutate,
-    archiveConversation: archiveConversation.mutate,
-    isCreating: createConversation.isPending,
-    isUpdating: updateConversation.isPending,
-    isDeleting: deleteConversation.isPending,
-  };
-}
-
-/**
- * Hook for managing messages in a conversation
- */
-export function useMessages(conversationId: string | null) {
-  const queryClient = useQueryClient();
-
-  // Get all messages in the conversation
-  const {
-    data: messages,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['messages', conversationId],
-    queryFn: () => workspacesApi.getMessages(conversationId!),
-    enabled: !!conversationId,
-  });
-
-  // Send message mutation (non-streaming)
-  const sendMessage = useMutation({
-    mutationFn: ({
-      content,
-      attachments,
-    }: {
-      content: string;
-      attachments?: string[];
-    }) => workspacesApi.sendMessage(conversationId!, content, attachments),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to send message: ${error.message}`);
-    },
-  });
-
-  return {
-    messages: messages || [],
-    isLoading,
-    error,
-    sendMessage: sendMessage.mutate,
-    isSending: sendMessage.isPending,
+    
+    // Actions
+    refresh: loadWorkspaces,
+    createWorkspace,
+    updateWorkspace,
+    deleteWorkspace,
+    switchWorkspace,
+    setDefaultWorkspace,
+    duplicateWorkspace,
   };
 }

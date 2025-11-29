@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { useUIEventLogger } from "./DebugContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Bot, User, Edit2, Check, X, RotateCw, Sparkles, Copy, Volume2, Info, ThumbsUp, ThumbsDown, Play, Share2, Send, Brain } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { toast } from "sonner";
+import { toast } from "sonner@2.0.3";
 import {
   Popover,
   PopoverContent,
@@ -36,6 +37,7 @@ export function ChatMessage({
   onEdit,
   onRegenerate,
 }: ChatMessageProps) {
+  const { logUIEvent } = useUIEventLogger();
   const isUser = role === "user";
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
@@ -53,20 +55,55 @@ export function ChatMessage({
 
   const handleSaveEdit = () => {
     if (editedContent.trim() && onEdit) {
+      logUIEvent('Edit message saved', 'ui:chat:message:edit:save', { role, originalLength: content.length, editedLength: editedContent.trim().length });
       onEdit(editedContent.trim());
       setIsEditing(false);
     }
   };
 
   const handleCancelEdit = () => {
+    logUIEvent('Edit message cancelled', 'ui:chat:message:edit:cancel', { role });
     setEditedContent(content);
     setIsEditing(false);
+  };
+  
+  const handleEditClick = () => {
+    logUIEvent('Edit button clicked', 'ui:chat:message:edit:start', { role });
+    setIsEditing(true);
+  };
+  
+  const handleRegenerateClick = () => {
+    logUIEvent('Regenerate message clicked', 'ui:chat:message:regenerate', { role });
+    if (onRegenerate) onRegenerate();
+  };
+  
+  const handleInfoClick = () => {
+    logUIEvent('Message info opened', 'ui:chat:message:info', { role });
+    setInfoOpen(!infoOpen);
+  };
+  
+  const handleShareClick = () => {
+    logUIEvent('Share message clicked', 'ui:chat:message:share', { role });
+    setShareOpen(true);
+  };
+  
+  const handleRatingClick = (type: 'up' | 'down') => {
+    logUIEvent(`Message rated: ${type}`, 'ui:chat:message:rating', { role, rating: type });
+    setRatingType(type);
+    setRatingOpen(true);
+  };
+  
+  const handleBrainClick = () => {
+    logUIEvent('Brain/Knowledge button clicked', 'ui:chat:message:brain', { role });
+    setBrainTooltipOpen(true);
+    setTimeout(() => setBrainTooltipOpen(false), 2000);
   };
 
   const [copyTooltipOpen, setCopyTooltipOpen] = useState(false);
   const [brainTooltipOpen, setBrainTooltipOpen] = useState(false);
 
   const handleCopy = async () => {
+    logUIEvent(`Copy message: ${isUser ? 'user' : 'assistant'}`, 'ui:chat:message:copy', { role, contentLength: content.length });
     try {
       // Try modern Clipboard API first
       await navigator.clipboard.writeText(content);
@@ -247,7 +284,7 @@ export function ChatMessage({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  onClick={() => setIsEditing(true)}
+                  onClick={handleEditClick}
                   title="Edit"
                 >
                   <Edit2 className="h-4 w-4" />

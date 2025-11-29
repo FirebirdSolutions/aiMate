@@ -94,8 +94,8 @@ export function MCPEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] h-[90vh] p-0 gap-0 flex flex-col bg-gray-900">
-        <DialogHeader className="flex-shrink-0 px-6 py-4 border-b border-gray-800 flex flex-row items-center justify-between">
+      <DialogContent className="max-w-2xl max-h-[90vh] h-[90vh] p-0 gap-0 flex flex-col">
+        <DialogHeader className="flex-shrink-0 px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex flex-row items-center justify-between">
           <DialogTitle>
             {connector ? "Edit Connection" : "Add Connection"}
           </DialogTitle>
@@ -104,7 +104,7 @@ export function MCPEditDialog({
               variant="ghost"
               size="sm"
               onClick={handleImport}
-              className="text-gray-400 hover:text-gray-200 cursor-pointer"
+              className="cursor-pointer"
             >
               Import
             </Button>
@@ -112,7 +112,7 @@ export function MCPEditDialog({
               variant="ghost"
               size="sm"
               onClick={handleExport}
-              className="text-gray-400 hover:text-gray-200 cursor-pointer"
+              className="cursor-pointer"
             >
               Export
             </Button>
@@ -125,14 +125,14 @@ export function MCPEditDialog({
         <ScrollArea className="flex-1 overflow-hidden">
           <div className="px-6 py-4 space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="connection-type" className="text-gray-400">Type</Label>
-              <span className="text-sm text-gray-300">
+              <Label htmlFor="connection-type">Type</Label>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
                 {formData.type}
               </span>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="url" className="text-gray-300">URL</Label>
+              <Label htmlFor="url">URL</Label>
               <div className="flex gap-2">
                 <Input
                   id="url"
@@ -141,9 +141,9 @@ export function MCPEditDialog({
                     setFormData({ ...formData, url: e.target.value })
                   }
                   placeholder="https://echo.firebird.co.nz"
-                  className="flex-1 bg-gray-800 border-gray-700 text-gray-100"
+                  className="flex-1"
                 />
-                <Button size="icon" variant="outline" className="border-gray-700 hover:bg-gray-800 cursor-pointer">
+                <Button size="icon" variant="outline" className="cursor-pointer">
                   <RefreshCw className="h-4 w-4" />
                 </Button>
                 <Switch
@@ -157,15 +157,15 @@ export function MCPEditDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="auth" className="text-gray-300">Auth</Label>
+              <Label htmlFor="auth">Auth</Label>
               <Select
                 value={formData.auth}
                 onValueChange={(auth) => setFormData({ ...formData, auth })}
               >
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-100">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectContent>
                   <SelectItem value="None">None</SelectItem>
                   <SelectItem value="Bearer">Bearer</SelectItem>
                   <SelectItem value="API Key">API Key</SelectItem>
@@ -176,7 +176,7 @@ export function MCPEditDialog({
 
             {formData.auth !== "None" && (
               <div className="space-y-2">
-                <Label htmlFor="auth-token" className="text-gray-300">Auth Token</Label>
+                <Label htmlFor="auth-token">Auth Token</Label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <Input
@@ -187,14 +187,14 @@ export function MCPEditDialog({
                         setFormData({ ...formData, authToken: e.target.value })
                       }
                       placeholder="••••••••••••••••••••••••••••••••"
-                      className="bg-gray-800 border-gray-700 text-gray-100 pr-10"
+                      className="pr-10"
                     />
                   </div>
                   <Button
                     size="icon"
                     variant="outline"
                     onClick={() => setShowAuthToken(!showAuthToken)}
-                    className="border-gray-700 hover:bg-gray-800 cursor-pointer"
+                    className="cursor-pointer"
                   >
                     {showAuthToken ? (
                       <EyeOff className="h-4 w-4" />
@@ -206,10 +206,10 @@ export function MCPEditDialog({
               </div>
             )}
 
-            <Separator className="bg-gray-800" />
+            <Separator />
 
             <div className="space-y-2">
-              <Label htmlFor="mcp-id" className="text-gray-300">ID</Label>
+              <Label htmlFor="mcp-id">ID</Label>
               <Input
                 id="mcp-id"
                 value={formData.mcpId}
@@ -217,12 +217,11 @@ export function MCPEditDialog({
                   setFormData({ ...formData, mcpId: e.target.value })
                 }
                 placeholder="EchoMCP"
-                className="bg-gray-800 border-gray-700 text-gray-100"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-gray-300">Name</Label>
+              <Label htmlFor="name">Name</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -230,12 +229,11 @@ export function MCPEditDialog({
                   setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="EchoMCP"
-                className="bg-gray-800 border-gray-700 text-gray-100"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-gray-300">Description</Label>
+              <Label htmlFor="description">Description</Label>
               <Input
                 id="description"
                 value={formData.description}
@@ -243,17 +241,16 @@ export function MCPEditDialog({
                   setFormData({ ...formData, description: e.target.value })
                 }
                 placeholder="Echo MCP Connector"
-                className="bg-gray-800 border-gray-700 text-gray-100"
               />
             </div>
 
-            <Separator className="bg-gray-800" />
+            <Separator />
 
             <div className="space-y-3">
-              <h4 className="font-medium text-gray-200">Visibility</h4>
-              <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
+              <h4 className="font-medium">Visibility</h4>
+              <div className="p-4 bg-card rounded-lg border border-border">
                 <div className="flex items-start gap-3">
-                  <Lock className="h-5 w-5 text-gray-400 mt-0.5" />
+                  <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
                   <div className="flex-1">
                     <Select
                       value={formData.visibility}
@@ -261,15 +258,15 @@ export function MCPEditDialog({
                         setFormData({ ...formData, visibility })
                       }
                     >
-                      <SelectTrigger className="bg-gray-900 border-gray-700 text-gray-100">
+                      <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700">
+                      <SelectContent>
                         <SelectItem value="private">Private</SelectItem>
                         <SelectItem value="public">Public</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-sm text-gray-400 mt-2">
+                    <p className="text-sm text-muted-foreground mt-2">
                       Only select users and groups with permission can access
                     </p>
                   </div>
@@ -278,30 +275,30 @@ export function MCPEditDialog({
             </div>
 
             <div className="space-y-3">
-              <h4 className="font-medium text-gray-200">Groups</h4>
+              <h4 className="font-medium">Groups</h4>
               <Select>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-gray-400">
+                <SelectTrigger>
                   <SelectValue placeholder="Select a group" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectContent>
                   <SelectItem value="group1">Group 1</SelectItem>
                   <SelectItem value="group2">Group 2</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-sm text-gray-400 px-3">
+              <p className="text-sm text-muted-foreground px-3">
                 No groups with access, add a group to grant access
               </p>
             </div>
 
-            <Separator className="bg-gray-800" />
+            <Separator />
 
-            <div className="p-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
-              <p className="text-sm text-yellow-200">
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
                 <strong>Warning:</strong> MCP support is experimental and its specification changes
                 often, which can lead to incompatibilities. OpenAPI specification support
                 is directly maintained by the Open WebUI team, making it the more
                 reliable option for compatibility.{" "}
-                <button className="text-yellow-400 underline hover:text-yellow-300 cursor-pointer">
+                <button className="text-yellow-600 dark:text-yellow-400 underline hover:text-yellow-700 dark:hover:text-yellow-300 cursor-pointer">
                   Read more →
                 </button>
               </p>
@@ -309,12 +306,12 @@ export function MCPEditDialog({
           </div>
         </ScrollArea>
 
-        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-800 flex justify-between">
+        <div className="flex-shrink-0 px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex justify-between">
           {connector && onDelete ? (
             <Button 
               variant="destructive" 
               onClick={handleDelete}
-              className="bg-red-900/20 text-red-400 hover:bg-red-900/30 border border-red-800 cursor-pointer"
+              className="cursor-pointer"
             >
               Delete
             </Button>
@@ -322,7 +319,7 @@ export function MCPEditDialog({
             <div />
           )}
           <div className="flex gap-2">
-            <Button onClick={handleSave} className="bg-white text-gray-900 hover:bg-gray-200 cursor-pointer">
+            <Button onClick={handleSave} className="cursor-pointer">
               Save
             </Button>
           </div>

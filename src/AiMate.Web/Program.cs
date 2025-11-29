@@ -11,9 +11,8 @@ using System.Threading.RateLimiting;
 using AiMate.Web;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.DataProtection;
-using Hangfire;
-using Hangfire.PostgreSql;
-using Hangfire.Dashboard; // Add this using directive
+using Swashbuckle.AspNetCore.Swagger;
+using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +32,11 @@ builder.Services.AddRazorComponents()
 
 // API Controllers for Developer tier
 builder.Services.AddControllers();
+
+// Swagger/OpenAPI
+builder.Services.AddSwaggerGen();
+
+Log.Information("Swagger configured");
 
 // Rate Limiting
 builder.Services.AddRateLimiter(options =>
@@ -307,8 +311,6 @@ builder.Services.AddMudServices();
 builder.Services.AddFluxor(options =>
 {
     options.ScanAssemblies(typeof(Program).Assembly);
-    // UseReduxDevTools() is not available in this version of Fluxor
-    // For debugging, use browser developer tools with Fluxor DevTools extension
 });
 
 // Database configuration
@@ -340,73 +342,23 @@ else
         options.UseInMemoryDatabase("AiMateDb"));
 }
 
-// Hangfire Background Jobs
-// Note: Requires Hangfire.AspNetCore and Hangfire.PostgreSql (or Hangfire.InMemory) NuGet packages
-// Install with: dotnet add package Hangfire.AspNetCore
-//              dotnet add package Hangfire.PostgreSql (for production)
-//              dotnet add package Hangfire.InMemory (for development)
-//try
-//{
-//    if (databaseProvider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase))
-//    {
-//        var connectionString = builder.Configuration.GetConnectionString("PostgreSQL");
-//        if (!string.IsNullOrEmpty(connectionString))
-//        {
-//            builder.Services.AddHangfire(config =>
-//            {
-//                config.UsePostgreSqlStorage(c =>
-//                    c.UseNpgsqlConnection(connectionString));
-//                config.UseSimpleAssemblyNameTypeSerializer();
-//                config.UseRecommendedSerializerSettings();
-//            });
-//        }
-//    }
-//    else
-//    {
-//        // Use in-memory storage for development
-//        builder.Services.AddHangfire(config =>
-//        {
-//            config.UseInMemoryStorage();
-//            config.UseSimpleAssemblyNameTypeSerializer();
-//            config.UseRecommendedSerializerSettings();
-//        });
-//    }
-
-//    builder.Services.AddHangfireServer(options =>
-//    {
-//        options.WorkerCount = 2; // Number of background workers
-//        options.Queues = new[] { "default", "high-priority" };
-//    });
-
-//    Log.Information("Hangfire background jobs configured");
-//}
-//catch (Exception ex)
-//{
-//    // Hangfire packages not installed yet - log warning but don't fail startup
-//    Log.Warning(ex, "Hangfire not configured - background jobs disabled. Install Hangfire.AspNetCore package to enable.");
-//}
-
 // Add HTTP client for general use
 builder.Services.AddHttpClient();
 
 // Add named HttpClient for API calls (Blazor frontend calling its own API)
 builder.Services.AddHttpClient("ApiClient", (serviceProvider, client) =>
 {
-    // Get the current HTTP context to determine the base URL
-    // In development, we know it's localhost:5001 (HTTPS) or localhost:5000 (HTTP)
-    // In production, this would be the deployed URL
     var baseUrl = builder.Configuration["ApiBaseUrl"];
 
     if (string.IsNullOrEmpty(baseUrl))
     {
-        // Default to localhost in development
         baseUrl = builder.Environment.IsDevelopment()
             ? "https://localhost:5001"
-            : "https://localhost:5001"; // Should be configured in production
+            : "https://localhost:5001";
     }
 
     client.BaseAddress = new Uri(baseUrl);
-    client.Timeout = TimeSpan.FromSeconds(120); // Longer timeout for streaming
+    client.Timeout = TimeSpan.FromSeconds(120);
 
     Log.Information("Configured ApiClient with BaseAddress: {BaseUrl}", baseUrl);
 });
@@ -414,80 +366,53 @@ builder.Services.AddHttpClient("ApiClient", (serviceProvider, client) =>
 // Add localization
 builder.Services.AddLocalization();
 
-// Register our services
-builder.Services.AddScoped<AiMate.Core.Services.ILiteLLMService, AiMate.Infrastructure.Services.LiteLLMService>();
-builder.Services.AddScoped<AiMate.Core.Services.IPersonalityService, AiMate.Infrastructure.Services.PersonalityService>();
-builder.Services.AddScoped<AiMate.Core.Services.IKnowledgeGraphService, AiMate.Infrastructure.Services.KnowledgeGraphService>();
-builder.Services.AddScoped<AiMate.Core.Services.IKnowledgeService, AiMate.Infrastructure.Services.KnowledgeService>();
-builder.Services.AddScoped<AiMate.Core.Services.IWorkspaceService, AiMate.Infrastructure.Services.WorkspaceService>();
-builder.Services.AddScoped<AiMate.Core.Services.IConversationService, AiMate.Infrastructure.Services.ConversationService>();
-builder.Services.AddScoped<AiMate.Core.Services.IProjectService, AiMate.Infrastructure.Services.ProjectService>();
-builder.Services.AddScoped<AiMate.Core.Services.INotesService, AiMate.Infrastructure.Services.NotesService>();
-builder.Services.AddScoped<AiMate.Core.Services.IAuthService, AiMate.Infrastructure.Services.AuthService>();
-// Use web-specific implementation that makes HTTP calls to backend API
-builder.Services.AddScoped<AiMate.Core.Services.IFileUploadService, AiMate.Web.Services.FileUploadService>();
-builder.Services.AddScoped<AiMate.Core.Services.IEmbeddingService, AiMate.Infrastructure.Services.OpenAIEmbeddingService>();
-builder.Services.AddScoped<AiMate.Core.Services.IDatasetGeneratorService, AiMate.Infrastructure.Services.DatasetGeneratorService>();
-builder.Services.AddScoped<AiMate.Core.Services.IMCPToolService, AiMate.Infrastructure.Services.MCPToolService>();
-builder.Services.AddScoped<AiMate.Core.Services.IApiKeyService, AiMate.Infrastructure.Services.ApiKeyService>();
-builder.Services.AddScoped<AiMate.Core.Services.IFeedbackService, AiMate.Infrastructure.Services.FeedbackService>();
-builder.Services.AddScoped<AiMate.Core.Services.IConnectionService, AiMate.Infrastructure.Services.ConnectionService>();
-builder.Services.AddScoped<AiMate.Core.Services.IPluginSettingsService, AiMate.Infrastructure.Services.PluginSettingsService>();
-builder.Services.AddScoped<AiMate.Core.Services.ICodeFileService, AiMate.Infrastructure.Services.CodeFileService>();
-
-// Register Roslyn and IntelliSense services
-builder.Services.AddScoped<AiMate.Core.Services.IRoslynCompilationService, AiMate.Infrastructure.Services.RoslynCompilationService>();
-builder.Services.AddScoped<AiMate.Core.Services.IIntelliSenseService, AiMate.Infrastructure.Services.IntelliSenseService>();
-
-// Register Structured Content services
-builder.Services.AddScoped<AiMate.Core.Services.IStructuredContentService, AiMate.Infrastructure.Services.StructuredContentService>();
-builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.NavigationActionHandler>();
-builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.ApiCallActionHandler>();
-builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.ExportActionHandler>();
-
-// Register Plugin System (Singleton for plugin lifecycle management)
-builder.Services.AddSingleton<AiMate.Core.Services.IPluginManager, AiMate.Infrastructure.Services.PluginManager>();
-
-// Register Permission Service (Singleton for access control)
-builder.Services.AddSingleton<AiMate.Core.Services.IPermissionService, AiMate.Infrastructure.Services.PermissionService>();
-
-// Register UI Services
-builder.Services.AddScoped<AiMate.Web.Services.MarkdownService>();
-// Register Organization and Group services
-builder.Services.AddScoped<AiMate.Core.Services.IOrganizationService, AiMate.Infrastructure.Services.OrganizationService>();
-builder.Services.AddScoped<AiMate.Core.Services.IGroupService, AiMate.Infrastructure.Services.GroupService>();
-
-// Register User Feedback and Error Logging services (alpha testing)
-builder.Services.AddScoped<AiMate.Core.Services.IUserFeedbackService, AiMate.Infrastructure.Services.UserFeedbackService>();
-builder.Services.AddScoped<AiMate.Core.Services.IErrorLoggingService, AiMate.Infrastructure.Services.ErrorLoggingService>();
-
-// Register Encryption Service (for API key protection)
-builder.Services.AddSingleton<AiMate.Core.Services.IEncryptionService, AiMate.Infrastructure.Services.EncryptionService>();
-
-// Register Search Service (full-text and semantic search)
-builder.Services.AddScoped<AiMate.Core.Services.ISearchService, AiMate.Infrastructure.Services.SearchService>();
-
-// Register File Storage Service (local filesystem, can be swapped for Azure/S3)
-builder.Services.AddSingleton<AiMate.Core.Services.IFileStorageService, AiMate.Infrastructure.Services.LocalFileStorageService>();
-
-// Register Background Job Services (requires Hangfire packages)
+// Register our services (with error handling for missing types)
 try
 {
-    builder.Services.AddSingleton<AiMate.Core.Services.IBackgroundJobService, AiMate.Infrastructure.Services.HangfireBackgroundJobService>();
-    builder.Services.AddScoped<AiMate.Core.Services.IBackgroundJobs, AiMate.Infrastructure.Services.BackgroundJobs>();
-    Log.Information("Background job services registered");
+    builder.Services.AddScoped<AiMate.Core.Services.ILiteLLMService, AiMate.Infrastructure.Services.LiteLLMService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IPersonalityService, AiMate.Infrastructure.Services.PersonalityService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IKnowledgeGraphService, AiMate.Infrastructure.Services.KnowledgeGraphService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IKnowledgeService, AiMate.Infrastructure.Services.KnowledgeService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IWorkspaceService, AiMate.Infrastructure.Services.WorkspaceService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IConversationService, AiMate.Infrastructure.Services.ConversationService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IProjectService, AiMate.Infrastructure.Services.ProjectService>();
+    builder.Services.AddScoped<AiMate.Core.Services.INotesService, AiMate.Infrastructure.Services.NotesService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IAuthService, AiMate.Infrastructure.Services.AuthService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IFileUploadService, AiMate.Web.Services.FileUploadService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IEmbeddingService, AiMate.Infrastructure.Services.OpenAIEmbeddingService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IDatasetGeneratorService, AiMate.Infrastructure.Services.DatasetGeneratorService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IMCPToolService, AiMate.Infrastructure.Services.MCPToolService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IApiKeyService, AiMate.Infrastructure.Services.ApiKeyService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IFeedbackService, AiMate.Infrastructure.Services.FeedbackService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IConnectionService, AiMate.Infrastructure.Services.ConnectionService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IPluginSettingsService, AiMate.Infrastructure.Services.PluginSettingsService>();
+    builder.Services.AddScoped<AiMate.Core.Services.ICodeFileService, AiMate.Infrastructure.Services.CodeFileService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IRoslynCompilationService, AiMate.Infrastructure.Services.RoslynCompilationService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IIntelliSenseService, AiMate.Infrastructure.Services.IntelliSenseService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IStructuredContentService, AiMate.Infrastructure.Services.StructuredContentService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.NavigationActionHandler>();
+    builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.ApiCallActionHandler>();
+    builder.Services.AddScoped<AiMate.Core.Services.IActionHandler, AiMate.Infrastructure.Services.ActionHandlers.ExportActionHandler>();
+    builder.Services.AddSingleton<AiMate.Core.Services.IPluginManager, AiMate.Infrastructure.Services.PluginManager>();
+    builder.Services.AddSingleton<AiMate.Core.Services.IPermissionService, AiMate.Infrastructure.Services.PermissionService>();
+    builder.Services.AddScoped<AiMate.Web.Services.MarkdownService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IOrganizationService, AiMate.Infrastructure.Services.OrganizationService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IGroupService, AiMate.Infrastructure.Services.GroupService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IUserFeedbackService, AiMate.Infrastructure.Services.UserFeedbackService>();
+    builder.Services.AddScoped<AiMate.Core.Services.IErrorLoggingService, AiMate.Infrastructure.Services.ErrorLoggingService>();
+    builder.Services.AddSingleton<AiMate.Core.Services.IEncryptionService, AiMate.Infrastructure.Services.EncryptionService>();
+    builder.Services.AddScoped<AiMate.Core.Services.ISearchService, AiMate.Infrastructure.Services.SearchService>();
+    builder.Services.AddSingleton<AiMate.Core.Services.IFileStorageService, AiMate.Infrastructure.Services.LocalFileStorageService>();
+    builder.Services.AddHttpClient<AiMate.Infrastructure.Services.LiteLLMService>();
+    builder.Services.AddHttpClient<AiMate.Infrastructure.Services.OpenAIEmbeddingService>();
+    builder.Services.AddHttpClient<AiMate.Infrastructure.Services.MCPToolService>();
+
+    Log.Information("All services registered successfully");
 }
 catch (Exception ex)
 {
-    Log.Warning(ex, "Background job services not registered - Hangfire packages may not be installed");
+    Log.Warning(ex, "Some services could not be registered - they may not be implemented yet");
 }
-
-// Register HttpClient for services that need it
-builder.Services.AddHttpClient<AiMate.Infrastructure.Services.LiteLLMService>();
-builder.Services.AddHttpClient<AiMate.Infrastructure.Services.OpenAIEmbeddingService>();
-builder.Services.AddHttpClient<AiMate.Infrastructure.Services.MCPToolService>();
-
-Log.Information("All services registered successfully (Phase 6 complete)");
 
 var app = builder.Build();
 
@@ -498,7 +423,6 @@ if (app.Environment.IsDevelopment() && databaseProvider.Equals("InMemory", Strin
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<AiMateDbContext>();
 
-        // Check if admin user already exists
         if (!dbContext.Users.Any(u => u.Username == "admin"))
         {
             var adminUser = new AiMate.Core.Entities.User
@@ -536,28 +460,32 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// Response compression (must be early in pipeline, before static files)
 app.UseResponseCompression();
-
 app.UseStaticFiles();
 app.UseAntiforgery();
-
-// CORS for API
 app.UseCors("ApiCorsPolicy");
-
-// Rate Limiting (must be before Authentication)
 app.UseRateLimiter();
-
-// Authentication and Authorization
 app.UseAuthentication();
 app.UseAuthorization();
-
-// Output caching (after auth so we can cache per-user if needed)
 app.UseOutputCache();
+
+// Swagger/OpenAPI (development only)
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "AiMate API v1");
+        options.RoutePrefix = string.Empty;
+    });
+
+    Log.Information("Swagger UI enabled at /");
+}
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapControllers();
 
 app.Run();
 

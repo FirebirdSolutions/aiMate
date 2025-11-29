@@ -1,35 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect, KeyboardEvent } from "react";
+import { Paperclip, Send, Smile, Mic, Square, FileText, Database, FileImage, MessageCircle, Globe, Wrench, CloudSun, Plus, Sparkles, X, Loader2, Upload, ChevronRight, Camera, Brain, MessageSquare, Search, Code, Settings2, MapPin } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel } from "./ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { ScrollArea } from "./ui/scroll-area";
+import { Badge } from "./ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
-import { Send, Plus, Wrench, Paperclip, Camera, Globe, FileText, Brain, ChevronRight, Settings2, LayoutGrid, Search, Code, MoreHorizontal, CloudSun, MapPin, MessageSquare, Upload, X, Loader2 } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "./ui/popover";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
+import { Label } from "./ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Switch } from "./ui/switch";
 import { Separator } from "./ui/separator";
-import { Label } from "./ui/label";
-import { ScrollArea } from "./ui/scroll-area";
-import { Slider } from "./ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
-import { useDebug } from "./DebugContext";
-import { toast } from "sonner";
-import * as API from "../utils/api-stubs";
+import { useDebug, useUIEventLogger } from "./DebugContext";
+import { toast } from "sonner@2.0.3";
 import { KnowledgeSuggestions } from "./KnowledgeSuggestions";
 import { AttachedContext } from "./AttachedContext";
 
@@ -48,6 +32,7 @@ interface AttachedItem {
 
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const { addLog, showcaseMode } = useDebug();
+  const { logUIEvent } = useUIEventLogger();
   const [message, setMessage] = useState("");
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [notesMenuOpen, setNotesMenuOpen] = useState(false);
@@ -94,6 +79,8 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !disabled) {
+      // Log the UI event
+      logUIEvent('Message sent', 'ui:chat:send', { messageLength: message.trim().length, hasAttachments: attachedItems.length > 0 });
       // Log the send event
       addLog({
         action: 'Message Sent',
@@ -146,155 +133,152 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 
   const loadNotes = async () => {
     setLoading(true);
-    const response = await API.getNotes();
-    if (response.success && response.data) {
-      setNotes(response.data);
-      addLog({
-        action: 'Loaded Notes',
-        api: response.metadata?.endpoint || '/api/v1/GetNotes',
-        payload: response.data,
-        type: 'success'
-      });
-    }
+    // Mock notes data
+    const mockNotes = [
+      { id: 'note-1', title: 'Safety Protocol Notes', date: 'Nov 25, 2025' },
+      { id: 'note-2', title: 'Meeting Summary - Crisis Response', date: 'Nov 24, 2025' },
+      { id: 'note-3', title: 'API Integration Checklist', date: 'Nov 22, 2025' },
+    ];
+    setNotes(mockNotes);
+    addLog({
+      action: 'Loaded Notes',
+      api: '/api/v1/notes',
+      payload: mockNotes,
+      type: 'success'
+    });
     setLoading(false);
   };
 
   const loadKnowledge = async () => {
     setLoading(true);
-    const response = await API.getKnowledge();
-    if (response.success && response.data) {
-      setKnowledge(response.data);
-      addLog({
-        action: 'Loaded Knowledge',
-        api: response.metadata?.endpoint || '/api/v1/GetKnowledge',
-        payload: response.data,
-        type: 'success'
-      });
-    }
+    // Mock knowledge data
+    const mockKnowledge = [
+      { id: 'kb-1', title: 'React Best Practices', type: 'Document' },
+      { id: 'kb-2', title: 'NZ Crisis Resources', type: 'Web' },
+      { id: 'kb-3', title: 'TypeScript Guide', type: 'PDF' },
+    ];
+    setKnowledge(mockKnowledge);
+    addLog({
+      action: 'Loaded Knowledge',
+      api: '/api/v1/knowledge',
+      payload: mockKnowledge,
+      type: 'success'
+    });
     setLoading(false);
   };
 
   const loadFiles = async () => {
     setLoading(true);
-    const response = await API.getFiles();
-    if (response.success && response.data) {
-      setFiles(response.data);
-      addLog({
-        action: 'Loaded Files',
-        api: response.metadata?.endpoint || '/api/v1/GetFiles',
-        payload: response.data,
-        type: 'success'
-      });
-    }
+    // Mock files data
+    const mockFiles = [
+      { id: 'file-1', title: 'project-spec.pdf', size: '2.4 MB' },
+      { id: 'file-2', title: 'design-mockup.fig', size: '5.1 MB' },
+      { id: 'file-3', title: 'api-docs.md', size: '156 KB' },
+    ];
+    setFiles(mockFiles);
+    addLog({
+      action: 'Loaded Files',
+      api: '/api/v1/files',
+      payload: mockFiles,
+      type: 'success'
+    });
     setLoading(false);
   };
 
   const loadChats = async () => {
     setLoading(true);
-    const response = await API.getChats();
-    if (response.success && response.data) {
-      setChats(response.data);
-      addLog({
-        action: 'Loaded Chats',
-        api: response.metadata?.endpoint || '/api/v1/GetChats',
-        payload: response.data,
-        type: 'success'
-      });
-    }
+    // Mock chats data
+    const mockChats = [
+      { id: 'chat-1', title: 'Previous discussion about safety', date: 'Nov 26, 2025' },
+      { id: 'chat-2', title: 'API design conversation', date: 'Nov 25, 2025' },
+      { id: 'chat-3', title: 'UI improvements chat', date: 'Nov 24, 2025' },
+    ];
+    setChats(mockChats);
+    addLog({
+      action: 'Loaded Chats',
+      api: '/api/v1/conversations',
+      payload: mockChats,
+      type: 'success'
+    });
     setLoading(false);
   };
 
   const handleAttachNote = async (noteId: string) => {
     setAttachedNotes((prev) => [...prev, noteId]);
-    const response = await API.attachNote(noteId, "current_chat_id");
-    if (response.success) {
-      toast.success("Note attached to chat context");
-      addLog({
-        action: 'Attached Note',
-        api: response.metadata?.endpoint || '/api/v1/AttachNote',
-        payload: response.data,
-        type: 'success'
-      });
-      setNotesMenuOpen(false);
-      setAttachMenuOpen(false);
-    }
+    toast.success("Note attached to chat context");
+    addLog({
+      action: 'Attached Note',
+      api: '/api/v1/attachments/note',
+      payload: { noteId },
+      type: 'success'
+    });
+    setNotesMenuOpen(false);
+    setAttachMenuOpen(false);
   };
 
   const handleAttachKnowledge = async (knowledgeId: string) => {
     setAttachedKnowledge((prev) => [...prev, knowledgeId]);
-    const response = await API.attachKnowledge(knowledgeId, "current_chat_id");
-    if (response.success) {
-      toast.success("Knowledge attached to chat context");
-      addLog({
-        action: 'Attached Knowledge',
-        api: response.metadata?.endpoint || '/api/v1/AttachKnowledge',
-        payload: response.data,
-        type: 'success'
-      });
-      setKnowledgeMenuOpen(false);
-      setAttachMenuOpen(false);
-    }
+    toast.success("Knowledge attached to chat context");
+    addLog({
+      action: 'Attached Knowledge',
+      api: '/api/v1/attachments/knowledge',
+      payload: { knowledgeId },
+      type: 'success'
+    });
+    setKnowledgeMenuOpen(false);
+    setAttachMenuOpen(false);
   };
 
   const handleAttachFile = async (fileId: string) => {
     setAttachedFiles((prev) => [...prev, fileId]);
-    const response = await API.attachFile(fileId, "current_chat_id");
-    if (response.success) {
-      toast.success("File attached to chat context");
-      addLog({
-        action: 'Attached File',
-        api: response.metadata?.endpoint || '/api/v1/AttachFile',
-        payload: response.data,
-        type: 'success'
-      });
-      setFilesMenuOpen(false);
-      setAttachMenuOpen(false);
-    }
+    toast.success("File attached to chat context");
+    addLog({
+      action: 'Attached File',
+      api: '/api/v1/attachments/file',
+      payload: { fileId },
+      type: 'success'
+    });
+    setFilesMenuOpen(false);
+    setAttachMenuOpen(false);
   };
 
   const handleReferenceChat = async (chatId: string) => {
     setAttachedChats((prev) => [...prev, chatId]);
-    const response = await API.referenceChat(chatId, "current_chat_id");
-    if (response.success) {
-      toast.success("Chat referenced in context");
-      addLog({
-        action: 'Referenced Chat',
-        api: response.metadata?.endpoint || '/api/v1/ReferenceChat',
-        payload: response.data,
-        type: 'success'
-      });
-      setReferenceChatMenuOpen(false);
-      setAttachMenuOpen(false);
-    }
+    toast.success("Chat referenced in context");
+    addLog({
+      action: 'Referenced Chat',
+      api: '/api/v1/attachments/chat',
+      payload: { chatId },
+      type: 'success'
+    });
+    setReferenceChatMenuOpen(false);
+    setAttachMenuOpen(false);
   };
 
   const handleAttachWebpage = async () => {
     if (webpageUrl.trim()) {
-      const response = await API.attachWebpage(webpageUrl, "current_chat_id");
-      if (response.success) {
-        // Create a webpage ID and add to attached webpages
-        const webpageId = `webpage-${Date.now()}`;
-        setAttachedWebpages((prev) => [...prev, webpageId]);
-        
-        // Add to webpages list for display
-        setWebpages((prev) => [...prev, {
-          id: webpageId,
-          title: response.data?.title || webpageUrl,
-          url: webpageUrl,
-          description: response.data?.description || ""
-        }]);
-        
-        toast.success("Webpage attached successfully!");
-        addLog({
-          action: 'Attached Webpage',
-          api: response.metadata?.endpoint || '/api/v1/AttachWebpage',
-          payload: response.data,
-          type: 'success'
-        });
-        setWebpageUrl("");
-        setWebpageMenuOpen(false);
-        setAttachMenuOpen(false);
-      }
+      // Mock webpage attachment
+      const webpageId = `webpage-${Date.now()}`;
+      setAttachedWebpages((prev) => [...prev, webpageId]);
+      
+      // Add to webpages list for display
+      setWebpages((prev) => [...prev, {
+        id: webpageId,
+        title: webpageUrl,
+        url: webpageUrl,
+        description: ""
+      }]);
+      
+      toast.success("Webpage attached successfully!");
+      addLog({
+        action: 'Attached Webpage',
+        api: '/api/v1/attachments/webpage',
+        payload: { url: webpageUrl },
+        type: 'success'
+      });
+      setWebpageUrl("");
+      setWebpageMenuOpen(false);
+      setAttachMenuOpen(false);
     }
   };
 

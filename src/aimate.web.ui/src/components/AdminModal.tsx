@@ -1,6 +1,8 @@
-import { useState, useMemo } from "react";
-import { useDebug } from "./DebugContext";
+import { useState, useMemo, useEffect } from "react";
+import { useDebug, useUIEventLogger } from "./DebugContext";
 import { useAdminSettings } from "../context/AdminSettingsContext";
+import { useAdmin } from "../hooks/useAdmin";
+import { AppConfig } from "../utils/config";
 import { ConnectionEditDialog } from "./ConnectionEditDialog";
 import { ModelEditDialog } from "./ModelEditDialog";
 import { MCPEditDialog } from "./MCPEditDialog";
@@ -38,6 +40,21 @@ interface AdminModalProps {
 }
 
 export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }: AdminModalProps) {
+  const { logUIEvent } = useUIEventLogger();
+  const { addLog } = useDebug();
+  
+  useEffect(() => {
+    if (open) {
+      logUIEvent('Admin Panel opened', 'ui:admin:open');
+      addLog({
+        action: 'Admin Panel opened',
+        category: 'admin:open',
+        api: 'api/v1/GetAdminSettings',
+        type: 'info'
+      });
+    }
+  }, [open, logUIEvent, addLog]);
+
   const tabs = useMemo(() => [
     {
       id: "general",
@@ -97,12 +114,6 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
       id: "codeexecution",
       label: "Code Execution",
       icon: Code,
-      content: <CodeExecutionTab />,
-    },
-    {
-      id: "audio",
-      label: "Audio",
-      icon: CloudSun,
       content: <AudioTab />,
     },
     {
@@ -129,8 +140,65 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
 }
 
 function GeneralTab() {
-  const { debugEnabled, setDebugEnabled } = useDebug();
+  const { debugEnabled, setDebugEnabled, addLog, debugSettings, updateDebugSettings } = useDebug();
   const { settings, updateGeneral } = useAdminSettings();
+  const [offlineMode, setOfflineModeState] = useState(AppConfig.isOfflineMode());
+
+  const handleOfflineModeChange = (checked: boolean) => {
+    AppConfig.setOfflineMode(checked);
+    setOfflineModeState(checked);
+    addLog({
+      action: `Offline mode: ${checked ? 'enabled' : 'disabled'}`,
+      category: 'admin:general:offline',
+      api: 'api/v1/admin/settings/general',
+      payload: { offlineMode: checked },
+      type: 'info'
+    });
+  };
+
+  const handleAdminEnabledChange = (checked: boolean) => {
+    updateGeneral({ adminEnabled: checked });
+    addLog({
+      action: `Admin panel: ${checked ? 'enabled' : 'disabled'}`,
+      category: 'admin:general:admin',
+      api: 'api/v1/admin/settings/general',
+      payload: { adminEnabled: checked },
+      type: 'info'
+    });
+  };
+
+  const handleUserRegistrationChange = (checked: boolean) => {
+    updateGeneral({ userRegistration: checked });
+    addLog({
+      action: `User registration: ${checked ? 'enabled' : 'disabled'}`,
+      category: 'admin:general:registration',
+      api: 'api/v1/admin/settings/general',
+      payload: { userRegistration: checked },
+      type: 'info'
+    });
+  };
+
+  const handleApiAccessChange = (checked: boolean) => {
+    updateGeneral({ apiAccess: checked });
+    addLog({
+      action: `API access: ${checked ? 'enabled' : 'disabled'}`,
+      category: 'admin:general:api',
+      api: 'api/v1/admin/settings/general',
+      payload: { apiAccess: checked },
+      type: 'info'
+    });
+  };
+
+  const handleDebugModeChange = (checked: boolean) => {
+    setDebugEnabled(checked);
+    addLog({
+      action: `Debug mode: ${checked ? 'enabled' : 'disabled'}`,
+      category: 'admin:general:debug',
+      api: 'api/v1/admin/settings/general',
+      payload: { debugEnabled: checked },
+      type: checked ? 'success' : 'warning'
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -142,7 +210,7 @@ function GeneralTab() {
             <Switch
               id="admin-enabled"
               checked={settings.general.adminEnabled}
-              onCheckedChange={(checked) => updateGeneral({ adminEnabled: checked })}
+              onCheckedChange={handleAdminEnabledChange}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -151,7 +219,7 @@ function GeneralTab() {
             <Switch
               id="user-registration"
               checked={settings.general.userRegistration}
-              onCheckedChange={(checked) => updateGeneral({ userRegistration: checked })}
+              onCheckedChange={handleUserRegistrationChange}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -160,7 +228,7 @@ function GeneralTab() {
             <Switch
               id="api-access"
               checked={settings.general.apiAccess}
-              onCheckedChange={(checked) => updateGeneral({ apiAccess: checked })}
+              onCheckedChange={handleApiAccessChange}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -174,6 +242,20 @@ function GeneralTab() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
+              <Label htmlFor="offline-mode">Offline Mode</Label>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Use mock data instead of live APIs (persists in browser storage)
+              </p>
+            </div>
+            <Switch
+              id="offline-mode"
+              checked={offlineMode}
+              onCheckedChange={handleOfflineModeChange}
+              className="data-[state=checked]:bg-purple-600"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
               <Label htmlFor="debug-mode">Debug Mode</Label>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Display debug console with API calls and payloads
@@ -182,12 +264,116 @@ function GeneralTab() {
             <Switch
               id="debug-mode"
               checked={debugEnabled}
-              onCheckedChange={setDebugEnabled}
+              onCheckedChange={handleDebugModeChange}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
         </div>
       </div>
+
+      {debugEnabled && (
+        <>
+          <Separator />
+          
+          <div>
+            <h3 className="font-semibold mb-3">Debug Configuration</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-payloads">Show Request Payloads</Label>
+                <Switch
+                  id="show-payloads"
+                  checked={debugSettings.showPayloads}
+                  onCheckedChange={(v) => updateDebugSettings({ showPayloads: v })}
+                  className="data-[state=checked]:bg-purple-600"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-responses">Show API Responses</Label>
+                <Switch
+                  id="show-responses"
+                  checked={debugSettings.showResponses}
+                  onCheckedChange={(v) => updateDebugSettings({ showResponses: v })}
+                  className="data-[state=checked]:bg-purple-600"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-timestamps">Show Timestamps</Label>
+                <Switch
+                  id="show-timestamps"
+                  checked={debugSettings.showTimestamps}
+                  onCheckedChange={(v) => updateDebugSettings({ showTimestamps: v })}
+                  className="data-[state=checked]:bg-purple-600"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="log-ui-events">Log UI Events</Label>
+                <Switch
+                  id="log-ui-events"
+                  checked={debugSettings.logUIEvents}
+                  onCheckedChange={(v) => updateDebugSettings({ logUIEvents: v })}
+                  className="data-[state=checked]:bg-purple-600"
+                />
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <Label className="mb-2 block">Log Levels</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="log-info" className="text-sm">Info</Label>
+                    <Switch
+                      id="log-info"
+                      checked={debugSettings.logLevels.info}
+                      onCheckedChange={(v) => updateDebugSettings({ logLevels: { ...debugSettings.logLevels, info: v } })}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="log-success" className="text-sm">Success</Label>
+                    <Switch
+                      id="log-success"
+                      checked={debugSettings.logLevels.success}
+                      onCheckedChange={(v) => updateDebugSettings({ logLevels: { ...debugSettings.logLevels, success: v } })}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="log-warning" className="text-sm">Warning</Label>
+                    <Switch
+                      id="log-warning"
+                      checked={debugSettings.logLevels.warning}
+                      onCheckedChange={(v) => updateDebugSettings({ logLevels: { ...debugSettings.logLevels, warning: v } })}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="log-error" className="text-sm">Error</Label>
+                    <Switch
+                      id="log-error"
+                      checked={debugSettings.logLevels.error}
+                      onCheckedChange={(v) => updateDebugSettings({ logLevels: { ...debugSettings.logLevels, error: v } })}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="max-logs">Maximum Log Entries</Label>
+                <Input
+                  id="max-logs"
+                  type="number"
+                  value={debugSettings.maxLogs}
+                  onChange={(e) => updateDebugSettings({ maxLogs: parseInt(e.target.value) || 200 })}
+                  min={50}
+                  max={1000}
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -243,7 +429,10 @@ function InterfaceTab() {
       <div>
         <div className="flex items-center gap-2 mb-3">
           <h3 className="font-semibold">Task Model</h3>
-          <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
+            onClick={() => alert('Task Models are used for automatic tasks like title generation and query rewriting.')}
+            title="Task Models are used for automatic tasks like title generation and query rewriting."
+          >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <circle cx="12" cy="12" r="10" strokeWidth="2" />
               <text x="12" y="16" textAnchor="middle" className="text-xs" fill="currentColor">?</text>
@@ -490,11 +679,47 @@ function InterfaceTab() {
 
       {/* Import/Export Buttons */}
       <div className="flex gap-2">
-        <Button variant="outline" className="cursor-pointer">
+        <Button 
+          variant="outline" 
+          className="cursor-pointer"
+          onClick={() => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+              const file = (e.target as HTMLInputElement).files?.[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  try {
+                    const suggestions = JSON.parse(event.target?.result as string);
+                    updateInterface({ promptSuggestions: suggestions });
+                  } catch {
+                    alert('Invalid JSON file');
+                  }
+                };
+                reader.readAsText(file);
+              }
+            };
+            input.click();
+          }}
+        >
           <Upload className="h-4 w-4 mr-2" />
           Import Prompt Suggestions
         </Button>
-        <Button variant="outline" className="cursor-pointer">
+        <Button 
+          variant="outline" 
+          className="cursor-pointer"
+          onClick={() => {
+            const element = document.createElement('a');
+            element.setAttribute('href', `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(iface.promptSuggestions, null, 2))}`);
+            element.setAttribute('download', `prompt-suggestions-${new Date().toISOString().split('T')[0]}.json`);
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+          }}
+        >
           <Download className="h-4 w-4 mr-2" />
           Export Prompt Suggestions ({iface.promptSuggestions.length})
         </Button>
@@ -508,12 +733,15 @@ function UsersGroupsTab() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editType, setEditType] = useState<"user" | "group" | "role">("user");
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const { users: apiUsers } = useAdmin();
 
-  const [users, setUsers] = useState([
-    { id: "1", name: "Rich", email: "rich@example.com", role: "Admin", group: "Admins" },
-    { id: "2", name: "John Doe", email: "john@example.com", role: "User", group: "Users" },
-    { id: "3", name: "Jane Smith", email: "jane@example.com", role: "User", group: "Power Users" },
-  ]);
+  const users = apiUsers.map(u => ({
+    id: u.id,
+    name: u.username,
+    email: u.email,
+    role: u.userTier,
+    group: u.userTier === 'Admin' ? 'Admins' : u.userTier === 'BYOK' ? 'Power Users' : 'Users',
+  }));
 
   const [groups, setGroups] = useState([
     { 
@@ -620,7 +848,12 @@ function UsersGroupsTab() {
                 Cancel
               </Button>
               <Button onClick={() => {
-                // Form submission will be handled by the form components
+                // Get form data from form component via ref or state
+                const formElement = document.querySelector('form');
+                if (formElement) {
+                  const formData = new FormData(formElement);
+                  handleSave(Object.fromEntries(formData));
+                }
               }} className="cursor-pointer">
                 Save
               </Button>
@@ -970,71 +1203,109 @@ function GroupForm({ item, onSave }: { item: any; onSave: (item: any) => void })
 }
 
 function ConnectionsTab() {
+  const { addLog } = useDebug();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState<any>(null);
-  const [connections, setConnections] = useState([
-    {
-      id: "1",
-      name: "OpenAI API",
-      type: "OpenAI",
-      url: "https://chat.firebird.co.nz/lmstudio/v1",
-      enabled: true,
-      isGroup: false,
-    },
-    {
-      id: "2",
-      name: "Anthropic API",
-      url: "https://api.anthropic.com/v1",
-      enabled: false,
-      isGroup: false,
-    },
-    {
-      id: "3",
-      name: "Local Docker",
-      url: "http://host.docker.internal:9099",
-      enabled: false,
-      isGroup: false,
-      hasLayer: true,
-    },
-    {
-      id: "4",
-      name: "OpenRouter",
-      url: "https://openrouter.ai/api/v1",
-      enabled: false,
-      isGroup: false,
-    },
-  ]);
+  const { connections, toggleConnection, createConnection, updateConnection, deleteConnection: deleteConnectionApi } = useAdmin();
 
   const handleEdit = (connection: any) => {
     setSelectedConnection(connection);
     setEditDialogOpen(true);
+    addLog({
+      action: `Editing connection: ${connection.name}`,
+      category: 'admin:connections:edit',
+      payload: { connectionId: connection.id, name: connection.name },
+      type: 'info'
+    });
   };
 
   const handleAdd = () => {
     setSelectedConnection(null);
     setEditDialogOpen(true);
+    addLog({
+      action: 'Adding new connection',
+      category: 'admin:connections:add',
+      type: 'info'
+    });
   };
 
-  const handleSave = (connection: any) => {
-    if (selectedConnection) {
-      setConnections(
-        connections.map((c) => (c.id === connection.id ? connection : c))
-      );
-    } else {
-      setConnections([...connections, connection]);
+  const handleSave = async (connection: any) => {
+    try {
+      if (selectedConnection) {
+        await updateConnection(connection.id, connection);
+        addLog({
+          action: `Connection updated: ${connection.name}`,
+          category: 'admin:connections:update',
+          api: 'api/v1/admin/connections',
+          payload: connection,
+          type: 'success'
+        });
+      } else {
+        await createConnection(connection);
+        addLog({
+          action: `Connection created: ${connection.name}`,
+          category: 'admin:connections:create',
+          api: 'api/v1/admin/connections',
+          payload: connection,
+          type: 'success'
+        });
+      }
+      setEditDialogOpen(false);
+    } catch (err) {
+      console.error('[ConnectionsTab] Failed to save connection:', err);
+      addLog({
+        action: `Failed to save connection: ${connection.name}`,
+        category: 'admin:connections:error',
+        payload: { error: String(err) },
+        type: 'error'
+      });
     }
   };
 
-  const handleDelete = (id: string) => {
-    setConnections(connections.filter((c) => c.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      const conn = connections.find(c => c.id === id);
+      await deleteConnectionApi(id);
+      addLog({
+        action: `Connection deleted: ${conn?.name || id}`,
+        category: 'admin:connections:delete',
+        api: 'api/v1/admin/connections',
+        payload: { connectionId: id },
+        type: 'warning'
+      });
+      setEditDialogOpen(false);
+    } catch (err) {
+      console.error('[ConnectionsTab] Failed to delete connection:', err);
+      addLog({
+        action: 'Failed to delete connection',
+        category: 'admin:connections:error',
+        payload: { error: String(err) },
+        type: 'error'
+      });
+    }
   };
 
-  const toggleConnection = (id: string) => {
-    setConnections(
-      connections.map((c) =>
-        c.id === id ? { ...c, enabled: !c.enabled } : c
-      )
-    );
+  const handleToggle = async (id: string) => {
+    try {
+      const conn = connections.find(c => c.id === id);
+      const newState = !conn?.enabled;
+      await toggleConnection(id);
+      addLog({
+        action: `${conn?.name}: ${newState ? 'enabled' : 'disabled'}`,
+        category: 'admin:connections:toggle',
+        api: 'api/v1/admin/connections/toggle',
+        payload: { connectionId: id, enabled: newState, name: conn?.name },
+        type: 'info'
+      });
+    } catch (err) {
+      console.error('[ConnectionsTab] Failed to toggle connection:', err);
+      addLog({
+        action: 'Failed to toggle connection',
+        category: 'admin:connections:error',
+        payload: { error: String(err) },
+        type: 'error'
+      });
+    }
   };
 
   return (
@@ -1072,21 +1343,31 @@ function ConnectionsTab() {
               </Button>
             </div>
             {connections
-              .filter((c) => c.type === "OpenAI")
+              .filter((c) => c.provider === "OpenAI")
               .map((connection) => (
                 <div
                   key={connection.id}
                   className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
-                  <span className="text-sm">{connection.url}</span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8"
-                    onClick={() => handleEdit(connection)}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">{connection.name}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{connection.apiKeyPrefix}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={connection.isActive}
+                      onCheckedChange={() => handleToggle(connection.id)}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8"
+                      onClick={() => handleEdit(connection)}
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
           </div>
@@ -1171,37 +1452,109 @@ interface ModelsTabProps {
 }
 
 function ModelsTab({ enabledModels, onToggleModel }: ModelsTabProps) {
+  const { addLog } = useDebug();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<any>(null);
-  const [models, setModels] = useState([
-    { id: "gpt-4", name: "GPT-4", color: "text-purple-500", description: "Most capable model, best for complex tasks", connection: "OpenAI" },
-    { id: "gpt-4-turbo", name: "GPT-4 Turbo", color: "text-blue-500", description: "Faster GPT-4 with improved performance", connection: "OpenAI" },
-    { id: "gpt-3.5-turbo", name: "GPT-3.5 Turbo", color: "text-green-500", description: "Fast and efficient for most tasks", connection: "OpenAI" },
-    { id: "claude-3-opus", name: "Claude 3 Opus", color: "text-orange-500", description: "Anthropic's most capable model", connection: "Anthropic" },
-    { id: "claude-3-sonnet", name: "Claude 3 Sonnet", color: "text-amber-500", description: "Balanced speed and capability", connection: "Anthropic" },
-    { id: "structured-gpt", name: "Structured GPT", color: "text-cyan-500", description: "Model with structured content support (tables, forms, panels)", connection: "OpenAI" },
-  ]);
+  const { models, toggleModel, createModel, updateModel, deleteModel: deleteModelApi } = useAdmin();
 
   const handleEdit = (model: any) => {
     setSelectedModel(model);
     setEditDialogOpen(true);
+    addLog({
+      action: `Editing model: ${model.name}`,
+      category: 'admin:models:edit',
+      payload: { modelId: model.id, name: model.name },
+      type: 'info'
+    });
   };
 
   const handleAdd = () => {
     setSelectedModel(null);
     setEditDialogOpen(true);
+    addLog({
+      action: 'Adding new model',
+      category: 'admin:models:add',
+      type: 'info'
+    });
   };
 
-  const handleSave = (model: any) => {
-    if (selectedModel) {
-      setModels(models.map((m) => (m.id === model.id ? model : m)));
-    } else {
-      setModels([...models, model]);
+  const handleSave = async (model: any) => {
+    try {
+      if (selectedModel) {
+        await updateModel(model.id, model);
+        addLog({
+          action: `Model updated: ${model.name}`,
+          category: 'admin:models:update',
+          api: 'api/v1/admin/models',
+          payload: model,
+          type: 'success'
+        });
+      } else {
+        await createModel(model);
+        addLog({
+          action: `Model created: ${model.name}`,
+          category: 'admin:models:create',
+          api: 'api/v1/admin/models',
+          payload: model,
+          type: 'success'
+        });
+      }
+      setEditDialogOpen(false);
+    } catch (err) {
+      console.error('[ModelsTab] Failed to save model:', err);
+      addLog({
+        action: `Failed to save model: ${model.name}`,
+        category: 'admin:models:error',
+        payload: { error: String(err) },
+        type: 'error'
+      });
     }
   };
 
-  const handleDelete = (id: string) => {
-    setModels(models.filter((m) => m.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      const model = models.find(m => m.id === id);
+      await deleteModelApi(id);
+      addLog({
+        action: `Model deleted: ${model?.name || id}`,
+        category: 'admin:models:delete',
+        api: 'api/v1/admin/models',
+        payload: { modelId: id },
+        type: 'warning'
+      });
+      setEditDialogOpen(false);
+    } catch (err) {
+      console.error('[ModelsTab] Failed to delete model:', err);
+      addLog({
+        action: 'Failed to delete model',
+        category: 'admin:models:error',
+        payload: { error: String(err) },
+        type: 'error'
+      });
+    }
+  };
+
+  const handleToggleModel = async (id: string) => {
+    const model = models.find(m => m.id === id);
+    const newState = !model?.isActive;
+    try {
+      await toggleModel(id);
+      addLog({
+        action: `${model?.name}: ${newState ? 'enabled' : 'disabled'}`,
+        category: 'admin:models:toggle',
+        api: 'api/v1/admin/models/toggle',
+        payload: { modelId: id, enabled: newState, name: model?.name },
+        type: 'info'
+      });
+    } catch (err) {
+      console.error('[ModelsTab] Failed to toggle model:', err);
+      addLog({
+        action: 'Failed to toggle model',
+        category: 'admin:models:error',
+        payload: { error: String(err) },
+        type: 'error'
+      });
+    }
   };
 
   return (
@@ -1233,14 +1586,14 @@ function ModelsTab({ enabledModels, onToggleModel }: ModelsTabProps) {
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1">
-                    <Sparkles className={`h-4 w-4 ${model.color}`} />
+                    <Sparkles className={`h-4 w-4 ${model.color || 'text-purple-500'}`} />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h4 className="font-medium text-sm">{model.name}</h4>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">via {model.connection}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">via {model.provider}</span>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {model.description}
+                        {model.contextWindow?.toLocaleString()} tokens | {model.capabilities?.join(', ') || 'General purpose'}
                       </p>
                     </div>
                   </div>
@@ -1254,8 +1607,8 @@ function ModelsTab({ enabledModels, onToggleModel }: ModelsTabProps) {
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     <Switch
-                      checked={enabledModels?.[model.id] ?? true}
-                      onCheckedChange={() => onToggleModel?.(model.id)}
+                      checked={model.isActive}
+                      onCheckedChange={() => handleToggleModel(model.id)}
                       className="data-[state=checked]:bg-purple-600"
                     />
                   </div>
@@ -1270,6 +1623,7 @@ function ModelsTab({ enabledModels, onToggleModel }: ModelsTabProps) {
 }
 
 function PluginsTab() {
+  const { addLog } = useDebug();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedPlugin, setSelectedPlugin] = useState<any>(null);
   const [plugins, setPlugins] = useState([
@@ -1336,17 +1690,52 @@ function PluginsTab() {
   const handleSave = (plugin: any) => {
     if (selectedPlugin) {
       setPlugins(plugins.map((p) => (p.id === plugin.id ? { ...plugin, icon: p.icon } : p)));
+      addLog({
+        action: `Plugin updated: ${plugin.name}`,
+        category: `plugin:${plugin.id}:update`,
+        api: 'api/v1/admin/plugins',
+        payload: plugin,
+        type: 'success'
+      });
     } else {
       setPlugins([...plugins, { ...plugin, icon: Wrench }]);
+      addLog({
+        action: `Plugin created: ${plugin.name}`,
+        category: `plugin:${plugin.id}:create`,
+        api: 'api/v1/admin/plugins',
+        payload: plugin,
+        type: 'success'
+      });
     }
   };
 
   const handleDelete = (id: string) => {
+    const plugin = plugins.find(p => p.id === id);
     setPlugins(plugins.filter((p) => p.id !== id));
+    addLog({
+      action: `Plugin deleted: ${plugin?.name}`,
+      category: `plugin:${id}:delete`,
+      api: 'api/v1/admin/plugins',
+      payload: { pluginId: id },
+      type: 'warning'
+    });
   };
 
   const togglePlugin = (id: string) => {
-    setPlugins(plugins.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p)));
+    const plugin = plugins.find(p => p.id === id);
+    const newEnabled = !plugin?.enabled;
+    setPlugins(plugins.map((p) => (p.id === id ? { ...p, enabled: newEnabled } : p)));
+    addLog({
+      action: `${plugin?.name}: ${newEnabled ? 'enabled' : 'disabled'}`,
+      category: `plugin:${id}:toggle`,
+      api: 'api/v1/admin/plugins',
+      payload: { 
+        pluginId: id, 
+        enabled: newEnabled,
+        parameters: plugin?.parameters 
+      },
+      type: 'info'
+    });
   };
 
   return (
@@ -1410,54 +1799,109 @@ function PluginsTab() {
 }
 
 function MCPTab() {
+  const { addLog } = useDebug();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedConnector, setSelectedConnector] = useState<any>(null);
-  const [connectors, setConnectors] = useState([
-    {
-      id: "1",
-      name: "EchoMCP",
-      type: "MCP Streamable HTTP",
-      url: "https://echo.firebird.co.nz",
-      auth: "Bearer",
-      authToken: "••••••••••••••••••••",
-      mcpId: "EchoMCP",
-      description: "Echo MCP Connector",
-      visibility: "private" as const,
-      groups: [],
-      enabled: true,
-    },
-  ]);
+  const { mcpServers, toggleMcpServer, createMcpServer, updateMcpServer, deleteMcpServer } = useAdmin();
 
   const handleEdit = (connector: any) => {
     setSelectedConnector(connector);
     setEditDialogOpen(true);
+    addLog({
+      action: `Editing MCP connector: ${connector.name}`,
+      category: 'admin:mcp:edit',
+      payload: { connectorId: connector.id, name: connector.name },
+      type: 'info'
+    });
   };
 
   const handleAdd = () => {
     setSelectedConnector(null);
     setEditDialogOpen(true);
+    addLog({
+      action: 'Adding new MCP connector',
+      category: 'admin:mcp:add',
+      type: 'info'
+    });
   };
 
-  const handleSave = (connector: any) => {
-    if (selectedConnector) {
-      setConnectors(
-        connectors.map((c) => (c.id === connector.id ? connector : c))
-      );
-    } else {
-      setConnectors([...connectors, connector]);
+  const handleSave = async (connector: any) => {
+    try {
+      if (selectedConnector) {
+        await updateMcpServer(connector.id, connector);
+        addLog({
+          action: `MCP connector updated: ${connector.name}`,
+          category: 'admin:mcp:update',
+          api: 'api/v1/admin/mcp',
+          payload: connector,
+          type: 'success'
+        });
+      } else {
+        await createMcpServer(connector);
+        addLog({
+          action: `MCP connector created: ${connector.name}`,
+          category: 'admin:mcp:create',
+          api: 'api/v1/admin/mcp',
+          payload: connector,
+          type: 'success'
+        });
+      }
+      setEditDialogOpen(false);
+    } catch (err) {
+      console.error('[MCPTab] Failed to save MCP server:', err);
+      addLog({
+        action: `Failed to save MCP connector: ${connector.name}`,
+        category: 'admin:mcp:error',
+        payload: { error: String(err) },
+        type: 'error'
+      });
     }
   };
 
-  const handleDelete = (id: string) => {
-    setConnectors(connectors.filter((c) => c.id !== id));
+  const handleDelete = async (id: string) => {
+    try {
+      const server = mcpServers.find(s => s.id === id);
+      await deleteMcpServer(id);
+      addLog({
+        action: `MCP connector deleted: ${server?.name || id}`,
+        category: 'admin:mcp:delete',
+        api: 'api/v1/admin/mcp',
+        payload: { connectorId: id },
+        type: 'warning'
+      });
+      setEditDialogOpen(false);
+    } catch (err) {
+      console.error('[MCPTab] Failed to delete MCP server:', err);
+      addLog({
+        action: 'Failed to delete MCP connector',
+        category: 'admin:mcp:error',
+        payload: { error: String(err) },
+        type: 'error'
+      });
+    }
   };
 
-  const toggleConnector = (id: string) => {
-    setConnectors(
-      connectors.map((c) =>
-        c.id === id ? { ...c, enabled: !c.enabled } : c
-      )
-    );
+  const handleToggle = async (id: string) => {
+    try {
+      const server = mcpServers.find(s => s.id === id);
+      const newState = !server?.enabled;
+      await toggleMcpServer(id);
+      addLog({
+        action: `${server?.name}: ${newState ? 'enabled' : 'disabled'}`,
+        category: 'admin:mcp:toggle',
+        api: 'api/v1/admin/mcp/toggle',
+        payload: { connectorId: id, enabled: newState, name: server?.name },
+        type: 'info'
+      });
+    } catch (err) {
+      console.error('[MCPTab] Failed to toggle MCP server:', err);
+      addLog({
+        action: 'Failed to toggle MCP connector',
+        category: 'admin:mcp:error',
+        payload: { error: String(err) },
+        type: 'error'
+      });
+    }
   };
 
   return (
@@ -1484,7 +1928,7 @@ function MCPTab() {
           </p>
 
           <div className="space-y-2">
-            {connectors.length === 0 ? (
+            {mcpServers.length === 0 ? (
               <div className="p-8 border border-gray-200 dark:border-gray-800 rounded-lg text-center">
                 <Database className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -1501,33 +1945,33 @@ function MCPTab() {
                 </Button>
               </div>
             ) : (
-              connectors.map((connector) => (
+              mcpServers.map((server) => (
                 <div
-                  key={connector.id}
+                  key={server.id}
                   className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-gray-200 dark:border-gray-800"
                 >
                   <div className="flex items-center gap-3 flex-1">
                     <div className="flex items-center gap-3 flex-1">
-                      <Database className="h-5 w-5 text-purple-500" />
+                      <Database className={`h-5 w-5 ${server.status === 'Connected' ? 'text-green-500' : server.status === 'Error' ? 'text-red-500' : 'text-gray-500'}`} />
                       <div>
-                        <h4 className="font-medium">{connector.name}</h4>
+                        <h4 className="font-medium">{server.name}</h4>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {connector.url}
+                          {server.description} • {server.tools.length} tools • {server.status}
                         </p>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch
-                      checked={connector.enabled}
-                      onCheckedChange={() => toggleConnector(connector.id)}
+                      checked={server.isActive}
+                      onCheckedChange={() => handleToggle(server.id)}
                       className="data-[state=checked]:bg-purple-600"
                     />
                     <Button
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 cursor-pointer"
-                      onClick={() => handleEdit(connector)}
+                      onClick={() => handleEdit(server)}
                     >
                       <Settings className="h-4 w-4" />
                     </Button>
@@ -1781,8 +2225,31 @@ function DocumentsTab() {
 }
 
 function WebSearchTab() {
+  const { addLog } = useDebug();
   const { settings, updateWebSearch } = useAdminSettings();
   const ws = settings.webSearch;
+
+  const handleWebSearchToggle = (enabled: boolean) => {
+    updateWebSearch({ webSearchEnabled: enabled });
+    addLog({
+      action: `Web search: ${enabled ? 'enabled' : 'disabled'}`,
+      category: 'admin:websearch:toggle',
+      api: 'api/v1/admin/settings/websearch',
+      payload: { webSearchEnabled: enabled },
+      type: 'info'
+    });
+  };
+
+  const handleSearchEngineChange = (engine: string) => {
+    updateWebSearch({ searchEngine: engine });
+    addLog({
+      action: `Search engine changed to: ${engine}`,
+      category: 'admin:websearch:engine',
+      api: 'api/v1/admin/settings/websearch',
+      payload: { searchEngine: engine },
+      type: 'info'
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -1791,7 +2258,7 @@ function WebSearchTab() {
         <Label>Enable Web Search</Label>
         <Switch
           checked={ws.webSearchEnabled}
-          onCheckedChange={(v) => updateWebSearch({ webSearchEnabled: v })}
+          onCheckedChange={handleWebSearchToggle}
           className="data-[state=checked]:bg-purple-600"
         />
       </div>
@@ -1801,7 +2268,7 @@ function WebSearchTab() {
       {/* Search Engine */}
       <div className="space-y-2">
         <Label>Search Engine</Label>
-        <Select value={ws.searchEngine} onValueChange={(v) => updateWebSearch({ searchEngine: v })}>
+        <Select value={ws.searchEngine} onValueChange={handleSearchEngineChange}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -2071,183 +2538,6 @@ function ImagesTab() {
                 <SelectItem value="stable-diffusion">Stable Diffusion</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function UsersTab() {
-  const users = [
-    { id: 1, name: "John Doe", email: "john.doe@example.com", role: "Admin", status: "Active" },
-    { id: 2, name: "Jane Smith", email: "jane.smith@example.com", role: "User", status: "Active" },
-    { id: 3, name: "Bob Johnson", email: "bob.johnson@example.com", role: "User", status: "Inactive" },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold">User Management</h3>
-        <Button>Add User</Button>
-      </div>
-
-      <div className="space-y-3">
-        {users.map((user) => (
-          <div
-            key={user.id}
-            className="p-4 border border-gray-200 dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">{user.name}</h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <div className="text-sm font-medium">{user.role}</div>
-                  <div className={`text-xs ${user.status === "Active" ? "text-green-600 dark:text-green-400" : "text-gray-500"}`}>
-                    {user.status}
-                  </div>
-                </div>
-                <Button variant="outline" size="sm">
-                  Edit
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DatabaseTab() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="font-semibold mb-4">Database Management</h3>
-        <div className="space-y-4">
-          <div className="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-medium">Database Size</h4>
-              <span className="text-sm text-gray-500 dark:text-gray-400">256 MB</span>
-            </div>
-            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
-              <div className="bg-purple-500 h-2 rounded-full" style={{ width: "45%" }}></div>
-            </div>
-          </div>
-
-          <div className="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">Backup Status</h4>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Last backup: 2 hours ago</p>
-              </div>
-              <Button variant="outline">Backup Now</Button>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div>
-            <h4 className="font-medium mb-3 text-red-600 dark:text-red-400">Danger Zone</h4>
-            <div className="space-y-2">
-              <Button
-                variant="outline"
-                className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900"
-              >
-                Clear All Data
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900"
-              >
-                Reset Database
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LogsTab() {
-  const logs = [
-    { id: 1, type: "Info", message: "User login successful", time: "2 minutes ago" },
-    { id: 2, type: "Warning", message: "High memory usage detected", time: "15 minutes ago" },
-    { id: 3, type: "Error", message: "API request failed", time: "1 hour ago" },
-    { id: 4, type: "Info", message: "Database backup completed", time: "2 hours ago" },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold">System Logs</h3>
-        <Button variant="outline" size="sm">Clear Logs</Button>
-      </div>
-
-      <div className="space-y-2">
-        {logs.map((log) => (
-          <div
-            key={log.id}
-            className="p-3 border border-gray-200 dark:border-gray-800 rounded-lg"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3">
-                <span
-                  className={`text-xs px-2 py-1 rounded ${
-                    log.type === "Error"
-                      ? "bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-400"
-                      : log.type === "Warning"
-                      ? "bg-yellow-100 dark:bg-yellow-900 text-yellow-600 dark:text-yellow-400"
-                      : "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400"
-                  }`}
-                >
-                  {log.type}
-                </span>
-                <p className="text-sm">{log.message}</p>
-              </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                {log.time}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function AnalyticsTab() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="font-semibold mb-4">System Analytics</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
-            <h4 className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Users</h4>
-            <p className="text-3xl font-semibold">1,234</p>
-            <p className="text-xs text-green-600 dark:text-green-400 mt-1">+12% this month</p>
-          </div>
-
-          <div className="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
-            <h4 className="text-sm text-gray-500 dark:text-gray-400 mb-1">Active Sessions</h4>
-            <p className="text-3xl font-semibold">89</p>
-            <p className="text-xs text-green-600 dark:text-green-400 mt-1">+5% this week</p>
-          </div>
-
-          <div className="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
-            <h4 className="text-sm text-gray-500 dark:text-gray-400 mb-1">API Calls</h4>
-            <p className="text-3xl font-semibold">45.6K</p>
-            <p className="text-xs text-red-600 dark:text-red-400 mt-1">-3% this week</p>
-          </div>
-
-          <div className="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
-            <h4 className="text-sm text-gray-500 dark:text-gray-400 mb-1">Storage Used</h4>
-            <p className="text-3xl font-semibold">256 MB</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">of 1 GB</p>
           </div>
         </div>
       </div>

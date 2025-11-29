@@ -1,5 +1,6 @@
 import apiClient from './client';
 import { Model } from './types';
+import { AppConfig } from '../utils/config';
 
 export interface AvailableModel {
   id: string;
@@ -39,8 +40,14 @@ function getColorForProvider(provider: string): string {
  * Returns simulated model + real models from configured connections
  */
 export async function getAvailableModels(): Promise<AvailableModel[]> {
+  // If in offline mode, only return simulated model
+  if (AppConfig.isOfflineMode()) {
+    console.log('[Models API] Offline mode enabled, using simulated model only');
+    return [SIMULATED_MODEL];
+  }
+
+  // Online mode - try to fetch from backend
   try {
-    // Try to fetch models from admin endpoint
     const models = await apiClient.get<Model[]>('/admin/models');
 
     const availableModels: AvailableModel[] = models
@@ -55,11 +62,10 @@ export async function getAvailableModels(): Promise<AvailableModel[]> {
         maxTokens: m.maxTokens,
       }));
 
-    // Always include simulated as first option
     return [SIMULATED_MODEL, ...availableModels];
   } catch (error) {
-    console.warn('Failed to fetch models from backend, using simulated only:', error);
-    // If backend is unavailable, return just the simulated model
+    // Silently fall back to simulated model when backend is unavailable
+    // This is expected behavior during local development
     return [SIMULATED_MODEL];
   }
 }
@@ -70,11 +76,3 @@ export async function getAvailableModels(): Promise<AvailableModel[]> {
 export function isSimulatedModel(modelId: string): boolean {
   return modelId === 'simulated';
 }
-
-export const modelsApi = {
-  getAvailableModels,
-  isSimulatedModel,
-  SIMULATED_MODEL,
-};
-
-export default modelsApi;

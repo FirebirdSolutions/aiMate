@@ -62,15 +62,6 @@ The aiMate REST API provides complete programmatic access to all aiMate function
 - ✅ **Admin Operations** for system management
 - ✅ **MCP Tools** execution and management
 
-### API Tiers & Limits
-
-| Tier | Monthly Cost | Requests/Min | Requests/Day | API Access |
-|------|-------------|--------------|--------------|-----------|
-| **Free** | Free | Limited | Limited | Web UI only |
-| **BYOK** | $10 | 60 | 10,000 | Full API + own provider keys |
-| **Developer** | $30 | 120 | 50,000 | Full API + premium support |
-| **Enterprise** | Custom | Custom | Custom | Dedicated support + SLA |
-
 ---
 
 ## Authentication
@@ -80,12 +71,14 @@ All API requests (except error logging) require authentication via Bearer token.
 ### Generating API Keys
 
 **Via Settings UI:**
+
 1. Navigate to Settings → API Keys
 2. Click "Generate New Key"
 3. Copy the key (shown only once!)
 4. Store securely
 
 **Via Admin API:**
+
 ```http
 POST /api/v1/admin/api-keys
 Authorization: Bearer YOUR_ADMIN_KEY
@@ -134,12 +127,14 @@ Authorization: Bearer sk-aimate-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 List all your API keys.
 
 **Request:**
+
 ```http
 GET /api/v1/admin/api-keys
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -172,6 +167,7 @@ Authorization: Bearer YOUR_API_KEY
 Create a new API key (admin only).
 
 **Request:**
+
 ```http
 POST /api/v1/admin/api-keys
 Authorization: Bearer YOUR_ADMIN_KEY
@@ -185,6 +181,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "key-new-1",
@@ -200,6 +197,7 @@ Content-Type: application/json
 Revoke an API key.
 
 **Request:**
+
 ```http
 DELETE /api/v1/admin/api-keys/key-1
 Authorization: Bearer YOUR_API_KEY
@@ -287,23 +285,24 @@ All errors return this consistent structure:
 
 ### HTTP Status Codes
 
-| Code | Meaning | When It Occurs |
-|------|---------|---------------|
-| `200` | OK | Request succeeded |
-| `201` | Created | Resource created |
-| `204` | No Content | Successful deletion |
-| `400` | Bad Request | Invalid request body/params |
-| `401` | Unauthorized | Missing/invalid API key |
-| `403` | Forbidden | Valid key but insufficient permissions |
-| `404` | Not Found | Resource doesn't exist |
-| `422` | Unprocessable Entity | Validation failed |
-| `429` | Too Many Requests | Rate limit exceeded |
-| `500` | Internal Server Error | Server-side error |
-| `503` | Service Unavailable | Maintenance/overload |
+| Code  | Meaning               | When It Occurs                         |
+| ----- | --------------------- | -------------------------------------- |
+| `200` | OK                    | Request succeeded                      |
+| `201` | Created               | Resource created                       |
+| `204` | No Content            | Successful deletion                    |
+| `400` | Bad Request           | Invalid request body/params            |
+| `401` | Unauthorized          | Missing/invalid API key                |
+| `403` | Forbidden             | Valid key but insufficient permissions |
+| `404` | Not Found             | Resource doesn't exist                 |
+| `422` | Unprocessable Entity  | Validation failed                      |
+| `429` | Too Many Requests     | Rate limit exceeded                    |
+| `500` | Internal Server Error | Server-side error                      |
+| `503` | Service Unavailable   | Maintenance/overload                   |
 
 ### Error Types & Examples
 
 **401 Unauthorized - Invalid API Key:**
+
 ```json
 {
   "error": {
@@ -315,6 +314,7 @@ All errors return this consistent structure:
 ```
 
 **403 Forbidden - Insufficient Permissions:**
+
 ```json
 {
   "error": {
@@ -330,6 +330,7 @@ All errors return this consistent structure:
 ```
 
 **422 Validation Error:**
+
 ```json
 {
   "error": {
@@ -346,6 +347,7 @@ All errors return this consistent structure:
 ```
 
 **429 Rate Limit:**
+
 ```json
 {
   "error": {
@@ -368,6 +370,7 @@ OpenAI-compatible chat completions endpoint.
 Create a non-streaming chat completion.
 
 **Request:**
+
 ```http
 POST /api/v1/chat/completions
 Authorization: Bearer YOUR_API_KEY
@@ -395,17 +398,18 @@ Content-Type: application/json
 
 **Parameters:**
 
-| Parameter | Type | Required | Range | Description |
-|-----------|------|----------|-------|-------------|
-| `model` | string | Yes | - | Model ID (e.g., "gpt-4", "claude-3-5-sonnet-20241022") |
-| `messages` | array | Yes | - | Array of message objects |
-| `temperature` | float | No | 0.0-2.0 | Randomness (0=deterministic, 2=very random) |
-| `max_tokens` | integer | No | 1-4000 | Maximum tokens to generate |
-| `top_p` | float | No | 0.0-1.0 | Nucleus sampling parameter |
-| `frequency_penalty` | float | No | -2.0-2.0 | Penalize token frequency |
-| `presence_penalty` | float | No | -2.0-2.0 | Penalize new tokens |
+| Parameter           | Type    | Required | Range    | Description                                            |
+| ------------------- | ------- | -------- | -------- | ------------------------------------------------------ |
+| `model`             | string  | Yes      | -        | Model ID (e.g., "gpt-4", "claude-3-5-sonnet-20241022") |
+| `messages`          | array   | Yes      | -        | Array of message objects                               |
+| `temperature`       | float   | No       | 0.0-2.0  | Randomness (0=deterministic, 2=very random)            |
+| `max_tokens`        | integer | No       | 1-4000   | Maximum tokens to generate                             |
+| `top_p`             | float   | No       | 0.0-1.0  | Nucleus sampling parameter                             |
+| `frequency_penalty` | float   | No       | -2.0-2.0 | Penalize token frequency                               |
+| `presence_penalty`  | float   | No       | -2.0-2.0 | Penalize new tokens                                    |
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "chatcmpl-8R3QzQq9K5L2mN6pO7R8s",
@@ -435,6 +439,7 @@ Content-Type: application/json
 Create a streaming chat completion using Server-Sent Events.
 
 **Request:**
+
 ```http
 POST /api/v1/chat/completions/stream
 Authorization: Bearer YOUR_API_KEY
@@ -454,6 +459,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK) - Server-Sent Events Stream:**
+
 ```
 data: {"id":"chatcmpl-8R3QzQq9","choices":[{"index":0,"delta":{"content":"1"},"finish_reason":null}]}
 
@@ -477,6 +483,7 @@ data: [DONE]
 ```
 
 **Streaming Example (JavaScript):**
+
 ```typescript
 async function streamChat(message: string) {
   const response = await fetch('/api/v1/chat/completions/stream', {
@@ -525,12 +532,14 @@ Manage workspaces and conversations within them.
 List all workspaces for the authenticated user.
 
 **Request:**
+
 ```http
 GET /api/v1/workspaces?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -559,6 +568,7 @@ Authorization: Bearer YOUR_API_KEY
 Create a new workspace.
 
 **Request:**
+
 ```http
 POST /api/v1/workspaces?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -573,6 +583,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "770e8400-e29b-41d4-a716-446655440002",
@@ -590,6 +601,7 @@ Content-Type: application/json
 Update an existing workspace.
 
 **Request:**
+
 ```http
 PUT /api/v1/workspaces/770e8400-e29b-41d4-a716-446655440002
 Authorization: Bearer YOUR_API_KEY
@@ -603,6 +615,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "770e8400-e29b-41d4-a716-446655440002",
@@ -620,12 +633,14 @@ Content-Type: application/json
 Delete a workspace and all associated conversations.
 
 **Request:**
+
 ```http
 DELETE /api/v1/workspaces/770e8400-e29b-41d4-a716-446655440002
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -638,12 +653,14 @@ Authorization: Bearer YOUR_API_KEY
 List all conversations in a workspace.
 
 **Request:**
+
 ```http
 GET /api/v1/workspaces/550e8400-e29b-41d4-a716-446655440000/conversations
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -676,6 +693,7 @@ Authorization: Bearer YOUR_API_KEY
 Create a new conversation.
 
 **Request:**
+
 ```http
 POST /api/v1/workspaces/550e8400-e29b-41d4-a716-446655440000/conversations
 Authorization: Bearer YOUR_API_KEY
@@ -687,6 +705,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": 680000,
@@ -706,6 +725,7 @@ Content-Type: application/json
 Update a conversation.
 
 **Request:**
+
 ```http
 PUT /api/v1/workspaces/550e8400-e29b-41d4-a716-446655440000/conversations/660000
 Authorization: Bearer YOUR_API_KEY
@@ -720,6 +740,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": 660000,
@@ -739,12 +760,14 @@ Content-Type: application/json
 Delete a conversation and all its messages.
 
 **Request:**
+
 ```http
 DELETE /api/v1/workspaces/550e8400-e29b-41d4-a716-446655440000/conversations/670000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -763,6 +786,7 @@ Manage feedback and ratings on AI responses.
 Create or update feedback for a message.
 
 **Request:**
+
 ```http
 POST /api/v1/feedback/messages/880e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -792,6 +816,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "990e8400-e29b-41d4-a716-446655440000",
@@ -806,6 +831,7 @@ Content-Type: application/json
 Update existing feedback.
 
 **Request:**
+
 ```http
 PUT /api/v1/feedback/990e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -818,6 +844,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "990e8400-e29b-41d4-a716-446655440000",
@@ -832,12 +859,14 @@ Content-Type: application/json
 Get feedback for a specific message.
 
 **Request:**
+
 ```http
 GET /api/v1/feedback/messages/880e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "990e8400-e29b-41d4-a716-446655440000",
@@ -865,12 +894,14 @@ Authorization: Bearer YOUR_API_KEY
 Get aggregate statistics for a model.
 
 **Request:**
+
 ```http
 GET /api/v1/feedback/stats/models/gpt-4?fromDate=2025-01-01&toDate=2025-01-31
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "modelId": "gpt-4",
@@ -900,6 +931,7 @@ Authorization: Bearer YOUR_API_KEY
 Delete feedback entry.
 
 **Request:**
+
 ```http
 DELETE /api/v1/feedback/990e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -912,12 +944,14 @@ Authorization: Bearer YOUR_API_KEY
 Get all active feedback tag templates.
 
 **Request:**
+
 ```http
 GET /api/v1/feedback/templates
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -951,6 +985,7 @@ Authorization: Bearer YOUR_API_KEY
 Create a new feedback tag template (admin only).
 
 **Request:**
+
 ```http
 POST /api/v1/feedback/templates
 Authorization: Bearer YOUR_ADMIN_API_KEY
@@ -981,6 +1016,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "template-new-1",
@@ -1020,12 +1056,14 @@ Manage and search your knowledge base.
 List knowledge articles.
 
 **Request:**
+
 ```http
 GET /api/v1/knowledge?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -1052,6 +1090,7 @@ Authorization: Bearer YOUR_API_KEY
 Create a new knowledge article.
 
 **Request:**
+
 ```http
 POST /api/v1/knowledge?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -1070,6 +1109,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "article-new-1",
@@ -1093,12 +1133,14 @@ Content-Type: application/json
 Get knowledge base analytics.
 
 **Request:**
+
 ```http
 GET /api/v1/knowledge/analytics?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "totalArticles": 145,
@@ -1142,6 +1184,7 @@ Authorization: Bearer YOUR_API_KEY
 Semantic search across knowledge base.
 
 **Request:**
+
 ```http
 POST /api/v1/knowledge/search
 Authorization: Bearer YOUR_API_KEY
@@ -1155,6 +1198,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "results": [
@@ -1189,12 +1233,14 @@ Create and manage personal notes.
 Get all notes for a user.
 
 **Request:**
+
 ```http
 GET /api/v1/notes?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -1222,6 +1268,7 @@ Authorization: Bearer YOUR_API_KEY
 Create a new note.
 
 **Request:**
+
 ```http
 POST /api/v1/notes?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -1239,6 +1286,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "note-new-1",
@@ -1264,6 +1312,7 @@ Content-Type: application/json
 Update a note.
 
 **Request:**
+
 ```http
 PUT /api/v1/notes/note-1?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -1278,6 +1327,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "note-1",
@@ -1295,6 +1345,7 @@ Content-Type: application/json
 Delete a note.
 
 **Request:**
+
 ```http
 DELETE /api/v1/notes/note-1?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -1307,12 +1358,14 @@ Authorization: Bearer YOUR_API_KEY
 Get all unique collections for a user.
 
 **Request:**
+
 ```http
 GET /api/v1/notes/collections?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 ["Technical", "Planning", "Personal", "Research"]
 ```
@@ -1322,12 +1375,14 @@ Authorization: Bearer YOUR_API_KEY
 Get all unique tags for a user.
 
 **Request:**
+
 ```http
 GET /api/v1/notes/tags?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 ["api", "design", "projects", "planning", "research", "technical", "personal"]
 ```
@@ -1343,12 +1398,14 @@ Manage software projects and initiatives.
 List all projects for a user.
 
 **Request:**
+
 ```http
 GET /api/v1/projects?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -1379,6 +1436,7 @@ Authorization: Bearer YOUR_API_KEY
 Create a new project.
 
 **Request:**
+
 ```http
 POST /api/v1/projects?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -1402,6 +1460,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "proj-new-1",
@@ -1429,6 +1488,7 @@ Content-Type: application/json
 Update a project.
 
 **Request:**
+
 ```http
 PUT /api/v1/projects/proj-1
 Authorization: Bearer YOUR_API_KEY
@@ -1442,6 +1502,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "proj-1",
@@ -1459,6 +1520,7 @@ Content-Type: application/json
 Delete a project.
 
 **Request:**
+
 ```http
 DELETE /api/v1/projects/proj-1
 Authorization: Bearer YOUR_API_KEY
@@ -1477,12 +1539,14 @@ Manage user settings and preferences.
 Get user settings.
 
 **Request:**
+
 ```http
 GET /api/v1/settings?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "username": "john.developer",
@@ -1510,6 +1574,7 @@ Authorization: Bearer YOUR_API_KEY
 Update user settings (REST compliant).
 
 **Request:**
+
 ```http
 PUT /api/v1/settings?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -1529,6 +1594,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -1541,6 +1607,7 @@ Content-Type: application/json
 Update user settings (legacy POST method).
 
 **Request:**
+
 ```http
 POST /api/v1/settings?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -1553,6 +1620,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -1565,12 +1633,14 @@ Content-Type: application/json
 Reset user settings to defaults.
 
 **Request:**
+
 ```http
 DELETE /api/v1/settings?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "username": "john.developer",
@@ -1593,12 +1663,14 @@ Get usage statistics and billing metrics.
 Get usage statistics for current billing period.
 
 **Request:**
+
 ```http
 GET /api/v1/users/usage?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "totalMessages": 2450,
@@ -1646,12 +1718,14 @@ Administrative operations (requires admin credentials).
 Get admin dashboard overview.
 
 **Request:**
+
 ```http
 GET /api/v1/admin
 Authorization: Bearer YOUR_ADMIN_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "totalUsers": 1250,
@@ -1672,12 +1746,14 @@ Authorization: Bearer YOUR_ADMIN_API_KEY
 List all AI models.
 
 **Request:**
+
 ```http
 GET /api/v1/admin/models
 Authorization: Bearer YOUR_ADMIN_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -1712,12 +1788,14 @@ Authorization: Bearer YOUR_ADMIN_API_KEY
 List all MCP servers.
 
 **Request:**
+
 ```http
 GET /api/v1/admin/mcp
 Authorization: Bearer YOUR_ADMIN_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -1738,6 +1816,7 @@ Authorization: Bearer YOUR_ADMIN_API_KEY
 Get system logs.
 
 **Request:**
+
 ```http
 GET /api/v1/admin/logs?limit=50
 Authorization: Bearer YOUR_ADMIN_API_KEY
@@ -1745,11 +1824,12 @@ Authorization: Bearer YOUR_ADMIN_API_KEY
 
 **Parameters:**
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | integer | 50 | Number of logs (max 500) |
+| Parameter | Type    | Default | Description              |
+| --------- | ------- | ------- | ------------------------ |
+| `limit`   | integer | 50      | Number of logs (max 500) |
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -1770,12 +1850,14 @@ Authorization: Bearer YOUR_ADMIN_API_KEY
 Clear all system logs.
 
 **Request:**
+
 ```http
 DELETE /api/v1/admin/logs
 Authorization: Bearer YOUR_ADMIN_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -1794,6 +1876,7 @@ Manage file uploads and attachments.
 Upload a file to a workspace.
 
 **Request:**
+
 ```http
 POST /api/v1/files/upload?workspaceId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -1805,13 +1888,14 @@ Content-Type: multipart/form-data
 
 **Parameters:**
 
-| Parameter | Type | Required | Max Size | Formats |
-|-----------|------|----------|----------|---------|
-| `workspaceId` | GUID | Yes | - | - |
-| `description` | string | No | 500 chars | - |
-| `file` | File | Yes | 50 MB | PDF, Word, Excel, Images, JSON, XML, CSV, Markdown, ZIP |
+| Parameter     | Type   | Required | Max Size  | Formats                                                 |
+| ------------- | ------ | -------- | --------- | ------------------------------------------------------- |
+| `workspaceId` | GUID   | Yes      | -         | -                                                       |
+| `description` | string | No       | 500 chars | -                                                       |
+| `file`        | File   | Yes      | 50 MB     | PDF, Word, Excel, Images, JSON, XML, CSV, Markdown, ZIP |
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "file-1",
@@ -1831,12 +1915,14 @@ Content-Type: multipart/form-data
 Get file information.
 
 **Request:**
+
 ```http
 GET /api/v1/files/file-1
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "file-1",
@@ -1854,6 +1940,7 @@ Authorization: Bearer YOUR_API_KEY
 Download a file.
 
 **Request:**
+
 ```http
 GET /api/v1/files/file-1/download
 Authorization: Bearer YOUR_API_KEY
@@ -1866,6 +1953,7 @@ Authorization: Bearer YOUR_API_KEY
 Update file metadata.
 
 **Request:**
+
 ```http
 PUT /api/v1/files/file-1
 Authorization: Bearer YOUR_API_KEY
@@ -1877,6 +1965,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "file-1",
@@ -1891,6 +1980,7 @@ Content-Type: application/json
 Delete a file.
 
 **Request:**
+
 ```http
 DELETE /api/v1/files/file-1
 Authorization: Bearer YOUR_API_KEY
@@ -1903,6 +1993,7 @@ Authorization: Bearer YOUR_API_KEY
 Upload attachment.
 
 **Request:**
+
 ```http
 POST /api/v1/attachments/upload-file
 Authorization: Bearer YOUR_API_KEY
@@ -1912,6 +2003,7 @@ Content-Type: multipart/form-data
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "attachment-1",
@@ -1932,6 +2024,7 @@ Comprehensive search across all content types.
 Search conversations by title.
 
 **Request:**
+
 ```http
 GET /api/v1/search/conversations?query=api&limit=10
 Authorization: Bearer YOUR_API_KEY
@@ -1939,12 +2032,13 @@ Authorization: Bearer YOUR_API_KEY
 
 **Parameters:**
 
-| Parameter | Type | Required | Default | Range |
-|-----------|------|----------|---------|-------|
-| `query` | string | Yes | - | - |
-| `limit` | integer | No | 10 | 1-50 |
+| Parameter | Type    | Required | Default | Range |
+| --------- | ------- | -------- | ------- | ----- |
+| `query`   | string  | Yes      | -       | -     |
+| `limit`   | integer | No       | 10      | 1-50  |
 
 **Response (200 OK):**
+
 ```json
 {
   "results": [
@@ -1964,12 +2058,14 @@ Authorization: Bearer YOUR_API_KEY
 Search messages by content.
 
 **Request:**
+
 ```http
 GET /api/v1/search/messages?query=authentication&limit=10
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "results": [
@@ -1990,6 +2086,7 @@ Authorization: Bearer YOUR_API_KEY
 Semantic search in knowledge base (AI embeddings).
 
 **Request:**
+
 ```http
 GET /api/v1/search/knowledge/semantic?query=jwt+tokens&limit=5&threshold=0.7
 Authorization: Bearer YOUR_API_KEY
@@ -1997,13 +2094,14 @@ Authorization: Bearer YOUR_API_KEY
 
 **Parameters:**
 
-| Parameter | Type | Required | Default | Range |
-|-----------|------|----------|---------|-------|
-| `query` | string | Yes | - | - |
-| `limit` | integer | No | 5 | 1-50 |
-| `threshold` | float | No | 0.7 | 0.0-1.0 |
+| Parameter   | Type    | Required | Default | Range   |
+| ----------- | ------- | -------- | ------- | ------- |
+| `query`     | string  | Yes      | -       | -       |
+| `limit`     | integer | No       | 5       | 1-50    |
+| `threshold` | float   | No       | 0.7     | 0.0-1.0 |
 
 **Response (200 OK):**
+
 ```json
 {
   "results": [
@@ -2024,12 +2122,14 @@ Authorization: Bearer YOUR_API_KEY
 Global search across all content types.
 
 **Request:**
+
 ```http
 GET /api/v1/search?query=workspace&limit=20
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "conversations": [
@@ -2064,12 +2164,14 @@ Execute MCP (Model Context Protocol) tools.
 List available MCP tools.
 
 **Request:**
+
 ```http
 GET /api/v1/tools?workspaceId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -2098,6 +2200,7 @@ Authorization: Bearer YOUR_API_KEY
 Execute a specific tool.
 
 **Request:**
+
 ```http
 POST /api/v1/tools/execute
 Authorization: Bearer YOUR_API_KEY
@@ -2113,6 +2216,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -2142,6 +2246,7 @@ Manage code files and compilation.
 Create a new code file.
 
 **Request:**
+
 ```http
 POST /api/v1/code/files?userId=550e8400-e29b-41d4-a716-446655440000&projectId=proj-1
 Authorization: Bearer YOUR_API_KEY
@@ -2156,6 +2261,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "file-code-1",
@@ -2173,12 +2279,14 @@ Content-Type: application/json
 List code files in a project.
 
 **Request:**
+
 ```http
 GET /api/v1/code/files?projectId=proj-1
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -2197,6 +2305,7 @@ Authorization: Bearer YOUR_API_KEY
 Compile code and check for errors.
 
 **Request:**
+
 ```http
 POST /api/v1/code/compile
 Authorization: Bearer YOUR_API_KEY
@@ -2209,6 +2318,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -2230,12 +2340,14 @@ Manage plugins and extensions.
 List all loaded plugins.
 
 **Request:**
+
 ```http
 GET /api/v1/plugins
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -2258,12 +2370,14 @@ Authorization: Bearer YOUR_API_KEY
 Get plugin settings schema and current values.
 
 **Request:**
+
 ```http
 GET /api/v1/plugins/plugin-1/settings?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "schema": {
@@ -2291,6 +2405,7 @@ Authorization: Bearer YOUR_API_KEY
 Update plugin settings (REST compliant).
 
 **Request:**
+
 ```http
 PUT /api/v1/plugins/plugin-1/settings?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -2303,6 +2418,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -2315,12 +2431,14 @@ Content-Type: application/json
 Toggle plugin enabled state.
 
 **Request:**
+
 ```http
 POST /api/v1/plugins/plugin-1/toggle
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "plugin-1",
@@ -2340,12 +2458,14 @@ Manage your own API keys for multiple providers (Bring Your Own Key).
 List all provider connections.
 
 **Request:**
+
 ```http
 GET /api/v1/connections?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -2376,6 +2496,7 @@ Authorization: Bearer YOUR_API_KEY
 Create a new provider connection.
 
 **Request:**
+
 ```http
 POST /api/v1/connections?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -2390,6 +2511,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "conn-new-1",
@@ -2407,6 +2529,7 @@ Content-Type: application/json
 Update a connection.
 
 **Request:**
+
 ```http
 PUT /api/v1/connections/conn-1?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -2419,6 +2542,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "conn-1",
@@ -2434,6 +2558,7 @@ Content-Type: application/json
 Delete a connection.
 
 **Request:**
+
 ```http
 DELETE /api/v1/connections/conn-1?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
@@ -2446,12 +2571,14 @@ Authorization: Bearer YOUR_API_KEY
 Test a connection.
 
 **Request:**
+
 ```http
 POST /api/v1/connections/conn-1/test?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -2472,12 +2599,14 @@ Manage organizations and user groups.
 List organizations for a user.
 
 **Request:**
+
 ```http
 GET /api/v1/organizations?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -2496,6 +2625,7 @@ Authorization: Bearer YOUR_API_KEY
 Create a new organization.
 
 **Request:**
+
 ```http
 POST /api/v1/organizations
 Authorization: Bearer YOUR_API_KEY
@@ -2508,6 +2638,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "org-new-1",
@@ -2523,12 +2654,14 @@ Content-Type: application/json
 List groups for a user.
 
 **Request:**
+
 ```http
 GET /api/v1/groups?userId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -2547,6 +2680,7 @@ Authorization: Bearer YOUR_API_KEY
 Create a new group.
 
 **Request:**
+
 ```http
 POST /api/v1/groups
 Authorization: Bearer YOUR_API_KEY
@@ -2560,6 +2694,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": "group-new-1",
@@ -2582,12 +2717,14 @@ Manage structured content and templates.
 List available content templates.
 
 **Request:**
+
 ```http
 GET /api/v1/structured-content/templates
 Authorization: Bearer YOUR_API_KEY
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -2621,6 +2758,7 @@ Authorization: Bearer YOUR_API_KEY
 Parse and validate structured content.
 
 **Request:**
+
 ```http
 POST /api/v1/structured-content/parse
 Authorization: Bearer YOUR_API_KEY
@@ -2637,6 +2775,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -2659,6 +2798,7 @@ Content-Type: application/json
 ### cURL
 
 **Non-streaming Chat:**
+
 ```bash
 curl -X POST https://your-domain.com/api/v1/chat/completions \
   -H "Authorization: Bearer sk-aimate-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
@@ -2677,6 +2817,7 @@ curl -X POST https://your-domain.com/api/v1/chat/completions \
 ```
 
 **Streaming Chat:**
+
 ```bash
 curl -N -X POST https://your-domain.com/api/v1/chat/completions/stream \
   -H "Authorization: Bearer sk-aimate-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
@@ -3066,6 +3207,7 @@ def batch_create_notes(notes: List[Dict], batch_size: int = 10) -> List[Dict]:
 **Email Support:** api@aimate.co.nz
 
 **Need Help?**
+
 - 📖 Read the [Complete API Documentation](https://docs.aimate.co.nz)
 - 💬 Ask in [GitHub Discussions](https://github.com/ChoonForge/aiMate/discussions)
 - 🐛 Report bugs on [GitHub Issues](https://github.com/ChoonForge/aiMate/issues)
@@ -3074,5 +3216,6 @@ def batch_create_notes(notes: List[Dict], batch_size: int = 10) -> List[Dict]:
 ---
 
 **Built with ❤️ from New Zealand** 🇳🇿
-**Last Updated:** January 2025
 **API Version:** v1
+
+

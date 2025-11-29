@@ -1,0 +1,262 @@
+/**
+ * Files Hook
+ * 
+ * Manages file uploads, attachments, and media
+ */
+
+import { useState, useCallback } from 'react';
+import { filesService, FileDto } from '../api/services';
+import { AppConfig } from '../utils/config';
+
+export function useFiles() {
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  // ============================================================================
+  // UPLOAD FILE
+  // ============================================================================
+
+  const uploadFile = useCallback(async (
+    file: File,
+    options?: {
+      conversationId?: string;
+      workspaceId?: string;
+      onProgress?: (progress: number) => void;
+    }
+  ) => {
+    if (AppConfig.isOfflineMode()) {
+      // Simulate upload in offline mode
+      setUploading(true);
+      setUploadProgress(0);
+      
+      const mockFile: FileDto = {
+        id: `file-${Date.now()}`,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        url: URL.createObjectURL(file),
+        uploadedAt: new Date().toISOString(),
+        conversationId: options?.conversationId,
+        workspaceId: options?.workspaceId,
+      };
+      
+      // Simulate progress
+      for (let i = 0; i <= 100; i += 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        setUploadProgress(i);
+        options?.onProgress?.(i);
+      }
+      
+      setUploading(false);
+      setUploadProgress(0);
+      return mockFile;
+    }
+
+    try {
+      setUploading(true);
+      setUploadProgress(0);
+      setError(null);
+      
+      const uploadedFile = await filesService.uploadFile(
+        file,
+        {
+          conversationId: options?.conversationId,
+          workspaceId: options?.workspaceId,
+        },
+        (progress) => {
+          setUploadProgress(progress);
+          options?.onProgress?.(progress);
+        }
+      );
+      
+      return uploadedFile;
+    } catch (err) {
+      console.error('[useFiles] Failed to upload file:', err);
+      setError('Failed to upload file');
+      throw err;
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  }, []);
+
+  // ============================================================================
+  // UPLOAD MULTIPLE FILES
+  // ============================================================================
+
+  const uploadFiles = useCallback(async (
+    files: File[],
+    options?: {
+      conversationId?: string;
+      workspaceId?: string;
+      onProgress?: (fileIndex: number, progress: number) => void;
+    }
+  ) => {
+    const uploadedFiles: FileDto[] = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const uploaded = await uploadFile(file, {
+          ...options,
+          onProgress: (progress) => options?.onProgress?.(i, progress),
+        });
+        uploadedFiles.push(uploaded);
+      } catch (err) {
+        console.error(`[useFiles] Failed to upload file ${file.name}:`, err);
+        // Continue with other files
+      }
+    }
+    
+    return uploadedFiles;
+  }, [uploadFile]);
+
+  // ============================================================================
+  // DELETE FILE
+  // ============================================================================
+
+  const deleteFile = useCallback(async (fileId: string) => {
+    if (AppConfig.isOfflineMode()) {
+      return;
+    }
+
+    try {
+      await filesService.deleteFile(fileId);
+    } catch (err) {
+      console.error('[useFiles] Failed to delete file:', err);
+      throw err;
+    }
+  }, []);
+
+  // ============================================================================
+  // GET FILE URL
+  // ============================================================================
+
+  const getFileUrl = useCallback(async (fileId: string) => {
+    if (AppConfig.isOfflineMode()) {
+      return `https://mock-file-url.aimate.nz/${fileId}`;
+    }
+
+    try {
+      return await filesService.getFileUrl(fileId);
+    } catch (err) {
+      console.error('[useFiles] Failed to get file URL:', err);
+      throw err;
+    }
+  }, []);
+
+  // ============================================================================
+  // DOWNLOAD FILE
+  // ============================================================================
+
+  const downloadFile = useCallback(async (fileId: string, filename?: string) => {
+    if (AppConfig.isOfflineMode()) {
+      throw new Error('Cannot download files in offline mode');
+    }
+
+    try {
+      const blob = await filesService.downloadFile(fileId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || `file-${fileId}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('[useFiles] Failed to download file:', err);
+      throw err;
+    }
+  }, []);
+
+  // ============================================================================
+  // UPLOAD IMAGE FROM URL
+  // ============================================================================
+
+  const uploadImageFromUrl = useCallback(async (
+    url: string,
+    options?: {
+      conversationId?: string;
+      workspaceId?: string;
+    }
+  ) => {
+    if (AppConfig.isOfflineMode()) {
+      const mockFile: FileDto = {
+        id: `file-${Date.now()}`,
+        name: url.split('/').pop() || 'image.jpg',
+        type: 'image/jpeg',
+        size: 0,
+        url: url,
+        uploadedAt: new Date().toISOString(),
+        conversationId: options?.conversationId,
+        workspaceId: options?.workspaceId,
+      };
+      return mockFile;
+    }
+
+    try {
+      return await filesService.uploadImageFromUrl(url, options);
+    } catch (err) {
+      console.error('[useFiles] Failed to upload image from URL:', err);
+      throw err;
+    }
+  }, []);
+
+  // ============================================================================
+  // VALIDATE FILE
+  // ============================================================================
+
+  const validateFile = useCallback((
+    file: File,
+    options?: {
+      maxSize?: number; // in bytes
+      allowedTypes?: string[];
+    }
+  ): { valid: boolean; error?: string } => {
+    const maxSize = options?.maxSize || 10 * 1024 * 1024; // 10MB default
+    const allowedTypes = options?.allowedTypes || [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'application/pdf',
+      'text/plain',
+      'text/markdown',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ];
+
+    if (file.size > maxSize) {
+      return {
+        valid: false,
+        error: `File size exceeds ${(maxSize / 1024 / 1024).toFixed(0)}MB limit`,
+      };
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      return {
+        valid: false,
+        error: `File type ${file.type} is not allowed`,
+      };
+    }
+
+    return { valid: true };
+  }, []);
+
+  return {
+    uploading,
+    uploadProgress,
+    error,
+    
+    // Actions
+    uploadFile,
+    uploadFiles,
+    deleteFile,
+    getFileUrl,
+    downloadFile,
+    uploadImageFromUrl,
+    validateFile,
+  };
+}

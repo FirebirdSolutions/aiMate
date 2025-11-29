@@ -1,19 +1,11 @@
 import { useState, useEffect } from "react";
+import { Upload, Trash2, FileText, Download, Eye } from "lucide-react";
 import { Button } from "./ui/button";
-import { File, Trash2, Download, Eye, Upload } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "./ui/alert-dialog";
-import { toast } from "sonner";
+import { ScrollArea } from "./ui/scroll-area";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
+import { toast } from "sonner@2.0.3";
 import { useDebug } from "./DebugContext";
-import * as API from "../utils/api-stubs";
+import { getFiles } from "../utils/api-stubs";
 import { BaseModal } from "./BaseModal";
 
 interface FileItem {
@@ -44,7 +36,7 @@ export function FilesModal({ open, onOpenChange }: FilesModalProps) {
 
   const loadFiles = async () => {
     setLoading(true);
-    const response = await API.getFiles();
+    const response = await getFiles();
     if (response.success && response.data) {
       // Convert API format to component format
       const formattedFiles = response.data.map(file => ({
@@ -102,7 +94,7 @@ export function FilesModal({ open, onOpenChange }: FilesModalProps) {
   };
 
   const getFileIcon = (type: string) => {
-    return <File className="h-5 w-5 text-blue-500" />;
+    return <FileText className="h-5 w-5 text-blue-500" />;
   };
 
   return (
@@ -112,7 +104,7 @@ export function FilesModal({ open, onOpenChange }: FilesModalProps) {
         onOpenChange={onOpenChange}
         title="Files"
         description="Manage your uploaded files"
-        icon={File}
+        icon={FileText}
         size="lg"
         showSave={false}
         showDelete={false}

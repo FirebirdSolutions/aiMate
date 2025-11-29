@@ -24,8 +24,8 @@ import { Switch } from "./ui/switch";
 import { Separator } from "./ui/separator";
 import { ChevronDown, ChevronUp, Download, Loader2, Zap, CheckCircle2, XCircle } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
-import { testConnection } from "../utils/api-stubs";
-import { toast } from "sonner";
+import { testConnection } from "../api/attachments";
+import { toast } from "sonner@2.0.3";
 
 interface Model {
   id: string;

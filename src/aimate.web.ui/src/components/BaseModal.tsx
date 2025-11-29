@@ -1,4 +1,5 @@
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState, useEffect, useCallback } from "react";
+import { useUIEventLogger } from "./DebugContext";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +10,6 @@ import {
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 import { X } from "lucide-react";
-import { useSwipeGesture } from "../utils/useSwipeGesture";
 
 interface Tab {
   id: string;
@@ -55,6 +55,7 @@ export function BaseModal({
   isDeleteDisabled = false,
   size = "lg",
 }: BaseModalProps) {
+  const { logUIEvent } = useUIEventLogger();
   const [activeTab, setActiveTab] = useState(tabs?.[0]?.id || "");
 
   // Reset to first tab when modal opens
@@ -63,28 +64,16 @@ export function BaseModal({
       setActiveTab(tabs[0].id);
     }
   }, [open]); // Only reset when modal opens, not when tabs change
+  
+  const handleTabChange = useCallback((tabId: string, tabLabel: string) => {
+    setActiveTab(tabId);
+    const modalType = title.toLowerCase().includes('admin') ? 'admin' : 
+                      title.toLowerCase().includes('settings') ? 'settings' : 'modal';
+    logUIEvent(`Tab clicked: ${tabLabel}`, `ui:${modalType}:tab:${tabId}`, { tabId, tabLabel });
+  }, [title, logUIEvent]);
 
-  // Swipe gesture handlers for tabs
-  const handleSwipeLeft = () => {
-    if (!tabs) return;
-    const currentIndex = tabs.findIndex((tab) => tab.id === activeTab);
-    if (currentIndex < tabs.length - 1) {
-      setActiveTab(tabs[currentIndex + 1].id);
-    }
-  };
-
-  const handleSwipeRight = () => {
-    if (!tabs) return;
-    const currentIndex = tabs.findIndex((tab) => tab.id === activeTab);
-    if (currentIndex > 0) {
-      setActiveTab(tabs[currentIndex - 1].id);
-    }
-  };
-
-  const swipeRef = useSwipeGesture({
-    onSwipeLeft: handleSwipeLeft,
-    onSwipeRight: handleSwipeRight,
-  });
+  // Swipe gestures disabled - they interfere with toggles and interactive elements
+  // Users can still click/tap tabs to navigate
 
   const sizeClasses = {
     md: "max-w-2xl",
@@ -118,7 +107,7 @@ export function BaseModal({
                   <button
                     key={tab.id}
                     onClick={(e) => {
-                      setActiveTab(tab.id);
+                      handleTabChange(tab.id, tab.label);
                       e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                     }}
                     className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
@@ -139,7 +128,7 @@ export function BaseModal({
         {/* Content with Vertical Scrolling */}
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full">
-            <div ref={swipeRef} className="px-6 py-4 space-y-4">
+            <div className="px-6 py-4 space-y-4">
               {tabs
                 ? tabs.map(
                     (tab) =>
