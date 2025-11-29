@@ -145,8 +145,8 @@ export interface UpdateWorkspaceDto {
 }
 
 export interface ConversationDto {
-  id: number;
-  workspaceId: number;
+  id: string;
+  workspaceId: string;
   title: string;
   modelId: string | null;
   isPinned: boolean;

@@ -9,7 +9,6 @@ export { authService } from './auth.service';
 export { chatService } from './chat.service';
 export { messagesService } from './messages.service';
 export { conversationsService } from './conversations.service';
-export { workspaceService } from './workspace.service';
 export { workspacesService } from './workspaces.service';
 export { projectsService } from './projects.service';
 export { settingsService } from './settings.service';
