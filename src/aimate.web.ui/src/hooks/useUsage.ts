@@ -17,76 +17,81 @@ export function useUsage() {
   // LOAD USAGE STATS
   // ============================================================================
 
+  // Mock data generator for offline/fallback scenarios
+  const getMockStats = useCallback((): UsageStatsDto => ({
+    totalMessages: 234,
+    totalTokens: 125000,
+    totalCost: 2.50,
+    billingPeriodStart: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+    billingPeriodEnd: new Date().toISOString(),
+    usageByModel: [
+      {
+        model: 'GPT-4 Turbo',
+        connection: 'OpenAI',
+        messages: 89,
+        tokens: 45000,
+        cost: 1.20,
+        color: '#8B5CF6',
+      },
+      {
+        model: 'GPT-4',
+        connection: 'OpenAI',
+        messages: 56,
+        tokens: 38000,
+        cost: 0.85,
+        color: '#3B82F6',
+      },
+      {
+        model: 'Claude 3 Sonnet',
+        connection: 'Anthropic',
+        messages: 45,
+        tokens: 28000,
+        cost: 0.30,
+        color: '#F59E0B',
+      },
+      {
+        model: 'GPT-3.5 Turbo',
+        connection: 'OpenAI',
+        messages: 44,
+        tokens: 14000,
+        cost: 0.15,
+        color: '#10B981',
+      },
+    ],
+  }), []);
+
   const loadStats = useCallback(async () => {
+    // Use mock usage data in offline mode
     if (AppConfig.isOfflineMode()) {
-      // Use mock usage data in offline mode
-      const mockStats: UsageStatsDto = {
-        totalMessages: 234,
-        totalTokens: 125000,
-        totalCost: 2.50,
-        billingPeriodStart: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        billingPeriodEnd: new Date().toISOString(),
-        usageByModel: [
-          {
-            model: 'GPT-4 Turbo',
-            connection: 'OpenAI',
-            messages: 89,
-            tokens: 45000,
-            cost: 1.20,
-            color: '#8B5CF6',
-          },
-          {
-            model: 'GPT-4',
-            connection: 'OpenAI',
-            messages: 56,
-            tokens: 38000,
-            cost: 0.85,
-            color: '#3B82F6',
-          },
-          {
-            model: 'Claude 3 Sonnet',
-            connection: 'Anthropic',
-            messages: 45,
-            tokens: 28000,
-            cost: 0.30,
-            color: '#F59E0B',
-          },
-          {
-            model: 'GPT-3.5 Turbo',
-            connection: 'OpenAI',
-            messages: 44,
-            tokens: 14000,
-            cost: 0.15,
-            color: '#10B981',
-          },
-        ],
-      };
-      setStats(mockStats);
+      setStats(getMockStats());
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const data = await usageService.getUsageStats();
+
+      // Add timeout to prevent indefinite loading (API client has retries which can take long)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 5000);
+      });
+
+      const data = await Promise.race([
+        usageService.getUsageStats(),
+        timeoutPromise
+      ]);
+
       setStats(data);
       setError(null);
     } catch (err) {
       console.error('[useUsage] Failed to load usage stats:', err);
       setError('Failed to load usage data');
-      // Fallback to zero stats on error
-      setStats({
-        totalMessages: 0,
-        totalTokens: 0,
-        totalCost: 0,
-        billingPeriodStart: new Date().toISOString(),
-        billingPeriodEnd: new Date().toISOString(),
-        usageByModel: [],
-      });
+      // Fallback to mock stats on error (better UX than empty state)
+      setStats(getMockStats());
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getMockStats]);
 
   // ============================================================================
   // LOAD BY DATE RANGE

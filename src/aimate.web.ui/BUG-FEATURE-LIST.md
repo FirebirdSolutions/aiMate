@@ -113,7 +113,7 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Default option | ❌ | Should default to ON |
+| Default option | ✅ | Fixed - defaults to 'on' |
 
 ### System Prompt
 
@@ -125,17 +125,17 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Theme persistence | 🔄 | Check persistence works |
+| Theme persistence | ✅ | Verified - localStorage persistence works |
 | Colour theme flow | ❌ | Ensure flows to all controls (toggles, etc) |
 
 ### Interface - Chat Display
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Timestamp option | ❌ | Ensure implemented |
-| Syntax highlighting | ❌ | Ensure implemented |
-| Markdown rendering | ❌ | Ensure implemented |
-| Code blocks | ❌ | Additional functionality needed |
+| Timestamp option | ✅ | Wired to UserSettings, conditional display |
+| Syntax highlighting | ✅ | Wired to UserSettings, affects code block styling |
+| Markdown rendering | ✅ | Wired to UserSettings, toggles ReactMarkdown |
+| Code blocks | ⚠️ | Basic styling works, needs syntax highlighter library |
 
 ### Personalisation - AI Behaviour
 
@@ -176,8 +176,8 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Mock data | ❌ | Implement mock data |
-| Loading state | ❌ | Stuck on loading - fix |
+| Mock data | ✅ | useUsage hook has mock data, falls back on error |
+| Loading state | ✅ | Fixed - 5s timeout with fallback to mock data |
 
 ---
 
@@ -287,6 +287,12 @@
 - [x] Tool call parsing (XML/JSON)
 - [x] SSE streaming for chat
 - [x] Offline mode with mock data
+- [x] Notification default to ON
+- [x] Theme persistence (localStorage)
+- [x] Timestamp toggle (wired to ChatMessage)
+- [x] Markdown rendering toggle (wired to ChatMessage)
+- [x] Syntax highlighting toggle (wired to ChatMessage)
+- [x] Usage tab loading state (5s timeout with fallback)
 
 ---
 
