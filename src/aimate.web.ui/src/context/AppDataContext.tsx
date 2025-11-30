@@ -15,6 +15,7 @@ import {
   useAdmin,
   useSettings,
   useUsage,
+  useTools,
 } from '../hooks';
 
 interface AppDataContextType {
@@ -35,7 +36,10 @@ interface AppDataContextType {
   
   // Files
   files: ReturnType<typeof useFiles>;
-  
+
+  // Tools (MCP)
+  tools: ReturnType<typeof useTools>;
+
   // Admin (optional - only for admin users)
   admin?: ReturnType<typeof useAdmin>;
   
@@ -60,6 +64,7 @@ export function AppDataProvider({ children, isAdmin = false }: AppDataProviderPr
   const knowledge = useKnowledge(workspaces.currentWorkspace?.id);
   const projects = useProjects(workspaces.currentWorkspace?.id);
   const files = useFiles();
+  const tools = useTools();
   const admin = isAdmin ? useAdmin() : undefined;
   const settings = useSettings();
   const usage = useUsage();
@@ -71,10 +76,11 @@ export function AppDataProvider({ children, isAdmin = false }: AppDataProviderPr
     knowledge,
     projects,
     files,
+    tools,
     admin,
     settings,
     usage,
-  }), [chat, conversations, workspaces, knowledge, projects, files, admin, settings, usage]);
+  }), [chat, conversations, workspaces, knowledge, projects, files, tools, admin, settings, usage]);
 
   return (
     <AppDataContext.Provider value={value}>
