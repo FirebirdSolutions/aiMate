@@ -4,11 +4,18 @@ This is the *MASTER* tracking list for /src/aimate.web.ui
 Refer to:   /docs/*
             /docs/api/*
 
-FUTURE ENHANCEMENTS
+FUTURE FIXES/ENHANCEMENTS/TO IMPLEMENT
     - Plugins
     - Vibe Coding (code_generation_spec.md)
     - Structured Content (Structure_content_spec.md)
     - FULL review of /src/aimate.Api|Shared|Core project for backend/db alignment
+
+| **Real backend connection** | ⚠️ Partial      | Works with direct LM server, backend API stubbed                       |
+| --------------------------- | --------------- | ---------------------------------------------------------------------- |
+| **Authentication flow**     | ⚠️ Stubbed      | AuthContext exists but login screen not wired                          |
+| **Database persistence**    | ⚠️ Offline mode | Uses localStorage/mock data, not real backend DB                       |
+| **E2E Testing**             | ❌ Not done      | Listed in Stage 6, no Playwright/Cypress setup                         |
+| **Accessibility**           | ⚠️ Partial      | Basic ARIA from shadcn, needs keyboard nav |
 
 EVERYWHERE:
     - Ensure required fields are validated
@@ -17,18 +24,17 @@ Admin Panel
     Modal Window
         Status: TODO:   Resize for mobile/desktop
         Status: TODO:   Ensure consistent vertical scrolling
-
     General
         Status: Complete
-    
+
     Interface
         Status: TODO:   Fix horizontal width of contents (text boxes/areas)
                         Discuss: What do we need to implement (Task Model, Title Generation etc)
-    
+
     Connections
         Status: TODO:   Provider Type - Dropdown?  Do we need it?
                         Auth - Display input for things like API key, OAUTH details
-    
+
     Models
         General
             Status: TODO:   Review
@@ -52,13 +58,12 @@ User Settings
     Modal Window
         Status: TODO:   Resize for mobile/desktop
         Status: TODO:   Ensure consistent vertical scrolling
-
     General
         Notifications
             Status: TODO:   Default option set to ON
         System Prompt
             Status: TODO:   Check to see it's used
-            
+
     Interface
         Theme (General)
             Status: TODO:   Check persistence
@@ -67,7 +72,7 @@ User Settings
         Chat Display
             Status: TODO:   Ensure options (timestamp, syntax highlighting, markdown) are implemented
                             Implement additional functionality (code blocks etc)
-    
+
     Personalisation
         AI Behaviour
             Status: TODO:   Check to see how creativity an response level are used
@@ -75,7 +80,7 @@ User Settings
             Status: TODO:   Check to see it's used (See GENERAL:SYSTEM PROMPT - Are we duplicating?)
         Remember Conversation Context
             Status: TODO:   Check to see it's used
-    
+
     Account
         Update Profile
             Status: TODO:   Implement mock workflow
@@ -87,11 +92,11 @@ User Settings
             Status: TODO:   Implement mock workflow
         Danger Zone
             Status: TODO:   Implement mock workflow
-    
+
     Memories
         Edit Memory
             Status: TODO:
-    
+
     Usage
         Status: TODO:   Implement mock data
                         Stuck on loading data
@@ -117,16 +122,15 @@ Top Bar - Right-hand Kebab Menu
 Side Nav
     Search
         Status: TODO:   Implement
-
     Notes
         Status: Complete - Migrate to Knowledge?
 
     Knowledge
         Status: TODO:   Full Audit, Integrate Files/Notes?
-    
+
     Files
         Status: TODO:   Remove as top-level item, integrate with Knowledge
-    
+
     Projects
         Status: TODO:   Populate for existing Porjects, Allow editing
 
