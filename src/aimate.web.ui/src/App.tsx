@@ -152,6 +152,22 @@ function ChatApp() {
       // Extract any new memories from the user's message
       memories.extractMemoriesFromText(content, targetConversationId);
 
+      // Map creativity level to temperature
+      const creativityToTemp: Record<string, number> = {
+        precise: 0.3,
+        balanced: 0.7,
+        creative: 1.0,
+      };
+      const temperature = creativityToTemp[userSettings.personalisation?.creativityLevel || 'balanced'];
+
+      // Map response style to max_tokens
+      const styleToTokens: Record<string, number> = {
+        concise: 512,
+        balanced: 2048,
+        detailed: 4096,
+      };
+      const maxTokens = styleToTokens[userSettings.personalisation?.responseStyle || 'balanced'];
+
       await chat.sendMessage(content, {
         conversationId: targetConversationId,
         workspaceId: workspaces.currentWorkspace?.id,
@@ -159,6 +175,9 @@ function ChatApp() {
         systemPrompt: userSettings.general?.systemPrompt,
         knowledgeIds: attachments?.knowledgeIds,
         memoryContext: memories.getContextString(),
+        temperature,
+        maxTokens,
+        includeHistory: userSettings.personalisation?.rememberContext !== false,
       });
 
       addLog({
@@ -240,9 +259,18 @@ function ChatApp() {
       category: 'chat:continue'
     });
 
+    // Map creativity level to temperature
+    const creativityToTemp: Record<string, number> = {
+      precise: 0.3,
+      balanced: 0.7,
+      creative: 1.0,
+    };
+    const temperature = creativityToTemp[userSettings.personalisation?.creativityLevel || 'balanced'];
+
     await chat.continueMessage({
       model: selectedModel,
       systemPrompt: userSettings.general?.systemPrompt,
+      temperature,
     });
   };
 

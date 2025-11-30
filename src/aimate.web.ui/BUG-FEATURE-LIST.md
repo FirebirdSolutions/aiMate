@@ -120,7 +120,7 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Check usage | ⚠️ | TODO: Quick verify it's passed to chat context |
+| Check usage | ✅ | Verified - passed via userSettings.general.systemPrompt to chat |
 
 ### Interface - Theme
 
@@ -142,8 +142,8 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Creativity level | ⚠️ | TODO: Wire to temperature (precise=0.3, balanced=0.7, creative=1.0) |
-| Response level | ⚠️ | TODO: Could affect max_tokens or system prompt suffix |
+| Creativity level | ✅ | Wired to temperature (precise=0.3, balanced=0.7, creative=1.0) |
+| Response level | ✅ | Wired to max_tokens (concise=512, balanced=2048, detailed=4096) |
 
 ### Personalisation - Custom Instructions
 
@@ -155,7 +155,7 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Check usage | ⚠️ | TODO: Toggle whether conversation history is sent |
+| Check usage | ✅ | Wired - toggles whether conversation history is included |
 
 ### Account
 
@@ -294,6 +294,10 @@
 - [x] Markdown rendering toggle (wired to ChatMessage)
 - [x] Syntax highlighting toggle (wired to ChatMessage)
 - [x] Usage tab loading state (5s timeout with fallback)
+- [x] System prompt wired to chat context
+- [x] Creativity level → temperature mapping
+- [x] Response style → max_tokens mapping
+- [x] Remember context toggle (history inclusion)
 
 ---
 
