@@ -48,7 +48,7 @@ The admin panel (`AdminModal.tsx`) has 11 tabs. For MVP, we show only essential 
 | Connections | **SHOW** | Critical - LM server configuration |
 | Models | **SHOW** | Critical - model enable/disable |
 | Plugins | HIDE | Future feature |
-| MCP | HIDE | Future feature |
+| MCP | **SHOW** | First-class citizen - tool integration |
 | Documents | HIDE | RAG - Phase 2 |
 | Web Search | HIDE | Future feature |
 | Code Execution | HIDE | Future feature |
