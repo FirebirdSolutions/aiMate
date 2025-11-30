@@ -182,7 +182,7 @@ src/aimate.web.ui/
 - [x] Custom MCP server configuration (MCPEditDialog already existed)
 
 ### Stage 6: Production Readiness (Next)
-- [ ] Error boundary for graceful failures
+- [x] Error boundary for graceful failures (ErrorBoundary.tsx with fallback variants)
 - [ ] Performance optimization (React.memo, virtualization)
 - [ ] Accessibility improvements (ARIA labels, keyboard nav)
 - [ ] E2E testing setup
