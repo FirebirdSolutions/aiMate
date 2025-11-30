@@ -1,7 +1,0 @@
-﻿src/api/services/settings.service.ts(8,10): error TS2724: '"../types"' has no exported member named 'UserSettingsDto'. Did you mean 'UpdateSettingsDto'?
-src/components/AdminModal.tsx(794,9): error TS2304: Cannot find name 'setUsers'.
-src/components/AdminModal.tsx(796,9): error TS2304: Cannot find name 'setUsers'.
-src/components/AdminModal.tsx(810,7): error TS2304: Cannot find name 'setUsers'.
-src/components/ModelEditDialog.tsx(27,32): error TS2307: Cannot find module '../api/attachments' or its corresponding type declarations.
-src/components/NotesModal.tsx(11,26): error TS2307: Cannot find module '../api/notes' or its corresponding type declarations.
-src/hooks/useSettings.ts(8,27): error TS2724: '"../api/services"' has no exported member named 'UserSettingsDto'. Did you mean 'UpdateSettingsDto'?
