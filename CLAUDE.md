@@ -133,6 +133,7 @@ src/aimate.web.ui/
 | Memories UI | `components/MemoriesPanel.tsx` | View/add/delete memories |
 | MCP tool discovery | `hooks/useTools.ts` | Load tools from enabled MCP servers |
 | MCP tool execution | `api/services/tools.service.ts` | Execute tools, validate params, mock responses |
+| MCP design patterns | `docs/MCP_DESIGN_SPEC.md` | Domain facades, context optimization |
 | Tool call UI | `components/ToolCallCard.tsx` | Render tool calls with status, params, results |
 | Admin connections | `context/AdminSettingsContext.tsx` | Persisted to localStorage |
 | API client | `api/client.ts` | Axios instance, JWT, retry logic |
@@ -207,3 +208,4 @@ npm run typecheck
 - All 93 API endpoints are integrated in the service layer
 - Offline mode provides full functionality for development/demos
 - Theme defaults to dark mode, persisted in localStorage
+- **MCP Design**: Use domain facades (1 tool per domain, commands as params) to minimize context overhead - see `docs/MCP_DESIGN_SPEC.md`
