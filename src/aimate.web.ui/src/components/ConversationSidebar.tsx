@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
+import { VirtualizedList, SimpleVirtualList } from "./ui/virtualized-list";
 import { MessageSquare, Plus, Trash2, X, Search, FileText, FolderKanban, Sparkles, Settings, Archive, ShieldCheck, LogOut, ChevronUp, Moon, Sun, Info, ChevronDown, ChevronRight, Brain, MoreVertical, Share, Download, Edit, Pin, Copy, FolderInput, Check, File, Layers, Users, Database } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useDebug } from "./DebugContext";
@@ -315,14 +316,17 @@ export function ConversationSidebar({
                     <div className="px-4 py-2.5 border-b border-gray-800">
                       <div className="text-xs text-gray-400">Projects</div>
                     </div>
-                    <ScrollArea className="h-80">
-                      <div className="p-2 space-y-1">
-                        {projects.length === 0 ? (
-                          <div className="px-3 py-2 text-sm text-gray-400">No projects available</div>
-                        ) : (
-                          projects.map((project) => (
+                    <div className="p-2">
+                      {projects.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-gray-400">No projects available</div>
+                      ) : (
+                        <SimpleVirtualList
+                          items={projects}
+                          estimatedItemHeight={40}
+                          maxHeight={320}
+                          getItemKey={(project) => project.id}
+                          renderItem={(project) => (
                             <button
-                              key={project.id}
                               className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
                               onClick={() => {
                                 toast.success(`Moved to "${project.name}"`);
@@ -331,10 +335,10 @@ export function ConversationSidebar({
                               <FolderKanban className="h-4 w-4" />
                               <span>{project.name}</span>
                             </button>
-                          ))
-                        )}
-                      </div>
-                    </ScrollArea>
+                          )}
+                        />
+                      )}
+                    </div>
                   </PopoverContent>
                 </Popover>
                 <button
@@ -361,6 +365,46 @@ export function ConversationSidebar({
 
   const pinnedList = conversations.filter(c => pinnedConversations.includes(c.id));
   const recentList = conversations.filter(c => !pinnedConversations.includes(c.id));
+
+  // Combined list for virtualization with section headers
+  type ListItem =
+    | { type: 'section'; title: string; id: string }
+    | { type: 'conversation'; data: Conversation };
+
+  const virtualizedItems = useMemo<ListItem[]>(() => {
+    const items: ListItem[] = [];
+
+    if (pinnedList.length > 0) {
+      items.push({ type: 'section', title: 'Pinned', id: 'section-pinned' });
+      pinnedList.forEach(c => items.push({ type: 'conversation', data: c }));
+    }
+
+    if (recentList.length > 0) {
+      if (pinnedList.length > 0) {
+        items.push({ type: 'section', title: 'Recent', id: 'section-recent' });
+      }
+      recentList.forEach(c => items.push({ type: 'conversation', data: c }));
+    }
+
+    return items;
+  }, [pinnedList, recentList]);
+
+  const getItemKey = useCallback((item: ListItem) => {
+    return item.type === 'section' ? item.id : item.data.id;
+  }, []);
+
+  const renderVirtualItem = useCallback((item: ListItem) => {
+    if (item.type === 'section') {
+      return (
+        <div className="px-2 py-1">
+          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+            {item.title}
+          </h2>
+        </div>
+      );
+    }
+    return renderConversationItem(item.data);
+  }, [renderConversationItem, activeConversationId, renamingId, renameValue, pinnedConversations, showcaseMode]);
 
   return (
     <>
@@ -526,52 +570,31 @@ export function ConversationSidebar({
           </Collapsible>
         </nav>
 
-        {/* Conversations Section with ScrollArea */}
+        {/* Conversations Section with Virtualized List */}
         <div className="flex-1 overflow-hidden flex flex-col">
-          <ScrollArea className="flex-1">
-            <div className="p-2 space-y-4">
-              {loading && conversations.length === 0 ? (
-                <ConversationListSkeleton count={5} />
-              ) : conversations.length === 0 ? (
-                <div className="text-center py-8 px-4 text-sm text-gray-500 dark:text-gray-400">
-                  No conversations yet. Start a new chat!
-                </div>
-              ) : (
-                <>
-                  {/* Pinned Conversations */}
-                  {pinnedList.length > 0 && (
-                    <div className="space-y-1">
-                      <div className="px-2 py-1">
-                        <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400">Pinned</h2>
-                      </div>
-                      {pinnedList.map(renderConversationItem)}
-                    </div>
-                  )}
-
-                  {/* Recent Conversations */}
-                  {recentList.length > 0 && (
-                    <div className="space-y-1">
-                      {pinnedList.length > 0 && (
-                        <div className="px-2 py-1">
-                          <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400">Recent</h2>
-                        </div>
-                      )}
-                      {recentList.map(renderConversationItem)}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Lazy Load Trigger */}
-              {onLoadMore && (
-                <LazyLoadTrigger
-                  onLoadMore={onLoadMore}
-                  hasMore={hasMore}
-                  loading={loading}
-                />
-              )}
+          {loading && conversations.length === 0 ? (
+            <div className="p-2">
+              <ConversationListSkeleton count={5} />
             </div>
-          </ScrollArea>
+          ) : conversations.length === 0 ? (
+            <div className="text-center py-8 px-4 text-sm text-gray-500 dark:text-gray-400">
+              No conversations yet. Start a new chat!
+            </div>
+          ) : (
+            <VirtualizedList
+              items={virtualizedItems}
+              estimatedItemHeight={52}
+              height="100%"
+              renderItem={renderVirtualItem}
+              getItemKey={getItemKey}
+              className="flex-1"
+              innerClassName="p-2"
+              overscan={5}
+              onEndReached={hasMore ? onLoadMore : undefined}
+              endReachedThreshold={3}
+              isLoading={loading}
+            />
+          )}
         </div>
 
         {/* User Footer */}

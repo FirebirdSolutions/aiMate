@@ -31,9 +31,6 @@ export { connectionsService } from './connections.service';
 export { filesService } from './files.service';
 export { searchService } from './search.service';
 
-// MCP tools services
-export { toolsService } from './tools.service';
-
 // Re-export API client for direct use if needed
 export { apiClient } from '../client';
 

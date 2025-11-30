@@ -462,6 +462,7 @@ function ChatApp() {
                       content={message.content}
                       timestamp={message.timestamp}
                       structuredContent={message.structuredContent}
+                      toolCalls={message.role === "assistant" ? tools.toolCalls : undefined}
                       onEdit={
                         message.role === "user"
                           ? (newContent) => handleEditMessage(message.id, newContent)
@@ -474,6 +475,14 @@ function ChatApp() {
                           ? handleRegenerateResponse
                           : undefined
                       }
+                      onContinue={
+                        message.role === "assistant" &&
+                          index === chat.messages.length - 1 &&
+                          !chat.streaming
+                          ? handleContinue
+                          : undefined
+                      }
+                      onRetryToolCall={handleRetryToolCall}
                     />
                   ))}
 
@@ -488,52 +497,6 @@ function ChatApp() {
                           <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                           <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                         </div>
-          <ScrollArea className="h-full">
-            {chat.messages.length === 0 && !chat.loading ? (
-              <EmptyState onSendMessage={handleSendMessage} />
-            ) : (
-              <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-                {chat.messages.map((message, index) => (
-                  <ChatMessage
-                    key={message.id}
-                    role={message.role}
-                    content={message.content}
-                    timestamp={message.timestamp}
-                    structuredContent={message.structuredContent}
-                    toolCalls={message.role === "assistant" ? tools.toolCalls : undefined}
-                    onEdit={
-                      message.role === "user"
-                        ? (newContent) => handleEditMessage(message.id, newContent)
-                        : undefined
-                    }
-                    onRegenerate={
-                      message.role === "assistant" &&
-                        index === chat.messages.length - 1 &&
-                        !chat.streaming
-                        ? handleRegenerateResponse
-                        : undefined
-                    }
-                    onContinue={
-                      message.role === "assistant" &&
-                        index === chat.messages.length - 1 &&
-                        !chat.streaming
-                        ? handleContinue
-                        : undefined
-                    }
-                    onRetryToolCall={handleRetryToolCall}
-                  />
-                ))}
-
-                {chat.streaming && (
-                  <div className="flex gap-3 items-center">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
-                      <Sparkles className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1 bg-white dark:bg-gray-900 rounded-2xl px-4 py-3 border border-gray-200 dark:border-gray-800">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                        <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                       </div>
                     </div>
                   )}
