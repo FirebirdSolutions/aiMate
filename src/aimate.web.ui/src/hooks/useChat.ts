@@ -172,6 +172,9 @@ export function useChat(conversationId?: string) {
       systemPrompt?: string;
       knowledgeIds?: string[];
       memoryContext?: string;
+      temperature?: number;
+      maxTokens?: number;
+      includeHistory?: boolean;
     }
   ) => {
     const isOffline = AppConfig.isOfflineMode();
@@ -259,9 +262,11 @@ export function useChat(conversationId?: string) {
           knowledgeContext,
         ].filter(Boolean).join('\n');
 
+        // Build messages array - optionally include history based on rememberContext setting
+        const includeHistory = options?.includeHistory !== false; // Default to true
         const chatMessages = [
           ...(systemContent ? [{ role: 'system' as const, content: systemContent }] : []),
-          ...messages.map(m => ({ role: m.role, content: m.content })),
+          ...(includeHistory ? messages.map(m => ({ role: m.role, content: m.content })) : []),
           { role: 'user' as const, content }
         ];
 
@@ -278,14 +283,23 @@ export function useChat(conversationId?: string) {
               await wait(delay);
             }
 
+            // Build request body with optional temperature and max_tokens
+            const requestBody: Record<string, unknown> = {
+              model: options?.model || 'default',
+              messages: chatMessages,
+              stream: true,
+            };
+            if (options?.temperature !== undefined) {
+              requestBody.temperature = options.temperature;
+            }
+            if (options?.maxTokens !== undefined) {
+              requestBody.max_tokens = options.maxTokens;
+            }
+
             response = await fetch(chatUrl, {
               method: 'POST',
               headers,
-              body: JSON.stringify({
-                model: options?.model || 'default',
-                messages: chatMessages,
-                stream: true,
-              }),
+              body: JSON.stringify(requestBody),
               signal: AbortSignal.timeout(30000), // 30 second timeout
             });
 
@@ -777,7 +791,7 @@ export function useChat(conversationId?: string) {
   // CONTINUE MESSAGE
   // ============================================================================
 
-  const continueMessage = useCallback(async (options?: { model?: string; systemPrompt?: string }) => {
+  const continueMessage = useCallback(async (options?: { model?: string; systemPrompt?: string; temperature?: number }) => {
     const activeConnection = adminSettings.settings.connections?.find(c => c.enabled && c.url);
 
     if (!activeConnection?.url) {
@@ -810,14 +824,19 @@ export function useChat(conversationId?: string) {
       ];
 
       const chatUrl = activeConnection.url.replace(/\/$/, '') + '/chat/completions';
+      const requestBody: Record<string, unknown> = {
+        model: options?.model || 'default',
+        messages: chatMessages,
+        stream: true,
+      };
+      if (options?.temperature !== undefined) {
+        requestBody.temperature = options.temperature;
+      }
+
       const response = await fetch(chatUrl, {
         method: 'POST',
         headers,
-        body: JSON.stringify({
-          model: options?.model || 'default',
-          messages: chatMessages,
-          stream: true,
-        }),
+        body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(30000),
       });
 
