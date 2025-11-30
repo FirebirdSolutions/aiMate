@@ -157,12 +157,12 @@ src/aimate.web.ui/
 - [x] Handle mid-stream network drops (partial content saved)
 - [x] Mobile responsive fixes (ChatHeader, model selector)
 
-### Stage 3: BYOK & Multi-Provider (Current)
-- [ ] Connection testing (implement TODO)
-- [ ] Multiple provider support
-- [ ] Usage tracking per connection
+### Stage 3: BYOK & Multi-Provider ✓
+- [x] Connection testing (ModelEditDialog tests /models endpoint)
+- [x] Multiple provider support (dropdown with auto-configured URLs)
+- [x] Usage tracking per connection (getUsageByConnection, local tracking)
 
-### Stage 4: Knowledge & Memory
+### Stage 4: Knowledge & Memory (Next)
 - [ ] Document upload end-to-end
 - [ ] Semantic search in chat context
 - [ ] Memory persistence
