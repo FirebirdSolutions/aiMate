@@ -151,13 +151,13 @@ src/aimate.web.ui/
 - [x] Graceful error messages with toast notifications
 - [x] Model validation with available models suggestion
 
-### Stage 2: Core UX Polish (Current)
-- [ ] System prompt configuration
-- [ ] Continue message feature
-- [ ] Handle mid-stream network drops
-- [ ] Mobile responsive fixes
+### Stage 2: Core UX Polish ✓
+- [x] System prompt configuration (wired from Settings → General)
+- [x] Continue message feature (appends to last assistant message)
+- [x] Handle mid-stream network drops (partial content saved)
+- [x] Mobile responsive fixes (ChatHeader, model selector)
 
-### Stage 3: BYOK & Multi-Provider
+### Stage 3: BYOK & Multi-Provider (Current)
 - [ ] Connection testing (implement TODO)
 - [ ] Multiple provider support
 - [ ] Usage tracking per connection
