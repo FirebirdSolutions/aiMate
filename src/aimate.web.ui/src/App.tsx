@@ -11,6 +11,7 @@ import { useTools, ToolCall } from "./hooks/useTools";
 import { ShowcaseModeIndicator } from "./components/ShowcaseModeIndicator";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { DebugProvider, useDebug } from "./components/DebugContext";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider } from "./context/AuthContext";
 import { AdminSettingsProvider } from "./context/AdminSettingsContext";
 import { UserSettingsProvider, useUserSettings } from "./context/UserSettingsContext";
@@ -382,20 +383,22 @@ function ChatApp() {
       {/* Desktop Sidebar */}
       {sidebarOpen && (
         <div className="hidden md:block w-80 shrink-0">
-          <ConversationSidebar
-            conversations={conversationList}
-            activeConversationId={activeConversationId}
-            onSelectConversation={setActiveConversationId}
-            onNewConversation={handleNewConversation}
-            onDeleteConversation={handleDeleteConversation}
-            onRenameConversation={handleRenameConversation}
-            onCloneConversation={handleCloneConversation}
-            enabledModels={enabledModels}
-            onToggleModel={handleToggleModel}
-            hasMore={conversations.hasMore}
-            onLoadMore={conversations.loadMore}
-            loading={conversations.loading}
-          />
+          <ErrorBoundary context="sidebar">
+            <ConversationSidebar
+              conversations={conversationList}
+              activeConversationId={activeConversationId}
+              onSelectConversation={setActiveConversationId}
+              onNewConversation={handleNewConversation}
+              onDeleteConversation={handleDeleteConversation}
+              onRenameConversation={handleRenameConversation}
+              onCloneConversation={handleCloneConversation}
+              enabledModels={enabledModels}
+              onToggleModel={handleToggleModel}
+              hasMore={conversations.hasMore}
+              onLoadMore={conversations.loadMore}
+              loading={conversations.loading}
+            />
+          </ErrorBoundary>
         </div>
       )}
 
@@ -403,24 +406,26 @@ function ChatApp() {
       <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
         <SheetContent side="left" className="p-0 w-80" aria-describedby={undefined}>
           <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-          <ConversationSidebar
-            conversations={conversationList}
-            activeConversationId={activeConversationId}
-            onSelectConversation={(id) => {
-              setActiveConversationId(id);
-              setMobileSidebarOpen(false);
-            }}
-            onNewConversation={handleNewConversation}
-            onDeleteConversation={handleDeleteConversation}
-            onRenameConversation={handleRenameConversation}
-            onCloneConversation={handleCloneConversation}
-            onClose={() => setMobileSidebarOpen(false)}
-            enabledModels={enabledModels}
-            onToggleModel={handleToggleModel}
-            hasMore={conversations.hasMore}
-            onLoadMore={conversations.loadMore}
-            loading={conversations.loading}
-          />
+          <ErrorBoundary context="sidebar">
+            <ConversationSidebar
+              conversations={conversationList}
+              activeConversationId={activeConversationId}
+              onSelectConversation={(id) => {
+                setActiveConversationId(id);
+                setMobileSidebarOpen(false);
+              }}
+              onNewConversation={handleNewConversation}
+              onDeleteConversation={handleDeleteConversation}
+              onRenameConversation={handleRenameConversation}
+              onCloneConversation={handleCloneConversation}
+              onClose={() => setMobileSidebarOpen(false)}
+              enabledModels={enabledModels}
+              onToggleModel={handleToggleModel}
+              hasMore={conversations.hasMore}
+              onLoadMore={conversations.loadMore}
+              loading={conversations.loading}
+            />
+          </ErrorBoundary>
         </SheetContent>
       </Sheet>
 
@@ -444,6 +449,45 @@ function ChatApp() {
         />
 
         <div className="flex-1 overflow-hidden">
+          <ErrorBoundary context="chat">
+            <ScrollArea className="h-full">
+              {chat.messages.length === 0 && !chat.loading ? (
+                <EmptyState onSendMessage={handleSendMessage} />
+              ) : (
+                <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+                  {chat.messages.map((message, index) => (
+                    <ChatMessage
+                      key={message.id}
+                      role={message.role}
+                      content={message.content}
+                      timestamp={message.timestamp}
+                      structuredContent={message.structuredContent}
+                      onEdit={
+                        message.role === "user"
+                          ? (newContent) => handleEditMessage(message.id, newContent)
+                          : undefined
+                      }
+                      onRegenerate={
+                        message.role === "assistant" &&
+                          index === chat.messages.length - 1 &&
+                          !chat.streaming
+                          ? handleRegenerateResponse
+                          : undefined
+                      }
+                    />
+                  ))}
+
+                  {chat.streaming && (
+                    <div className="flex gap-3 items-center">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1 bg-white dark:bg-gray-900 rounded-2xl px-4 py-3 border border-gray-200 dark:border-gray-800">
+                        <div className="flex gap-1">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                          <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                          <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                        </div>
           <ScrollArea className="h-full">
             {chat.messages.length === 0 && !chat.loading ? (
               <EmptyState onSendMessage={handleSendMessage} />
@@ -492,13 +536,13 @@ function ChatApp() {
                         <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <div ref={scrollRef} />
-              </div>
-            )}
-          </ScrollArea>
+                  <div ref={scrollRef} />
+                </div>
+              )}
+            </ScrollArea>
+          </ErrorBoundary>
         </div>
 
         <ChatInput
@@ -524,7 +568,9 @@ function App() {
               <UserSettingsProvider>
                 <AppDataProvider isAdmin={true}>
                   <Toaster />
-                  <ChatApp />
+                  <ErrorBoundary context="app">
+                    <ChatApp />
+                  </ErrorBoundary>
                 </AppDataProvider>
               </UserSettingsProvider>
             </AdminSettingsProvider>

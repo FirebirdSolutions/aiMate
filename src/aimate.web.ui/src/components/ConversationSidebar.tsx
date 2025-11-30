@@ -4,6 +4,8 @@ import { ScrollArea } from "./ui/scroll-area";
 import { MessageSquare, Plus, Trash2, X, Search, FileText, FolderKanban, Sparkles, Settings, Archive, ShieldCheck, LogOut, ChevronUp, Moon, Sun, Info, ChevronDown, ChevronRight, Brain, MoreVertical, Share, Download, Edit, Pin, Copy, FolderInput, Check, File, Layers, Users, Database } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useDebug } from "./DebugContext";
+import { ErrorBoundary, ModalErrorFallback } from "./ErrorBoundary";
+import { ConversationListSkeleton } from "./LoadingSkeletons";
 import { SettingsModal } from "./SettingsModal";
 import { AdminModal } from "./AdminModal";
 import { AboutModal } from "./AboutModal";
@@ -362,24 +364,38 @@ export function ConversationSidebar({
 
   return (
     <>
-      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
-      <AdminModal
-        open={adminOpen}
-        onOpenChange={setAdminOpen}
-        enabledModels={enabledModels}
-        onToggleModel={onToggleModel}
-      />
-      <AboutModal open={aboutOpen} onOpenChange={setAboutOpen} />
-      <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
-      <NotesModal open={notesOpen} onOpenChange={setNotesOpen} />
-      <KnowledgeModal open={knowledgeOpen} onOpenChange={setKnowledgeOpen} />
-      <ProjectModal
-        open={projectModalOpen}
-        onOpenChange={setProjectModalOpen}
-        project={selectedProject}
-        mode={projectModalMode}
-        onCreateProject={handleCreateProject}
-      />
+      <ErrorBoundary context="settings-modal" fallback={<ModalErrorFallback onClose={() => setSettingsOpen(false)} />}>
+        <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+      </ErrorBoundary>
+      <ErrorBoundary context="admin-modal" fallback={<ModalErrorFallback onClose={() => setAdminOpen(false)} />}>
+        <AdminModal
+          open={adminOpen}
+          onOpenChange={setAdminOpen}
+          enabledModels={enabledModels}
+          onToggleModel={onToggleModel}
+        />
+      </ErrorBoundary>
+      <ErrorBoundary context="about-modal" fallback={<ModalErrorFallback onClose={() => setAboutOpen(false)} />}>
+        <AboutModal open={aboutOpen} onOpenChange={setAboutOpen} />
+      </ErrorBoundary>
+      <ErrorBoundary context="search-modal" fallback={<ModalErrorFallback onClose={() => setSearchOpen(false)} />}>
+        <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
+      </ErrorBoundary>
+      <ErrorBoundary context="notes-modal" fallback={<ModalErrorFallback onClose={() => setNotesOpen(false)} />}>
+        <NotesModal open={notesOpen} onOpenChange={setNotesOpen} />
+      </ErrorBoundary>
+      <ErrorBoundary context="knowledge-modal" fallback={<ModalErrorFallback onClose={() => setKnowledgeOpen(false)} />}>
+        <KnowledgeModal open={knowledgeOpen} onOpenChange={setKnowledgeOpen} />
+      </ErrorBoundary>
+      <ErrorBoundary context="project-modal" fallback={<ModalErrorFallback onClose={() => setProjectModalOpen(false)} />}>
+        <ProjectModal
+          open={projectModalOpen}
+          onOpenChange={setProjectModalOpen}
+          project={selectedProject}
+          mode={projectModalMode}
+          onCreateProject={handleCreateProject}
+        />
+      </ErrorBoundary>
 
       <div className="flex flex-col h-full bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800">
         {/* Logo and Close Button */}
@@ -514,7 +530,9 @@ export function ConversationSidebar({
         <div className="flex-1 overflow-hidden flex flex-col">
           <ScrollArea className="flex-1">
             <div className="p-2 space-y-4">
-              {conversations.length === 0 ? (
+              {loading && conversations.length === 0 ? (
+                <ConversationListSkeleton count={5} />
+              ) : conversations.length === 0 ? (
                 <div className="text-center py-8 px-4 text-sm text-gray-500 dark:text-gray-400">
                   No conversations yet. Start a new chat!
                 </div>
@@ -622,23 +640,29 @@ export function ConversationSidebar({
         </div>
 
         {/* Share Modal */}
-        <ShareModal
-          open={shareModalOpen}
-          onOpenChange={setShareModalOpen}
-          conversationTitle={conversations.find(c => c.id === shareConversationId)?.title}
-        />
+        <ErrorBoundary context="share-modal" fallback={<ModalErrorFallback onClose={() => setShareModalOpen(false)} />}>
+          <ShareModal
+            open={shareModalOpen}
+            onOpenChange={setShareModalOpen}
+            conversationTitle={conversations.find(c => c.id === shareConversationId)?.title}
+          />
+        </ErrorBoundary>
 
         {/* Files Modal */}
-        <FilesModal
-          open={filesOpen}
-          onOpenChange={setFilesOpen}
-        />
+        <ErrorBoundary context="files-modal" fallback={<ModalErrorFallback onClose={() => setFilesOpen(false)} />}>
+          <FilesModal
+            open={filesOpen}
+            onOpenChange={setFilesOpen}
+          />
+        </ErrorBoundary>
 
         {/* Archived Modal */}
-        <ArchivedModal
-          open={archivedOpen}
-          onOpenChange={setArchivedOpen}
-        />
+        <ErrorBoundary context="archived-modal" fallback={<ModalErrorFallback onClose={() => setArchivedOpen(false)} />}>
+          <ArchivedModal
+            open={archivedOpen}
+            onOpenChange={setArchivedOpen}
+          />
+        </ErrorBoundary>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteConfirmId !== null} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
