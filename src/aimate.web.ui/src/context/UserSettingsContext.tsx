@@ -69,7 +69,7 @@ const UserSettingsContext = createContext<UserSettingsContextType | undefined>(u
 const defaultSettings: UserSettings = {
   general: {
     language: 'en-gb',
-    notifications: 'all',
+    notifications: 'on',
     defaultModel: 'gpt-4',
     systemPrompt: '',
   },

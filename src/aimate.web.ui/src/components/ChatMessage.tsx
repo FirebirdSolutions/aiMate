@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useUIEventLogger } from "./DebugContext";
+import { useUserSettings } from "../context/UserSettingsContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
@@ -46,6 +47,12 @@ export function ChatMessage({
   onRetryToolCall,
 }: ChatMessageProps) {
   const { logUIEvent } = useUIEventLogger();
+  const { settings } = useUserSettings();
+  const interfaceSettings = settings.interface || {};
+  const showTimestamps = interfaceSettings.showTimestamps ?? true;
+  const markdownSupport = interfaceSettings.markdownSupport ?? true;
+  const syntaxHighlighting = interfaceSettings.syntaxHighlighting ?? true;
+
   const isUser = role === "user";
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
@@ -238,7 +245,7 @@ export function ChatMessage({
               >
                 {isUser ? (
                   <p className="whitespace-pre-wrap break-words">{content}</p>
-                ) : (
+                ) : markdownSupport ? (
                   <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2">
                     <ReactMarkdown
                       components={{
@@ -252,16 +259,20 @@ export function ChatMessage({
                             return null;
                           }
 
+                          const codeClass = syntaxHighlighting
+                            ? "bg-gray-200 dark:bg-gray-700"
+                            : "bg-gray-100 dark:bg-gray-800";
+
                           return inline ? (
                             <code
-                              className="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm"
+                              className={`${codeClass} px-1.5 py-0.5 rounded text-sm`}
                               {...props}
                             >
                               {children}
                             </code>
                           ) : (
                             <code
-                              className="block bg-gray-200 dark:bg-gray-700 p-3 rounded text-sm overflow-x-auto"
+                              className={`block ${codeClass} p-3 rounded text-sm overflow-x-auto ${syntaxHighlighting ? 'font-mono' : ''}`}
                               {...props}
                             >
                               {children}
@@ -273,6 +284,8 @@ export function ChatMessage({
                       {structuredContent ? content.replace(/```structured[\s\S]*?```/g, '').trim() : content}
                     </ReactMarkdown>
                   </div>
+                ) : (
+                  <p className="whitespace-pre-wrap break-words">{content}</p>
                 )}
               </div>
 
@@ -421,7 +434,7 @@ export function ChatMessage({
                 </div>
               ) : (
                 <div className="flex items-center gap-2 mt-1 px-2">
-                  <span className="text-xs text-gray-500">{timestamp}</span>
+                  {showTimestamps && <span className="text-xs text-gray-500">{timestamp}</span>}
                   {onEdit && (
                     <Button
                       variant="ghost"

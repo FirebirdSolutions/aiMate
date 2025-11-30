@@ -9,9 +9,10 @@
 | Symbol | Meaning |
 |--------|---------|
 | ✅ | Complete |
-| ⚠️ | Partial/In Progress |
+| ⚠️ | Partial/In Progress/TODO |
 | ❌ | Not Started |
-| 🔄 | Needs Review |
+| ⛔ | Removed (not needed for MVP) |
+| 🔒 | Hidden/Deferred (revisit later) |
 
 ---
 
@@ -59,21 +60,21 @@
 | Item | Status | Notes |
 |------|--------|-------|
 | Horizontal width of contents | ❌ | Text boxes/areas need fixing |
-| Task Model implementation | 🔄 | Discuss: What do we need? |
-| Title Generation | 🔄 | Discuss: Implementation needed? |
+| Task Model implementation | ⛔ | **Removed** - Overkill for MVP, users pick model in chat |
+| Title Generation | ✅ | Auto-generate from first message, no separate model needed |
 
 ### Connections
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Provider Type dropdown | 🔄 | Do we need it? |
+| Provider Type dropdown | ⛔ | **Removed** - URL pattern implies provider |
 | Auth input display | ❌ | API key, OAuth details |
 
 ### Models - General
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Model Params | 🔄 | Review needed |
+| Model Params | ⚠️ | Simplify to just temperature + max_tokens for MVP |
 
 ### Models - Prompts
 
@@ -81,13 +82,13 @@
 |------|--------|-------|
 | Suggestions | ❌ | TODO |
 | Tools/Filters | ❌ | Dynamic - TODO |
-| Actions | ❌ | Remove for now |
+| Actions | ⛔ | **Removed** - Not needed for MVP |
 
 ### Models - Advanced Params
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Pass to chat context | ❌ | Ensure they're passed correctly |
+| Pass to chat context | 🔒 | **Hidden** - Tab hidden, revisit later |
 
 ### MCP
 
@@ -113,48 +114,48 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Default option | ❌ | Should default to ON |
+| Default option | ✅ | Fixed - defaults to 'on' |
 
 ### System Prompt
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Check usage | 🔄 | Verify it's being used |
+| Check usage | ⚠️ | TODO: Quick verify it's passed to chat context |
 
 ### Interface - Theme
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Theme persistence | 🔄 | Check persistence works |
+| Theme persistence | ✅ | Verified - localStorage persistence works |
 | Colour theme flow | ❌ | Ensure flows to all controls (toggles, etc) |
 
 ### Interface - Chat Display
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Timestamp option | ❌ | Ensure implemented |
-| Syntax highlighting | ❌ | Ensure implemented |
-| Markdown rendering | ❌ | Ensure implemented |
-| Code blocks | ❌ | Additional functionality needed |
+| Timestamp option | ✅ | Wired to UserSettings, conditional display |
+| Syntax highlighting | ✅ | Wired to UserSettings, affects code block styling |
+| Markdown rendering | ✅ | Wired to UserSettings, toggles ReactMarkdown |
+| Code blocks | ⚠️ | Basic styling works, needs syntax highlighter library |
 
 ### Personalisation - AI Behaviour
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Creativity level | 🔄 | Check how it's used |
-| Response level | 🔄 | Check how it's used |
+| Creativity level | ⚠️ | TODO: Wire to temperature (precise=0.3, balanced=0.7, creative=1.0) |
+| Response level | ⚠️ | TODO: Could affect max_tokens or system prompt suffix |
 
 ### Personalisation - Custom Instructions
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Check usage | 🔄 | See General > System Prompt - duplicating? |
+| Check usage | ⛔ | **Merge with System Prompt** - Remove this field, append to system prompt instead |
 
 ### Personalisation - Remember Context
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Check usage | 🔄 | Verify it's being used |
+| Check usage | ⚠️ | TODO: Toggle whether conversation history is sent |
 
 ### Account
 
@@ -170,14 +171,14 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Edit Memory | 🔄 | Check usage |
+| Edit Memory | ✅ | Keep simple - inline edit is sufficient |
 
 ### Usage
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Mock data | ❌ | Implement mock data |
-| Loading state | ❌ | Stuck on loading - fix |
+| Mock data | ✅ | useUsage hook has mock data, falls back on error |
+| Loading state | ✅ | Fixed - 5s timeout with fallback to mock data |
 
 ---
 
@@ -187,8 +188,8 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Attach Content | 🔄 | Review |
-| Tooling | 🔄 | Review |
+| Attach Content | ✅ | Keep - powerful with Knowledge/Project features |
+| Tooling | ✅ | Keep basic - MCP tools work, don't over-engineer |
 
 ### User Messages
 
@@ -208,7 +209,7 @@
 | Item | Status | Notes |
 |------|--------|-------|
 | Add to knowledge | ❌ | TODO: Implement |
-| "Not implemented" items | 🔄 | Review all |
+| "Not implemented" items | ⚠️ | Audit toasts - remove or implement |
 
 ---
 
@@ -218,7 +219,7 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Help and FAQ | 🔄 | Check where info is stored (see `/HelpSystem`) |
+| Help and FAQ | 🔒 | **Deferred** - Point to GitHub docs for now |
 
 ---
 
@@ -235,20 +236,20 @@
 | Item | Status | Notes |
 |------|--------|-------|
 | Basic functionality | ✅ | Complete |
-| Migrate to Knowledge? | 🔄 | Discuss |
+| Migrate to Knowledge? | ⚠️ | **Yes** - Merge Notes/Files into Knowledge section |
 
 ### Knowledge
 
 | Item | Status | Notes |
 |------|--------|-------|
 | Full audit | ❌ | TODO |
-| Integrate Files/Notes? | 🔄 | Discuss |
+| Integrate Files/Notes? | ⚠️ | **Yes** - One unified "Knowledge" section |
 
 ### Files
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Remove as top-level | 🔄 | Integrate with Knowledge instead? |
+| Remove as top-level | ⚠️ | **Yes** - Merge into Knowledge |
 
 ### Projects
 
@@ -262,7 +263,7 @@
 | Item | Status | Notes |
 |------|--------|-------|
 | Virtualization | ✅ | Done - @tanstack/react-virtual |
-| Kebab menu functionality | 🔄 | Ensure all works (e.g. Move to Project) |
+| Kebab menu functionality | ⚠️ | TODO: Quick test Move to Project works |
 | Vertical scroll styling | ❌ | TODO |
 
 ---
@@ -287,6 +288,12 @@
 - [x] Tool call parsing (XML/JSON)
 - [x] SSE streaming for chat
 - [x] Offline mode with mock data
+- [x] Notification default to ON
+- [x] Theme persistence (localStorage)
+- [x] Timestamp toggle (wired to ChatMessage)
+- [x] Markdown rendering toggle (wired to ChatMessage)
+- [x] Syntax highlighting toggle (wired to ChatMessage)
+- [x] Usage tab loading state (5s timeout with fallback)
 
 ---
 
