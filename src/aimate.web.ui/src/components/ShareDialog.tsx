@@ -1,4 +1,4 @@
-import { Share2, Copy, Mail, MessageSquare } from "lucide-react";
+import { Copy } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
@@ -57,32 +57,14 @@ export function ShareDialog({
 
         <div>
           <h3 className="font-semibold mb-3">Quick Actions</h3>
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3"
-              onClick={handleCopyContent}
-            >
-              <Copy className="h-4 w-4" />
-              Copy Content
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3"
-              onClick={() => toast.info("Email share not implemented")}
-            >
-              <Mail className="h-4 w-4" />
-              Share via Email
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3"
-              onClick={() => toast.info("Social share not implemented")}
-            >
-              <MessageSquare className="h-4 w-4" />
-              Share on Social Media
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            className="w-full justify-start gap-3"
+            onClick={handleCopyContent}
+          >
+            <Copy className="h-4 w-4" />
+            Copy Content
+          </Button>
         </div>
       </div>
     </BaseDialog>
