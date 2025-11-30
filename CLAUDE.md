@@ -101,9 +101,9 @@
 - `useFiles.ts` - File management
 - `useTools.ts` - MCP tool execution ← NEW
 
-### Stage 5: UI Integration 🔄 IN PROGRESS
+### Stage 5: UI Integration ✅ COMPLETE
 
-#### Completed:
+#### All Components Wired:
 - ✅ Chat streaming with SSE
 - ✅ Conversation management (create/edit/delete)
 - ✅ Workspace switching
@@ -119,11 +119,18 @@
   - ✅ Drag & drop with validation and upload progress
   - ✅ Manual file selection via "Upload New File" button
   - ✅ Upload progress overlay with percentage
-
-#### Remaining:
-- 🔜 KnowledgeModal - Wire to `useKnowledge()`
-- 🔜 ProjectModal - Wire to `useProjects()`
-- 🔜 FilesModal - Wire to `useFiles()`
+- ✅ **KnowledgeModal**
+  - ✅ Wired to `useKnowledge()` hook
+  - ✅ Load, delete, upload documents via hook
+  - ✅ Added refresh functionality
+- ✅ **ProjectModal**
+  - ✅ Wired to `useProjects()` hook
+  - ✅ Create, update, delete projects via hook
+  - ✅ Loading states for operations
+- ✅ **FilesModal**
+  - ✅ Wired to `useFiles()` hook (enhanced with loadFiles)
+  - ✅ Upload, delete, download, view files via hook
+  - ✅ Added refresh and upload progress
 
 ### Stage 6: Testing & Polish (Future)
 - End-to-end testing
@@ -133,9 +140,11 @@
 
 ---
 
-## Current Focus: MCP Tool Integration
+## Current Focus: Stage 6 - Testing & Polish
 
-### What Exists
+Stage 5 is complete. All modals and components are now wired to their respective hooks.
+
+### What's Ready for Testing
 - **MCP Admin UI** - Toggle/CRUD MCP servers in AdminModal ✅
 - **MCP Service** - `admin.service.ts` has MCP server management ✅
 - **MCP Types** - `ToolDto`, `ToolExecutionRequest`, `ToolExecutionResponse` ✅
@@ -204,10 +213,10 @@ The UI supports full offline mode with mock data. Toggle via:
 | Admin | 15/15 | ✅ | ✅ Wired |
 | Settings | 5/5 | ✅ | ✅ Wired |
 | Usage | 6/6 | ✅ | ✅ Wired |
-| **Tools/MCP** | 3/3 | 🔜 | 🔜 Next |
-| Knowledge | 10/10 | ✅ | 🔜 Ready |
-| Projects | 10/10 | ✅ | 🔜 Ready |
-| Files | 6/6 | ✅ | 🔜 Ready |
+| **Tools/MCP** | 3/3 | ✅ | ✅ Wired |
+| Knowledge | 10/10 | ✅ | ✅ Wired |
+| Projects | 10/10 | ✅ | ✅ Wired |
+| Files | 6/6 | ✅ | ✅ Wired |
 
 ---
 
@@ -226,4 +235,4 @@ The UI supports full offline mode with mock data. Toggle via:
 ---
 
 *Last Updated: November 2025*
-*Current Stage: 5 - MCP Tool Integration*
+*Current Stage: 5 Complete - Ready for Stage 6 (Testing & Polish)*
