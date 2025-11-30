@@ -4,6 +4,9 @@ A sovereign AI chat platform for New Zealand, built with React, TypeScript, and 
 
 ## Overview
 
+This project is a direct response to OSS alternatives now restricting and gating as a result of "benefactors".
+This project will be released under the MIT OSS License, and contributions/forking/do-what-you-want will be encouraged.
+
 aiMate.web.ui is a production-ready React frontend featuring:
 
 - **Real-time streaming chat** with SSE (Server-Sent Events)
@@ -79,23 +82,27 @@ src/
 ## Key Features
 
 ### Chat System
+
 - Streaming responses with character-by-character rendering
 - Edit/regenerate messages
 - File attachments and knowledge context
 - Multi-model support
 
 ### Workspace Management
+
 - Multiple workspaces for organization
 - Conversation archiving and pinning
 - Search across all conversations
 
 ### Admin Panel
+
 - Toggle AI models on/off
 - Manage BYOK API connections
 - MCP server configuration
 - User management
 
 ### Offline Mode
+
 - Full functionality without backend
 - 50 mock conversations
 - Simulated streaming responses
@@ -135,19 +142,19 @@ localStorage.setItem('LOG_LEVEL', 'DEBUG');
 
 The UI integrates with 93 API endpoints across 11 categories:
 
-| Category | Endpoints | Status |
-|----------|-----------|--------|
-| Auth | 5 | Ready |
-| Chat | 8 | Ready |
-| Conversations | 12 | Ready |
-| Workspaces | 8 | Ready |
-| Knowledge | 10 | Ready |
-| Projects | 10 | Ready |
-| Files | 6 | Ready |
-| Admin | 15 | Ready |
-| Settings | 5 | Ready |
-| Usage | 6 | Ready |
-| Connections | 8 | Ready |
+| Category      | Endpoints | Status |
+| ------------- | --------- | ------ |
+| Auth          | 5         | Ready  |
+| Chat          | 8         | Ready  |
+| Conversations | 12        | Ready  |
+| Workspaces    | 8         | Ready  |
+| Knowledge     | 10        | Ready  |
+| Projects      | 10        | Ready  |
+| Files         | 6         | Ready  |
+| Admin         | 15        | Ready  |
+| Settings      | 5         | Ready  |
+| Usage         | 6         | Ready  |
+| Connections   | 8         | Ready  |
 
 ## Safety Features
 
