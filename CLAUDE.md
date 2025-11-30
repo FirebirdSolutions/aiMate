@@ -56,6 +56,21 @@ The admin panel (`AdminModal.tsx`) has 11 tabs. For MVP, we show only essential 
 
 To hide tabs, filter the `tabs` array in `AdminModal.tsx` around line 58.
 
+## Settings Modal Tabs
+
+The settings modal (`SettingsModal.tsx`) has 6 tabs:
+
+| Tab | Status | Notes |
+|-----|--------|-------|
+| General | **SHOW** | Language, notifications |
+| Interface | **SHOW** | Theme, appearance |
+| Connections | HIDE | BYOK - Phase 3 |
+| Personalisation | **SHOW** | AI personality settings |
+| Account | **SHOW** | User profile |
+| Usage | **SHOW** | Usage stats |
+
+To hide tabs, filter the `tabs` array in `SettingsModal.tsx` around line 64.
+
 ## File Structure
 
 ```

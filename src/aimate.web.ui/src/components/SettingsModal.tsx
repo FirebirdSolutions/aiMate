@@ -61,6 +61,9 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     onOpenChange(false);
   };
 
+  // MVP visible tabs - connections hidden until BYOK phase
+  const visibleTabs = ['general', 'interface', 'personalisation', 'account', 'usage'];
+
   const tabs = useMemo(() => [
     {
       id: "general",
@@ -98,7 +101,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       icon: BarChart3,
       content: <UsageTab />,
     },
-  ], []);
+  ].filter(tab => visibleTabs.includes(tab.id)), []);
 
   return (
     <BaseModal
