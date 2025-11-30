@@ -231,25 +231,12 @@
 |------|--------|-------|
 | Search functionality | ❌ | TODO: Implement |
 
-### Notes
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Basic functionality | ✅ | Complete |
-| Migrate to Knowledge? | ⚠️ | **Yes** - Merge Notes/Files into Knowledge section |
-
 ### Knowledge
 
 | Item | Status | Notes |
 |------|--------|-------|
 | Full audit | ❌ | TODO |
-| Integrate Files/Notes? | ⚠️ | **Yes** - One unified "Knowledge" section |
-
-### Files
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Remove as top-level | ⚠️ | **Yes** - Merge into Knowledge |
+| Consolidated from Notes/Files | ✅ | Notes and Files buttons removed, Knowledge is unified |
 
 ### Projects
 
@@ -301,6 +288,7 @@
 - [x] Processing indicator fix (bouncing dots only before first chunk)
 - [x] Toast audit (removed non-working share buttons, implemented TTS)
 - [x] MCP design spec documentation
+- [x] Knowledge consolidation (removed Notes/Files buttons, unified under Knowledge)
 
 ---
 

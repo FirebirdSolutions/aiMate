@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
 import { VirtualizedList, SimpleVirtualList } from "./ui/virtualized-list";
-import { MessageSquare, Plus, Trash2, X, Search, FileText, FolderKanban, Sparkles, Settings, Archive, ShieldCheck, LogOut, ChevronUp, Moon, Sun, Info, ChevronDown, ChevronRight, Brain, MoreVertical, Share, Download, Edit, Pin, Copy, FolderInput, Check, File, Layers, Users, Database } from "lucide-react";
+import { MessageSquare, Plus, Trash2, X, Search, FolderKanban, Sparkles, Settings, Archive, ShieldCheck, LogOut, ChevronUp, Moon, Sun, Info, ChevronDown, ChevronRight, Brain, MoreVertical, Share, Download, Edit, Pin, Copy, FolderInput, Check, Layers, Users, Database } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useDebug } from "./DebugContext";
 import { ErrorBoundary, ModalErrorFallback } from "./ErrorBoundary";
@@ -12,10 +12,8 @@ import { AdminModal } from "./AdminModal";
 import { AboutModal } from "./AboutModal";
 import { ProjectModal, Project } from "./ProjectModal";
 import { SearchModal } from "./SearchModal";
-import { NotesModal } from "./NotesModal";
 import { KnowledgeModal } from "./KnowledgeModal";
 import { ShareModal } from "./ShareModal";
-import { FilesModal } from "./FilesModal";
 import { ArchivedModal } from "./ArchivedModal";
 import { LazyLoadTrigger } from "./LazyLoadTrigger";
 import { Input } from "./ui/input";
@@ -89,7 +87,6 @@ export function ConversationSidebar({
   const [adminOpen, setAdminOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -100,7 +97,6 @@ export function ConversationSidebar({
   const [selectedProject, setSelectedProject] = useState<Project | undefined>();
   const [projectModalMode, setProjectModalMode] = useState<"create" | "view">("create");
   const [projectsExpanded, setProjectsExpanded] = useState(false);
-  const [filesOpen, setFilesOpen] = useState(false);
   const [archivedOpen, setArchivedOpen] = useState(false);
   const [pinnedConversations, setPinnedConversations] = useState<string[]>([]);
   const [archivedConversationsLocal, setArchivedConversationsLocal] = useState<string[]>([]);
@@ -425,9 +421,6 @@ export function ConversationSidebar({
       <ErrorBoundary context="search-modal" fallback={<ModalErrorFallback onClose={() => setSearchOpen(false)} />}>
         <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
       </ErrorBoundary>
-      <ErrorBoundary context="notes-modal" fallback={<ModalErrorFallback onClose={() => setNotesOpen(false)} />}>
-        <NotesModal open={notesOpen} onOpenChange={setNotesOpen} />
-      </ErrorBoundary>
       <ErrorBoundary context="knowledge-modal" fallback={<ModalErrorFallback onClose={() => setKnowledgeOpen(false)} />}>
         <KnowledgeModal open={knowledgeOpen} onOpenChange={setKnowledgeOpen} />
       </ErrorBoundary>
@@ -478,26 +471,10 @@ export function ConversationSidebar({
           <Button
             variant="ghost"
             className="w-full justify-start gap-3"
-            onClick={() => setNotesOpen(true)}
-          >
-            <FileText className="h-4 w-4" />
-            Notes
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3"
             onClick={() => setKnowledgeOpen(true)}
           >
             <Brain className="h-4 w-4" />
             Knowledge
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3"
-            onClick={() => setFilesOpen(true)}
-          >
-            <File className="h-4 w-4" />
-            Files
           </Button>
           <Collapsible open={projectsExpanded} onOpenChange={setProjectsExpanded}>
             <CollapsibleTrigger asChild>
@@ -668,14 +645,6 @@ export function ConversationSidebar({
             open={shareModalOpen}
             onOpenChange={setShareModalOpen}
             conversationTitle={conversations.find(c => c.id === shareConversationId)?.title}
-          />
-        </ErrorBoundary>
-
-        {/* Files Modal */}
-        <ErrorBoundary context="files-modal" fallback={<ModalErrorFallback onClose={() => setFilesOpen(false)} />}>
-          <FilesModal
-            open={filesOpen}
-            onOpenChange={setFilesOpen}
           />
         </ErrorBoundary>
 
