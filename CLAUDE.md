@@ -6,6 +6,17 @@ aiMate is a privacy-first AI chat application for New Zealand. The web UI is bui
 
 **Tagline**: "Your AI Mate. Free for Kiwis. Fair for Everyone."
 
+### Why aiMate Exists
+
+This is a **true open source (MIT) alternative** to OpenWebUI, which has moved to an enterprise license. We believe AI tooling should be:
+
+- **Genuinely open** - MIT licensed, no enterprise license traps
+- **Extensible** - MCP-first architecture, not bolted-on integrations
+- **Flexible** - use personally, self-host, or build a PaaS on top
+- **Community-owned** - contributions welcome, governance transparent
+
+We're building the foundation others can build on, not a walled garden.
+
 ## Current State (Post-First Light)
 
 We have achieved **first light** - the first successful live connection to an inference server with streaming responses working.
