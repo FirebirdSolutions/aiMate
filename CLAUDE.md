@@ -114,12 +114,16 @@
   - ✅ `useTools.ts` hook with offline mock support
   - ✅ `ToolCallDisplay.tsx` component for rendering tool calls
   - ✅ AppDataContext updated with tools hook
+- ✅ **ChatInput Attachments**
+  - ✅ Wired to `useFiles()` hook for real file uploads
+  - ✅ Drag & drop with validation and upload progress
+  - ✅ Manual file selection via "Upload New File" button
+  - ✅ Upload progress overlay with percentage
 
 #### Remaining:
 - 🔜 KnowledgeModal - Wire to `useKnowledge()`
 - 🔜 ProjectModal - Wire to `useProjects()`
 - 🔜 FilesModal - Wire to `useFiles()`
-- 🔜 ChatInput Attachments - Wire to `useFiles()`
 
 ### Stage 6: Testing & Polish (Future)
 - End-to-end testing
