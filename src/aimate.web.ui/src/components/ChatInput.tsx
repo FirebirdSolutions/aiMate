@@ -5,6 +5,7 @@ import { Textarea } from "./ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel } from "./ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { ScrollArea } from "./ui/scroll-area";
+import { SimpleVirtualList } from "./ui/virtualized-list";
 import { Badge } from "./ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
@@ -814,29 +815,32 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                       <div className="px-4 py-2.5 border-b border-gray-800">
                         <div className="text-xs text-gray-400">Recent Files</div>
                       </div>
-                      <ScrollArea className="h-64">
-                        <div className="p-2 space-y-1">
-                          {loading && files.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-8 gap-2 text-gray-400">
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                              <span className="text-sm">Loading files...</span>
-                            </div>
-                          ) : files.length === 0 ? (
-                            <div className="px-3 py-2 text-sm text-gray-400">No recent files</div>
-                          ) : (
-                            files.map((file) => (
+                      <div className="p-2">
+                        {loading && files.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-8 gap-2 text-gray-400">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span className="text-sm">Loading files...</span>
+                          </div>
+                        ) : files.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-gray-400">No recent files</div>
+                        ) : (
+                          <SimpleVirtualList
+                            items={files}
+                            estimatedItemHeight={52}
+                            maxHeight={256}
+                            getItemKey={(file) => file.id}
+                            renderItem={(file) => (
                               <button
-                                key={file.id}
                                 className="w-full flex flex-col gap-1 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
                                 onClick={() => handleAttachFile(file.id)}
                               >
                                 <span>{file.title}</span>
                                 <span className="text-xs text-gray-400">{file.size}</span>
                               </button>
-                            ))
-                          )}
-                        </div>
-                      </ScrollArea>
+                            )}
+                          />
+                        )}
+                      </div>
                     </PopoverContent>
                   </Popover>
 
@@ -911,29 +915,32 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                       <div className="px-4 py-2.5 border-b border-gray-800">
                         <div className="text-xs text-gray-400">Recent Notes</div>
                       </div>
-                      <ScrollArea className="h-80">
-                        <div className="p-2 space-y-1">
-                          {loading && notes.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-8 gap-2 text-gray-400">
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                              <span className="text-sm">Loading notes...</span>
-                            </div>
-                          ) : notes.length === 0 ? (
-                            <div className="px-3 py-2 text-sm text-gray-400">No notes found</div>
-                          ) : (
-                            notes.map((note) => (
+                      <div className="p-2">
+                        {loading && notes.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-8 gap-2 text-gray-400">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span className="text-sm">Loading notes...</span>
+                          </div>
+                        ) : notes.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-gray-400">No notes found</div>
+                        ) : (
+                          <SimpleVirtualList
+                            items={notes}
+                            estimatedItemHeight={52}
+                            maxHeight={320}
+                            getItemKey={(note) => note.id}
+                            renderItem={(note) => (
                               <button
-                                key={note.id}
                                 className="w-full flex flex-col gap-1 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
                                 onClick={() => handleAttachNote(note.id)}
                               >
                                 <span>{note.title}</span>
                                 <span className="text-xs text-gray-400">{note.date}</span>
                               </button>
-                            ))
-                          )}
-                        </div>
-                      </ScrollArea>
+                            )}
+                          />
+                        )}
+                      </div>
                     </PopoverContent>
                   </Popover>
 
@@ -958,29 +965,32 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                       <div className="px-4 py-2.5 border-b border-gray-800">
                         <div className="text-xs text-gray-400">Knowledge Base</div>
                       </div>
-                      <ScrollArea className="h-80">
-                        <div className="p-2 space-y-1">
-                          {loading && knowledge.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-8 gap-2 text-gray-400">
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                              <span className="text-sm">Loading knowledge...</span>
-                            </div>
-                          ) : knowledge.length === 0 ? (
-                            <div className="px-3 py-2 text-sm text-gray-400">No knowledge found</div>
-                          ) : (
-                            knowledge.map((item) => (
+                      <div className="p-2">
+                        {loading && knowledge.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-8 gap-2 text-gray-400">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span className="text-sm">Loading knowledge...</span>
+                          </div>
+                        ) : knowledge.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-gray-400">No knowledge found</div>
+                        ) : (
+                          <SimpleVirtualList
+                            items={knowledge}
+                            estimatedItemHeight={52}
+                            maxHeight={320}
+                            getItemKey={(item) => item.id}
+                            renderItem={(item) => (
                               <button
-                                key={item.id}
                                 className="w-full flex flex-col gap-1 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
                                 onClick={() => handleAttachKnowledge(item.id)}
                               >
                                 <span>{item.title}</span>
                                 <span className="text-xs text-gray-400">{item.type}</span>
                               </button>
-                            ))
-                          )}
-                        </div>
-                      </ScrollArea>
+                            )}
+                          />
+                        )}
+                      </div>
                     </PopoverContent>
                   </Popover>
 
@@ -1005,29 +1015,32 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                       <div className="px-4 py-2.5 border-b border-gray-800">
                         <div className="text-xs text-gray-400">Recent Chats</div>
                       </div>
-                      <ScrollArea className="h-80">
-                        <div className="p-2 space-y-1">
-                          {loading && chats.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-8 gap-2 text-gray-400">
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                              <span className="text-sm">Loading chats...</span>
-                            </div>
-                          ) : chats.length === 0 ? (
-                            <div className="px-3 py-2 text-sm text-gray-400">No chats found</div>
-                          ) : (
-                            chats.map((chat) => (
+                      <div className="p-2">
+                        {loading && chats.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-8 gap-2 text-gray-400">
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            <span className="text-sm">Loading chats...</span>
+                          </div>
+                        ) : chats.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-gray-400">No chats found</div>
+                        ) : (
+                          <SimpleVirtualList
+                            items={chats}
+                            estimatedItemHeight={52}
+                            maxHeight={320}
+                            getItemKey={(chat) => chat.id}
+                            renderItem={(chat) => (
                               <button
-                                key={chat.id}
                                 className="w-full flex flex-col gap-1 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
                                 onClick={() => handleReferenceChat(chat.id)}
                               >
                                 <span>{chat.title}</span>
                                 <span className="text-xs text-gray-400">{chat.date}</span>
                               </button>
-                            ))
-                          )}
-                        </div>
-                      </ScrollArea>
+                            )}
+                          />
+                        )}
+                      </div>
                     </PopoverContent>
                   </Popover>
                 </div>

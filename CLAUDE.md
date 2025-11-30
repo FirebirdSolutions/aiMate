@@ -183,7 +183,7 @@ src/aimate.web.ui/
 
 ### Stage 6: Production Readiness (Next)
 - [x] Error boundary for graceful failures (ErrorBoundary.tsx with fallback variants)
-- [ ] Performance optimization (React.memo, virtualization)
+- [x] Performance optimization (@tanstack/react-virtual for lists)
 - [ ] Accessibility improvements (ARIA labels, keyboard nav)
 - [ ] E2E testing setup
 
