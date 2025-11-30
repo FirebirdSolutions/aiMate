@@ -19,6 +19,7 @@ import { SettingsModal } from "./SettingsModal";
 import { AboutModal } from "./AboutModal";
 import { HelpModal } from "./HelpModal";
 import { OfflineModeIndicator } from "./OfflineModeIndicator";
+import { ConnectionHealthIndicator } from "./ConnectionHealthIndicator";
 import { useDebug, useUIEventLogger } from "./DebugContext";
 
 interface ModelOption {
@@ -123,6 +124,7 @@ export function ChatHeader({
           </div>
           
           <div className="flex items-center gap-2">
+            <ConnectionHealthIndicator />
             <OfflineModeIndicator />
             
             <Button
