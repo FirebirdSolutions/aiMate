@@ -71,6 +71,23 @@ function toAdminModel(dto: ModelDto): AdminModel {
   };
 }
 
+// Helper to extract apiKey from headers JSON string (used by ConnectionEditDialog)
+function extractApiKeyFromHeaders(data: any): string | undefined {
+  // If apiKey is directly provided, use it
+  if (data.apiKey) return data.apiKey;
+
+  // Try to extract from headers JSON
+  if (data.headers && (data.auth === 'Bearer Token' || data.auth === 'API Key')) {
+    try {
+      const headers = typeof data.headers === 'string' ? JSON.parse(data.headers) : data.headers;
+      return headers.Authorization?.replace('Bearer ', '') || headers['api-key'] || headers['x-api-key'];
+    } catch {
+      // Headers not valid JSON, ignore
+    }
+  }
+  return undefined;
+}
+
 export function useAdmin() {
   const adminSettings = useAdminSettings();
   const [dashboard, setDashboard] = useState<AdminDashboardDto | null>(null);
@@ -259,6 +276,8 @@ export function useAdmin() {
 
   // Add multiple models from a connection (for offline LM server testing)
   const addModelsFromConnection = useCallback((modelsToAdd: Array<{ id: string; name: string; connectionName: string }>) => {
+    console.log('[useAdmin] addModelsFromConnection called with:', modelsToAdd);
+
     if (!AppConfig.isOfflineMode()) {
       console.warn('[useAdmin] addModelsFromConnection is only available in offline mode');
       return;
@@ -269,7 +288,7 @@ export function useAdmin() {
     const newModels = modelsToAdd.filter(m => !existingIds.has(m.id));
 
     if (newModels.length === 0) {
-      console.log('[useAdmin] All models already exist');
+      console.log('[useAdmin] All models already exist, skipping');
       return;
     }
 
@@ -281,7 +300,9 @@ export function useAdmin() {
       description: `From ${m.connectionName}`,
       connection: m.connectionName,
     }));
-    adminSettings.updateModels([...adminSettings.settings.models, ...newAdminModels]);
+    const updatedModels = [...adminSettings.settings.models, ...newAdminModels];
+    console.log('[useAdmin] Persisting models to localStorage:', updatedModels);
+    adminSettings.updateModels(updatedModels);
 
     // Also update local state
     const newModelDtos = newAdminModels.map(toModelDto);
@@ -346,14 +367,18 @@ export function useAdmin() {
   }, [loadConnections, adminSettings]);
 
   const createConnection = useCallback(async (data: any) => {
+    console.log('[useAdmin] createConnection called with:', data);
+
     if (AppConfig.isOfflineMode()) {
       const newId = `conn-${Date.now()}`;
+      const apiKey = extractApiKeyFromHeaders(data);
+
       const newConnection: ConnectionDto = {
         id: newId,
         provider: data.provider || data.providerType || 'Custom',
         name: data.name,
         isActive: data.isActive ?? data.enabled ?? true,
-        apiKeyPrefix: data.apiKey?.substring(0, 10) + '...',
+        apiKeyPrefix: apiKey ? apiKey.substring(0, 10) + '...' : '',
         createdAt: new Date().toISOString(),
         models: data.modelIds || [],
         enabled: data.enabled ?? true,
@@ -368,9 +393,12 @@ export function useAdmin() {
         type: data.provider || data.providerType || 'Custom',
         url: data.url || '',
         enabled: data.enabled ?? true,
-        apiKey: data.apiKey,
+        apiKey: apiKey,
       };
-      adminSettings.updateConnections([...adminSettings.settings.connections, newAdminConnection]);
+
+      const updatedConnections = [...adminSettings.settings.connections, newAdminConnection];
+      console.log('[useAdmin] Persisting connections to localStorage:', updatedConnections);
+      adminSettings.updateConnections(updatedConnections);
 
       return newConnection;
     }
@@ -386,12 +414,16 @@ export function useAdmin() {
   }, [loadConnections, adminSettings]);
 
   const updateConnection = useCallback(async (connectionId: string, data: any) => {
+    console.log('[useAdmin] updateConnection called:', { connectionId, data });
+
     // Optimistic update
     setConnections(prev => prev.map(c =>
       c.id === connectionId ? { ...c, ...data } : c
     ));
 
     if (AppConfig.isOfflineMode()) {
+      const apiKey = extractApiKeyFromHeaders(data);
+
       // Persist to AdminSettingsContext
       const updatedConnections = adminSettings.settings.connections.map(c =>
         c.id === connectionId
@@ -401,10 +433,11 @@ export function useAdmin() {
               type: data.provider ?? data.providerType ?? c.type,
               url: data.url ?? c.url,
               enabled: data.enabled ?? data.isActive ?? c.enabled,
-              apiKey: data.apiKey ?? c.apiKey,
+              apiKey: apiKey ?? c.apiKey,
             }
           : c
       );
+      console.log('[useAdmin] Updating connections in localStorage:', updatedConnections);
       adminSettings.updateConnections(updatedConnections);
       return;
     }
