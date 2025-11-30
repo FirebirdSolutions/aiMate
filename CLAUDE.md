@@ -1,0 +1,162 @@
+# aiMate Development Guide
+
+## Project Overview
+
+aiMate is a privacy-first AI chat application for New Zealand. The web UI is built with React 18 + TypeScript + Vite, using shadcn/ui components and Tailwind CSS.
+
+**Tagline**: "Your AI Mate. Free for Kiwis. Fair for Everyone."
+
+## Current State (Post-First Light)
+
+We have achieved **first light** - the first successful live connection to an inference server with streaming responses working.
+
+### What's Working
+- **Core chat with SSE streaming** to live LM server
+- **Direct LM server connection** (bypasses backend, works in offline mode)
+- **Conversation management** - create, delete, archive, pin, search, export
+- **Workspace switching** - multi-workspace support with filtering
+- **Admin panel** - connections and models configuration
+- **Settings modal** - user preferences and theme
+- **Offline mode** - full mock data fallback with 50 sample conversations
+
+### What's Stubbed/Placeholder
+- Text-to-speech (hook ready, UI shows toast)
+- Email/social sharing (link sharing works)
+- MCP import/export (TODOs in code)
+- Model connection testing
+- Continue message generation
+
+## Priority Focus: Chat is Core
+
+The chat experience is the product. Everything else supports it.
+
+### Critical Path (in order)
+1. **Stable streaming** - robust reconnection, error handling
+2. **Conversation context** - proper message history sent to LM
+3. **System prompts** - personality/instruction configuration
+4. **Model selection** - validated against available models
+
+## Admin Panel Tabs
+
+The admin panel (`AdminModal.tsx`) has 11 tabs. For MVP, we show only essential ones:
+
+| Tab | Status | Notes |
+|-----|--------|-------|
+| General | **SHOW** | Debug settings, offline mode toggle |
+| Interface | **SHOW** | UI customization |
+| Users & Groups | HIDE | Not needed for single-user alpha |
+| Connections | **SHOW** | Critical - LM server configuration |
+| Models | **SHOW** | Critical - model enable/disable |
+| Plugins | HIDE | Future feature |
+| MCP | HIDE | Future feature |
+| Documents | HIDE | RAG - Phase 2 |
+| Web Search | HIDE | Future feature |
+| Code Execution | HIDE | Future feature |
+| Images | HIDE | Future feature |
+
+To hide tabs, filter the `tabs` array in `AdminModal.tsx` around line 58.
+
+## File Structure
+
+```
+src/aimate.web.ui/
+├── src/
+│   ├── api/
+│   │   ├── client.ts          # Axios + SSE streaming
+│   │   ├── types.ts           # 90+ TypeScript interfaces
+│   │   └── services/          # 14 service files, 93 endpoints
+│   ├── components/
+│   │   ├── App.tsx            # Main app, hooks up everything
+│   │   ├── ChatMessage.tsx    # Message rendering
+│   │   ├── ChatInput.tsx      # Message input + attachments
+│   │   ├── ChatHeader.tsx     # Model selection, new chat
+│   │   ├── ConversationSidebar.tsx
+│   │   ├── AdminModal.tsx     # Admin panel (11 tabs)
+│   │   ├── SettingsModal.tsx  # User settings
+│   │   └── ui/                # 48 shadcn/ui components
+│   ├── context/
+│   │   ├── AppDataContext.tsx      # Central hook provider
+│   │   ├── AdminSettingsContext.tsx # Admin + localStorage
+│   │   ├── AuthContext.tsx
+│   │   └── UserSettingsContext.tsx
+│   ├── hooks/
+│   │   ├── useChat.ts         # 550+ lines - streaming, offline mock
+│   │   ├── useConversations.ts
+│   │   ├── useWorkspaces.ts
+│   │   ├── useAdmin.ts
+│   │   ├── useKnowledge.ts
+│   │   ├── useProjects.ts
+│   │   ├── useFiles.ts
+│   │   ├── useSettings.ts
+│   │   └── useUsage.ts
+│   └── utils/
+│       └── config.ts          # AppConfig, offline mode
+```
+
+## Key Code Locations
+
+| Feature | File | Notes |
+|---------|------|-------|
+| Chat streaming | `hooks/useChat.ts` | SSE handling, abort, retry |
+| LM server connection | `hooks/useChat.ts:sendMessage` | Checks for enabled LM connection first |
+| Admin connections | `context/AdminSettingsContext.tsx` | Persisted to localStorage |
+| API client | `api/client.ts` | Axios instance, JWT, retry logic |
+| Message rendering | `components/ChatMessage.tsx` | Markdown, code blocks, actions |
+
+## Chat Flow (Priority System)
+
+```
+1. Check AdminSettings for enabled LM Server connection
+   └── YES → Direct to LM server at connection.baseUrl + /chat/completions
+
+2. Check if offline mode enabled
+   └── YES → Return mock streaming response
+
+3. Use backend API
+   └── POST /api/v1/chat/send with SSE streaming
+```
+
+## Development Stages
+
+### Stage 1: Stabilize First Light (Current)
+- [ ] Connection health indicator in UI
+- [ ] Reconnection logic on disconnect
+- [ ] Graceful error messages
+- [ ] Validate model exists on server
+
+### Stage 2: Core UX Polish
+- [ ] System prompt configuration
+- [ ] Continue message feature
+- [ ] Handle mid-stream network drops
+- [ ] Mobile responsive fixes
+
+### Stage 3: BYOK & Multi-Provider
+- [ ] Connection testing (implement TODO)
+- [ ] Multiple provider support
+- [ ] Usage tracking per connection
+
+### Stage 4: Knowledge & Memory
+- [ ] Document upload end-to-end
+- [ ] Semantic search in chat context
+- [ ] Memory persistence
+
+## Commands
+
+```bash
+# Development
+cd src/aimate.web.ui
+npm run dev
+
+# Build
+npm run build
+
+# Type check
+npm run typecheck
+```
+
+## Notes
+
+- The UI is **production-ready** for core chat functionality
+- All 93 API endpoints are integrated in the service layer
+- Offline mode provides full functionality for development/demos
+- Theme defaults to dark mode, persisted in localStorage
