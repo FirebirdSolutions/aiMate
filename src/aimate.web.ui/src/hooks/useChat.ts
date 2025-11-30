@@ -337,6 +337,7 @@ export function useChat(conversationId?: string) {
         // Map errors to user-friendly messages
         let userMessage = 'Unable to connect to the AI server.';
         let toastMessage = 'Connection failed';
+        const selectedModel = options?.model || 'default';
 
         if (err instanceof Error) {
           const msg = err.message.toLowerCase();
@@ -344,8 +345,27 @@ export function useChat(conversationId?: string) {
             userMessage = 'Authentication failed. Please check your API key in Admin → Connections.';
             toastMessage = 'Authentication failed';
           } else if (msg.includes('404')) {
-            userMessage = 'The AI endpoint was not found. Please verify the server URL in Admin → Connections.';
-            toastMessage = 'Endpoint not found';
+            // Could be model not found or endpoint not found
+            userMessage = `The model "${selectedModel}" may not exist on this server, or the endpoint was not found.`;
+            toastMessage = 'Model or endpoint not found';
+
+            // Try to fetch available models to help the user
+            try {
+              const modelsUrl = activeConnection.url.replace(/\/$/, '') + '/models';
+              const modelsRes = await fetch(modelsUrl, {
+                headers: activeConnection.apiKey ? { 'Authorization': `Bearer ${activeConnection.apiKey}` } : {},
+                signal: AbortSignal.timeout(5000),
+              });
+              if (modelsRes.ok) {
+                const modelsData = await modelsRes.json();
+                const modelIds = modelsData.data?.map((m: { id: string }) => m.id) || [];
+                if (modelIds.length > 0) {
+                  userMessage = `Model "${selectedModel}" not found. Available models: ${modelIds.slice(0, 5).join(', ')}${modelIds.length > 5 ? ` (+${modelIds.length - 5} more)` : ''}`;
+                }
+              }
+            } catch {
+              // Ignore - just use the original error message
+            }
           } else if (msg.includes('timeout')) {
             userMessage = 'The request timed out. The server may be busy or unreachable.';
             toastMessage = 'Request timed out';
