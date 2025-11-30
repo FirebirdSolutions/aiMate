@@ -209,6 +209,22 @@ function ChatApp() {
     }
   };
 
+  const handleContinue = async () => {
+    if (!chat.messages.length || chat.streaming) return;
+
+    addLog({
+      action: 'Continuing message',
+      api: 'LM server /chat/completions',
+      type: 'info',
+      category: 'chat:continue'
+    });
+
+    await chat.continueMessage({
+      model: selectedModel,
+      systemPrompt: userSettings.general?.systemPrompt,
+    });
+  };
+
   const handleDeleteConversation = async (id: string) => {
     try {
       await conversations.deleteConversation(id);
@@ -414,6 +430,13 @@ function ChatApp() {
                         index === chat.messages.length - 1 &&
                         !chat.streaming
                         ? handleRegenerateResponse
+                        : undefined
+                    }
+                    onContinue={
+                      message.role === "assistant" &&
+                        index === chat.messages.length - 1 &&
+                        !chat.streaming
+                        ? handleContinue
                         : undefined
                     }
                   />

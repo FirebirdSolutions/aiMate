@@ -711,20 +711,120 @@ export function useChat(conversationId?: string) {
     setMessages([]);
   }, []);
 
+  // ============================================================================
+  // CONTINUE MESSAGE
+  // ============================================================================
+
+  const continueMessage = useCallback(async (options?: { model?: string; systemPrompt?: string }) => {
+    const activeConnection = adminSettings.settings.connections?.find(c => c.enabled && c.url);
+
+    if (!activeConnection?.url) {
+      toast.error('No active LM connection');
+      return;
+    }
+
+    // Get the last assistant message to continue from
+    const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+    if (!lastAssistantMsg) {
+      toast.error('No message to continue');
+      return;
+    }
+
+    setStreaming(true);
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (activeConnection.apiKey) {
+        headers['Authorization'] = `Bearer ${activeConnection.apiKey}`;
+      }
+
+      // Build messages with a continuation prompt
+      const chatMessages = [
+        ...(options?.systemPrompt ? [{ role: 'system' as const, content: options.systemPrompt }] : []),
+        ...messages.map(m => ({ role: m.role, content: m.content })),
+        { role: 'user' as const, content: 'Please continue from where you left off.' }
+      ];
+
+      const chatUrl = activeConnection.url.replace(/\/$/, '') + '/chat/completions';
+      const response = await fetch(chatUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: options?.model || 'default',
+          messages: chatMessages,
+          stream: true,
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Handle streaming response - append to last assistant message
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let continuedContent = lastAssistantMsg.content;
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const delta = parsed.choices?.[0]?.delta?.content || '';
+                if (delta) {
+                  continuedContent += delta;
+                  setMessages(prev => prev.map(msg =>
+                    msg.id === lastAssistantMsg.id
+                      ? { ...msg, content: continuedContent }
+                      : msg
+                  ));
+                }
+              } catch {
+                // Skip invalid JSON chunks
+              }
+            }
+          }
+        }
+      }
+
+        console.log('[useChat] Continue message complete');
+      toast.success('Message continued');
+    } catch (err) {
+      console.error('[useChat] Continue failed:', err);
+      toast.error('Failed to continue message');
+    } finally {
+      setStreaming(false);
+    }
+  }, [messages, adminSettings.settings.connections]);
+
   return useMemo(() => ({
     messages,
     streaming,
     loading,
     error,
-    
+
     // Actions
     loadMessages,
     sendMessage,
+    continueMessage,
     regenerateMessage,
     editMessage,
     deleteMessage,
     submitFeedback,
     cancelStreaming,
     clearMessages,
-  }), [messages, streaming, loading, error, loadMessages, sendMessage, regenerateMessage, editMessage, deleteMessage, submitFeedback, cancelStreaming, clearMessages]);
+  }), [messages, streaming, loading, error, loadMessages, sendMessage, continueMessage, regenerateMessage, editMessage, deleteMessage, submitFeedback, cancelStreaming, clearMessages]);
 }

@@ -27,6 +27,7 @@ interface ChatMessageProps {
   structuredContent?: any;
   onEdit?: (newContent: string) => void;
   onRegenerate?: () => void;
+  onContinue?: () => void;
 }
 
 export function ChatMessage({
@@ -36,6 +37,7 @@ export function ChatMessage({
   structuredContent,
   onEdit,
   onRegenerate,
+  onContinue,
 }: ChatMessageProps) {
   const { logUIEvent } = useUIEventLogger();
   const isUser = role === "user";
@@ -150,7 +152,12 @@ export function ChatMessage({
   };
 
   const handleContinue = () => {
-    toast.info("Continue not implemented");
+    if (onContinue) {
+      logUIEvent('Continue message clicked', 'ui:chat:message:continue');
+      onContinue();
+    } else {
+      toast.info("Continue not available");
+    }
   };
 
   const handleShare = () => {
