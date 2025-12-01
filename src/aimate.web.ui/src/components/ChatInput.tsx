@@ -16,6 +16,7 @@ import { Separator } from "./ui/separator";
 import { Progress } from "./ui/progress";
 import { useDebug, useUIEventLogger } from "./DebugContext";
 import { useAppData } from "../context/AppDataContext";
+import { useAdminSettings } from "../context/AdminSettingsContext";
 import { toast } from "sonner";
 import { KnowledgeSuggestions } from "./KnowledgeSuggestions";
 import { AttachedContext } from "./AttachedContext";
@@ -44,10 +45,14 @@ interface AttachedItem {
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const { addLog, showcaseMode } = useDebug();
   const { logUIEvent } = useUIEventLogger();
+  const { settings } = useAdminSettings();
 
   // Get files hook from context for real file uploads
   const { files: filesHook, workspaces } = useAppData();
   const currentWorkspaceId = workspaces.currentWorkspace?.id || 'default';
+
+  // Get enabled MCP connectors and their tools
+  const enabledMCPConnectors = settings.mcpConnectors?.filter(c => c.enabled) || [];
 
   // File input ref for manual file selection
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,12 +84,15 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [webpages, setWebpages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [enabledTools, setEnabledTools] = useState({
-    webSearch: false,
-    codeInterpreter: true,
-    fileManagement: false,
-    weatherForecast: false,
-    echoMCP: true,
+  // Track enabled tools by connector ID - tools with 'always' permission are auto-enabled
+  const [enabledConnectorIds, setEnabledConnectorIds] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    settings.mcpConnectors?.forEach(c => {
+      if (c.enabled && c.tools?.some(t => t.permission === 'always')) {
+        initial.add(c.id);
+      }
+    });
+    return initial;
   });
 
   const [weatherSettings, setWeatherSettings] = useState({
@@ -143,11 +151,23 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     }
   };
 
-  const toggleTool = (tool: keyof typeof enabledTools) => {
-    setEnabledTools((prev) => ({ ...prev, [tool]: !prev[tool] }));
+  const toggleConnectorTools = (connectorId: string) => {
+    setEnabledConnectorIds(prev => {
+      const next = new Set(prev);
+      if (next.has(connectorId)) {
+        next.delete(connectorId);
+      } else {
+        next.add(connectorId);
+      }
+      return next;
+    });
   };
 
-  const enabledToolsCount = Object.values(enabledTools).filter(Boolean).length;
+  // Count total enabled tools across all enabled connectors
+  const enabledToolsCount = enabledMCPConnectors.filter(c => enabledConnectorIds.has(c.id)).reduce(
+    (count, c) => count + (c.tools?.filter(t => t.permission !== 'never').length || 0),
+    0
+  );
 
   // Load data when menus open
   useEffect(() => {
@@ -1047,7 +1067,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
               </PopoverContent>
             </Popover>
 
-            {/* Tools Menu - Single Level */}
+            {/* Tools Menu - MCP Connectors */}
             <Popover open={toolsMenuOpen} onOpenChange={setToolsMenuOpen}>
               <PopoverTrigger asChild onClick={() => setToolsMenuOpen(!toolsMenuOpen)}>
                 <Button
@@ -1071,84 +1091,78 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
                 onInteractOutside={(e) => showcaseMode && e.preventDefault()}
               >
                 <div className="space-y-1">
-                  {/* Web Search */}
-                  <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <Search className="h-4 w-4" />
-                      <span className="text-sm">Web Search</span>
+                  {enabledMCPConnectors.length === 0 ? (
+                    <div className="px-3 py-4 text-center text-gray-400 text-sm">
+                      <Wrench className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No MCP connectors configured</p>
+                      <p className="text-xs mt-1">Add connectors in Admin → MCP</p>
                     </div>
-                    <Switch
-                      checked={enabledTools.webSearch}
-                      onCheckedChange={() => toggleTool("webSearch")}
-                      className="data-[state=checked]:bg-purple-600"
-                    />
-                  </div>
+                  ) : (
+                    enabledMCPConnectors.map((connector) => {
+                      const toolCount = connector.tools?.filter(t => t.permission !== 'never').length || 0;
+                      const isEnabled = enabledConnectorIds.has(connector.id);
 
-                  {/* Code Interpreter */}
-                  <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <Code className="h-4 w-4" />
-                      <span className="text-sm">Code Interpreter</span>
-                    </div>
-                    <Switch
-                      checked={enabledTools.codeInterpreter}
-                      onCheckedChange={() => toggleTool("codeInterpreter")}
-                      className="data-[state=checked]:bg-purple-600"
-                    />
-                  </div>
+                      return (
+                        <div key={connector.id} className="rounded-md hover:bg-gray-800 transition-colors">
+                          {/* Connector Header */}
+                          <div className="flex items-center justify-between px-3 py-2.5">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <Wrench className="h-4 w-4 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm font-medium truncate block">{connector.name}</span>
+                                {connector.description && (
+                                  <span className="text-xs text-gray-400 truncate block">{connector.description}</span>
+                                )}
+                              </div>
+                              {toolCount > 0 && (
+                                <Badge variant="secondary" className="text-xs bg-gray-700 text-gray-300 ml-2">
+                                  {toolCount} {toolCount === 1 ? 'tool' : 'tools'}
+                                </Badge>
+                              )}
+                            </div>
+                            <Switch
+                              checked={isEnabled}
+                              onCheckedChange={() => toggleConnectorTools(connector.id)}
+                              className="data-[state=checked]:bg-purple-600 ml-2"
+                            />
+                          </div>
 
-                  {/* Supreme File Management */}
-                  <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <Wrench className="h-4 w-4" />
-                      <span className="text-sm">Supreme File Management</span>
-                    </div>
-                    <Switch
-                      checked={enabledTools.fileManagement}
-                      onCheckedChange={() => toggleTool("fileManagement")}
-                      className="data-[state=checked]:bg-purple-600"
-                    />
-                  </div>
+                          {/* Tool List (shown when enabled) */}
+                          {isEnabled && connector.tools && connector.tools.length > 0 && (
+                            <div className="px-3 pb-2 space-y-1">
+                              {connector.tools
+                                .filter(tool => tool.permission !== 'never')
+                                .map((tool) => (
+                                  <div
+                                    key={tool.name}
+                                    className="flex items-center gap-2 px-2 py-1 text-xs bg-gray-800/50 rounded"
+                                  >
+                                    <span className="text-gray-300 truncate flex-1">{tool.name}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                      tool.permission === 'always'
+                                        ? 'bg-green-900/50 text-green-400'
+                                        : 'bg-yellow-900/50 text-yellow-400'
+                                    }`}>
+                                      {tool.permission === 'always' ? 'Auto' : 'Ask'}
+                                    </span>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
 
-                  {/* Weather Forecast */}
-                  <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
-                    <div className="flex items-center gap-3 flex-1">
-                      <CloudSun className="h-4 w-4" />
-                      <span className="text-sm">Weather Forecast</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 hover:bg-gray-700"
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setWeatherModalOpen(true);
-                        }}
-                      >
-                        <Settings2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <Switch
-                        checked={enabledTools.weatherForecast}
-                        onCheckedChange={() => toggleTool("weatherForecast")}
-                        className="data-[state=checked]:bg-purple-600"
-                      />
-                    </div>
-                  </div>
-
-                  {/* EchoMCP */}
-                  <div className="flex items-center justify-between px-3 py-2.5 rounded-md hover:bg-gray-800 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <Wrench className="h-4 w-4" />
-                      <span className="text-sm">EchoMCP</span>
-                    </div>
-                    <Switch
-                      checked={enabledTools.echoMCP}
-                      onCheckedChange={() => toggleTool("echoMCP")}
-                      className="data-[state=checked]:bg-purple-600"
-                    />
-                  </div>
+                  {/* Separator and help text */}
+                  {enabledMCPConnectors.length > 0 && (
+                    <>
+                      <Separator className="my-2 bg-gray-700" />
+                      <p className="text-xs text-gray-500 px-3 py-1">
+                        Tools with "Auto" run automatically. "Ask" tools require confirmation.
+                      </p>
+                    </>
+                  )}
                 </div>
               </PopoverContent>
             </Popover>

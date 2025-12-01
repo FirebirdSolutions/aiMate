@@ -55,6 +55,16 @@ interface Plugin {
   parameters: Array<{ name: string; type: string; value: string; required: boolean }>;
 }
 
+// Tool permission levels
+type ToolPermission = 'never' | 'ask' | 'always';
+
+// Tool with permission settings
+interface MCPTool {
+  name: string;
+  description: string;
+  permission: ToolPermission;
+}
+
 // MCP Connector type
 interface MCPConnector {
   id: string;
@@ -68,7 +78,12 @@ interface MCPConnector {
   visibility: 'private' | 'public';
   groups: string[];
   enabled: boolean;
+  // Tool-related fields
+  tools?: MCPTool[];
+  lastTested?: string;
+  connectionStatus?: 'unknown' | 'connected' | 'failed';
 }
+
 
 // Documents Settings
 interface DocumentsSettings {
@@ -458,6 +473,8 @@ export type {
   Model,
   Plugin,
   MCPConnector,
+  MCPTool,
+  ToolPermission,
   DocumentsSettings,
   WebSearchSettings,
   AudioSettings,
