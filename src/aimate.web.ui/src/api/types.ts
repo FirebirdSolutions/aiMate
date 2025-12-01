@@ -925,3 +925,222 @@ export interface ParseStructuredContentResponse {
   parsed: Record<string, any>;
 }
 
+// ============================================================================
+// MODEL EVALUATION
+// ============================================================================
+
+/**
+ * Evaluation tag categories for behavioral analysis
+ */
+export type EvaluationTagCategory =
+  | 'tool_use'           // Correctly chose/used tools
+  | 'general_chat'       // Facts, friendliness, coherence
+  | 'safety'             // Appropriate content, refusals
+  | 'instruction_following' // Did it follow the instructions?
+  | 'creativity'         // Novel/creative responses
+  | 'accuracy'           // Factual correctness
+  | 'helpfulness'        // Actually solved the problem
+  | 'code_quality'       // For code-related responses
+  | 'custom';            // User-defined tags
+
+/**
+ * Evaluation tag for categorizing model behaviors
+ */
+export interface EvaluationTagDto {
+  id: string;
+  key: string;
+  label: string;
+  category: EvaluationTagCategory;
+  description: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
+  color: string;
+  icon?: string;
+  isDefault: boolean;      // System-provided vs user-created
+  isActive: boolean;
+  displayOrder: number;
+}
+
+/**
+ * Create/update evaluation tag
+ */
+export interface CreateEvaluationTagDto {
+  key: string;
+  label: string;
+  category: EvaluationTagCategory;
+  description: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
+  color?: string;
+  icon?: string;
+}
+
+/**
+ * Elo rating for a model
+ */
+export interface ModelEloRatingDto {
+  modelId: string;
+  modelName: string;
+  provider: string;
+  eloRating: number;
+  wins: number;
+  losses: number;
+  ties: number;
+  totalMatches: number;
+  winRate: number;
+  confidenceInterval: { lower: number; upper: number };
+  lastUpdated: string;
+}
+
+/**
+ * Arena match - side-by-side model comparison
+ */
+export interface ArenaMatchDto {
+  id: string;
+  prompt: string;
+  conversationId?: string;
+  modelA: {
+    id: string;
+    name: string;
+    response: string;
+    responseTimeMs: number;
+    tokenCount: number;
+  };
+  modelB: {
+    id: string;
+    name: string;
+    response: string;
+    responseTimeMs: number;
+    tokenCount: number;
+  };
+  winner?: 'a' | 'b' | 'tie' | null;  // null = not yet voted
+  votedAt?: string;
+  voterId?: string;
+  tags?: string[];           // Topic tags for this match
+  createdAt: string;
+}
+
+/**
+ * Create arena match request
+ */
+export interface CreateArenaMatchDto {
+  prompt: string;
+  conversationId?: string;
+  modelPool?: string[];      // Optional: specific models to choose from
+}
+
+/**
+ * Submit arena vote
+ */
+export interface ArenaVoteDto {
+  matchId: string;
+  winner: 'a' | 'b' | 'tie';
+  tags?: string[];           // Topic tags for re-ranking
+  feedback?: string;         // Optional comment
+}
+
+/**
+ * Message sibling/variant info for regenerations
+ */
+export interface MessageVariantInfo {
+  parentMessageId?: string;   // The user message this is responding to
+  variantIndex: number;       // Which variant is this (0 = original, 1+ = regenerations)
+  totalVariants: number;      // Total variants for this parent
+  siblingIds: string[];       // IDs of all sibling variants
+  regeneratedWith?: {
+    model?: string;
+    temperature?: number;
+    timestamp: string;
+  };
+}
+
+/**
+ * Extended message with evaluation data
+ */
+export interface EvaluatedMessageDto extends MessageDto {
+  variantInfo?: MessageVariantInfo;
+  evaluation?: {
+    rating?: number;
+    tags: string[];
+    isPreferred?: boolean;   // Selected as best variant
+  };
+}
+
+/**
+ * Model leaderboard entry
+ */
+export interface LeaderboardEntryDto {
+  rank: number;
+  modelId: string;
+  modelName: string;
+  provider: string;
+  eloRating: number;
+  totalEvaluations: number;
+  averageRating: number;
+  winRate: number;
+  strengthsByTag: Record<string, number>;  // Performance by category
+  weaknessesByTag: Record<string, number>;
+  trendDirection: 'up' | 'down' | 'stable';
+  trendDelta: number;        // Elo change in last period
+}
+
+/**
+ * Leaderboard filter options
+ */
+export interface LeaderboardFilterDto {
+  tags?: string[];           // Filter by topic tags
+  minMatches?: number;       // Minimum matches to include
+  providers?: string[];      // Filter by provider
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+}
+
+/**
+ * Evaluation snapshot for fine-tuning export
+ */
+export interface EvaluationSnapshotDto {
+  id: string;
+  conversationId: string;
+  messageId: string;
+  prompt: string;
+  response: string;
+  modelId: string;
+  rating: number;
+  tags: string[];
+  feedback?: string;
+  isPositive: boolean;
+  createdAt: string;
+}
+
+/**
+ * Export evaluation data request
+ */
+export interface ExportEvaluationDataDto {
+  format: 'json' | 'jsonl' | 'csv';
+  minRating?: number;        // Only export above this rating
+  maxRating?: number;
+  tags?: string[];           // Filter by tags
+  models?: string[];         // Filter by models
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+  includeNegative?: boolean; // Include thumbs-down for contrast
+}
+
+/**
+ * Evaluation statistics by topic
+ */
+export interface EvaluationStatsByTopicDto {
+  topic: string;
+  totalEvaluations: number;
+  averageRating: number;
+  topModels: Array<{
+    modelId: string;
+    modelName: string;
+    averageRating: number;
+    evaluationCount: number;
+  }>;
+  tagBreakdown: Record<string, number>;
+}
+

@@ -17,7 +17,8 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { ShieldCheck, Users, Database, FileText, BarChart3, Pencil, Sparkles, Search, Code, Wrench, CloudSun, Plus, Settings, Layers, Download, X, Upload, Eye, Trash2, Edit2, Puzzle, Bot, Copy } from "lucide-react";
+import { ShieldCheck, Users, Database, FileText, BarChart3, Pencil, Sparkles, Search, Code, Wrench, CloudSun, Plus, Settings, Layers, Download, X, Upload, Eye, Trash2, Edit2, Puzzle, Bot, Copy, Trophy } from "lucide-react";
+import { ModelLeaderboard } from "./ModelLeaderboard";
 import { ScrollArea } from "./ui/scroll-area";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
@@ -58,7 +59,7 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
   }, [open, logUIEvent, addLog]);
 
   // MVP visible tabs - others hidden until needed
-  const visibleTabs = ['general', 'interface', 'connections', 'models', 'agents', 'plugins', 'mcp', 'websearch'];
+  const visibleTabs = ['general', 'interface', 'connections', 'models', 'evaluation', 'agents', 'plugins', 'mcp', 'websearch'];
 
   const tabs = useMemo(() => [
     {
@@ -90,6 +91,12 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
       label: "Models",
       icon: BarChart3,
       content: <ModelsTab enabledModels={enabledModels} onToggleModel={onToggleModel} />,
+    },
+    {
+      id: "evaluation",
+      label: "Evaluation",
+      icon: Trophy,
+      content: <EvaluationTab />,
     },
     {
       id: "agents",
@@ -2793,6 +2800,21 @@ function ImagesTab() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function EvaluationTab() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="font-semibold mb-2">Model Evaluation & Leaderboard</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Track model performance through user feedback and arena comparisons.
+          Rankings use Elo ratings from head-to-head comparisons.
+        </p>
+      </div>
+      <ModelLeaderboard showExport={true} />
     </div>
   );
 }

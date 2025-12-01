@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Button } from "./ui/button";
-import { Menu, MoreVertical, Plus, PanelLeftClose, PanelLeft, ChevronDown, Sparkles, MessageSquare, Keyboard, Bot, Check } from "lucide-react";
+import { Menu, MoreVertical, Plus, PanelLeftClose, PanelLeft, ChevronDown, Sparkles, MessageSquare, Keyboard, Bot, Check, Swords, Trophy } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +42,9 @@ interface ChatHeaderProps {
   onModelChange?: (model: string) => void;
   enabledModels?: Record<string, boolean>;
   availableModels?: ModelOption[];
+  // Arena mode props
+  isArenaMode?: boolean;
+  onToggleArenaMode?: () => void;
 }
 
 export function ChatHeader({
@@ -53,6 +57,8 @@ export function ChatHeader({
     "simulated": true,
   },
   availableModels,
+  isArenaMode = false,
+  onToggleArenaMode,
 }: ChatHeaderProps) {
   const { showcaseMode } = useDebug();
   const { logUIEvent } = useUIEventLogger();
@@ -255,6 +261,25 @@ export function ChatHeader({
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Arena Mode Toggle */}
+            {onToggleArenaMode && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={isArenaMode ? "default" : "ghost"}
+                    size="icon"
+                    onClick={onToggleArenaMode}
+                    className={isArenaMode ? "bg-purple-600 hover:bg-purple-700" : ""}
+                  >
+                    <Swords className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isArenaMode ? "Exit Arena Mode" : "Enter Arena Mode - Compare models side-by-side"}
+                </TooltipContent>
+              </Tooltip>
+            )}
+
             <ConnectionHealthIndicator />
             <OfflineModeIndicator />
             
@@ -289,6 +314,13 @@ export function ChatHeader({
                 <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                   Settings
                 </DropdownMenuItem>
+                {onToggleArenaMode && (
+                  <DropdownMenuItem onClick={onToggleArenaMode}>
+                    <Swords className="h-4 w-4 mr-2" />
+                    {isArenaMode ? "Exit Arena Mode" : "Arena Mode"}
+                    {isArenaMode && <span className="ml-auto text-xs text-purple-500">Active</span>}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setHelpOpen(true)}>
                   Help & FAQ
                 </DropdownMenuItem>
