@@ -515,7 +515,7 @@ function ChatApp() {
                   ))}
 
                   {/* Show streaming indicator only while waiting for first chunk (before assistant message appears) */}
-                  {chat.streaming && chat.messages.at(-1)?.role !== 'assistant' && (
+                  {chat.streaming && chat.messages[chat.messages.length - 1]?.role !== 'assistant' && (
                     <div className="flex gap-3 items-center">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
                         <Sparkles className="w-4 h-4 text-white" />
