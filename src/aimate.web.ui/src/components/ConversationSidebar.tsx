@@ -65,6 +65,9 @@ interface ConversationSidebarProps {
   hasMore?: boolean;
   onLoadMore?: () => void;
   loading?: boolean;
+  // Project view mode
+  activeProjectId?: string | null;
+  onSetActiveProject?: (projectId: string | null) => void;
 }
 
 export function ConversationSidebar({
@@ -82,6 +85,8 @@ export function ConversationSidebar({
   hasMore = false,
   onLoadMore,
   loading = false,
+  activeProjectId = null,
+  onSetActiveProject,
 }: ConversationSidebarProps) {
   const { showcaseMode } = useDebug();
 
@@ -203,6 +208,19 @@ export function ConversationSidebar({
     })),
     [projectsHook.projects]
   );
+
+  // Get active project data for project view mode
+  const activeProject = useMemo(() =>
+    activeProjectId ? projectsHook.projects.find(p => p.id === activeProjectId) : null,
+    [activeProjectId, projectsHook.projects]
+  );
+
+  // Filter conversations when in project view
+  const filteredConversations = useMemo(() => {
+    if (!activeProjectId || !activeProject) return conversations;
+    const projectConvIds = new Set(activeProject.conversationIds || []);
+    return conversations.filter(c => projectConvIds.has(c.id));
+  }, [conversations, activeProjectId, activeProject]);
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -609,8 +627,8 @@ export function ConversationSidebar({
     return inFolders;
   }, [folders]);
 
-  const pinnedList = conversations.filter(c => pinnedConversations.includes(c.id));
-  const recentList = conversations.filter(c =>
+  const pinnedList = filteredConversations.filter(c => pinnedConversations.includes(c.id));
+  const recentList = filteredConversations.filter(c =>
     !pinnedConversations.includes(c.id) &&
     !conversationsInFolders.has(c.id) &&
     !archivedConversationsLocal.includes(c.id)
@@ -631,10 +649,10 @@ export function ConversationSidebar({
       pinnedList.forEach(c => items.push({ type: 'conversation', data: c }));
     }
 
-    // Folders section - only show if we have folders
-    if (folders.length > 0) {
+    // Folders section - only show if we have folders (and not in project view)
+    if (folders.length > 0 && !activeProjectId) {
       folders.forEach(folder => {
-        const folderConversations = conversations.filter(c =>
+        const folderConversations = filteredConversations.filter(c =>
           folder.conversationIds.includes(c.id) && !archivedConversationsLocal.includes(c.id)
         );
         const isExpanded = expandedFolders.has(folder.id);
@@ -845,6 +863,39 @@ export function ConversationSidebar({
           )}
         </div>
 
+        {/* Project View Banner */}
+        {activeProject && (
+          <div className="flex-shrink-0 px-3 py-2 bg-purple-50 dark:bg-purple-950/30 border-b border-purple-200 dark:border-purple-800">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className="w-6 h-6 rounded-md flex items-center justify-center text-sm shrink-0"
+                  style={{ backgroundColor: (activeProject.color || '#8b5cf6') + '20' }}
+                >
+                  {activeProject.icon || '📁'}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-purple-700 dark:text-purple-300 truncate">
+                    {activeProject.name}
+                  </div>
+                  <div className="text-xs text-purple-500 dark:text-purple-400">
+                    {filteredConversations.length} chat{filteredConversations.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onSetActiveProject?.(null)}
+                className="text-purple-600 hover:text-purple-700 dark:text-purple-400 h-7 px-2 shrink-0"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Exit
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Navigation Links */}
         <nav className="flex-shrink-0 p-3 space-y-1 border-b border-gray-200 dark:border-gray-800">
           <Button
@@ -853,7 +904,7 @@ export function ConversationSidebar({
             className="w-full justify-start gap-3"
           >
             <MessageSquare className="h-4 w-4" />
-            Start a new chat
+            {activeProject ? `New chat in project` : 'Start a new chat'}
           </Button>
           <Button
             variant="ghost"
@@ -1040,8 +1091,13 @@ export function ConversationSidebar({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="w-full justify-start gap-2 pl-10 text-sm pr-8 overflow-hidden"
-                      onClick={() => handleViewProject(project)}
+                      className={`w-full justify-start gap-2 pl-10 text-sm pr-8 overflow-hidden ${activeProjectId === project.id ? 'bg-purple-100 dark:bg-purple-950/50' : ''}`}
+                      onClick={() => {
+                        // Enter project view mode
+                        if (onSetActiveProject) {
+                          onSetActiveProject(project.id);
+                        }
+                      }}
                     >
                       {project.icon ? (
                         <span className="text-sm shrink-0">{project.icon}</span>

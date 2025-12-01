@@ -40,12 +40,13 @@ function ChatApp() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>("gpt-4-turbo");
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
   const { addLog } = useDebug();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Get all our data from context
-  const { chat, conversations, workspaces, admin } = useAppData();
+  const { chat, conversations, workspaces, projects, admin } = useAppData();
   const { settings: userSettings } = useUserSettings();
   const memories = useMemories();
   const tools = useTools();
@@ -95,18 +96,32 @@ function ChatApp() {
         workspaceId: workspaces.currentWorkspace?.id,
       });
 
+      // If in project view, auto-add to project
+      if (activeProjectId) {
+        await projects.addConversation(activeProjectId, newConv.id);
+        const project = projects.projects.find(p => p.id === activeProjectId);
+        addLog({
+          action: 'Conversation added to project',
+          api: 'api/v1/projects/conversations',
+          payload: { conversationId: newConv.id, projectId: activeProjectId, projectName: project?.name },
+          type: 'success',
+          category: 'chat:conversation'
+        });
+      }
+
       setActiveConversationId(newConv.id);
       setMobileSidebarOpen(false);
 
       addLog({
         action: 'New conversation created',
         api: 'api/v1/conversations',
-        payload: { conversationId: newConv.id },
+        payload: { conversationId: newConv.id, projectId: activeProjectId },
         type: 'success',
         category: 'chat:conversation'
       });
 
-      toast.success("New conversation created");
+      const project = activeProjectId ? projects.projects.find(p => p.id === activeProjectId) : null;
+      toast.success(project ? `New conversation in "${project.name}"` : "New conversation created");
     } catch (err) {
       console.error('Failed to create conversation:', err);
       toast.error("Failed to create conversation");
@@ -124,6 +139,12 @@ function ChatApp() {
           title: content.substring(0, 50) + (content.length > 50 ? "..." : ""),
           workspaceId: workspaces.currentWorkspace?.id,
         });
+
+        // If in project view, auto-add to project
+        if (activeProjectId) {
+          await projects.addConversation(activeProjectId, newConv.id);
+        }
+
         setActiveConversationId(newConv.id);
         targetConversationId = newConv.id;
       } catch (err) {
@@ -525,6 +546,8 @@ function ChatApp() {
               hasMore={conversations.hasMore}
               onLoadMore={conversations.loadMore}
               loading={conversations.loading}
+              activeProjectId={activeProjectId}
+              onSetActiveProject={setActiveProjectId}
             />
           </ErrorBoundary>
         </div>
@@ -553,6 +576,8 @@ function ChatApp() {
               hasMore={conversations.hasMore}
               onLoadMore={conversations.loadMore}
               loading={conversations.loading}
+              activeProjectId={activeProjectId}
+              onSetActiveProject={setActiveProjectId}
             />
           </ErrorBoundary>
         </SheetContent>
@@ -643,6 +668,12 @@ function ChatApp() {
         <ChatInput
           onSend={handleSendMessage}
           disabled={chat.streaming}
+          activeProject={activeProjectId ? {
+            id: activeProjectId,
+            name: projects.projects.find(p => p.id === activeProjectId)?.name || 'Project',
+            icon: projects.projects.find(p => p.id === activeProjectId)?.icon,
+            color: projects.projects.find(p => p.id === activeProjectId)?.color,
+          } : null}
         />
 
         <DebugPanel />

@@ -251,6 +251,9 @@
 | Allow editing | ✅ | Done - ProjectModal supports create/edit/delete |
 | Project-conversation linking | ✅ | Done - addConversation/removeConversation wired |
 | ProjectModal chats tab | ✅ | Done - fetches real conversations from conversationIds |
+| Project view mode | ✅ | Done - Click project to filter to its chats only |
+| Project-scoped chat creation | ✅ | Done - New chats auto-added to active project |
+| Project indicator in chat | ✅ | Done - Banner in ChatInput shows active project |
 
 ### Chat List
 
