@@ -10,7 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "./ui/dropdown-menu";
-import { useAgents, AgentPreset } from "../hooks/useAgents";
+import { useCustomModels } from "../hooks/useCustomModels";
+import type { CustomModelDto } from "../api/types";
 import {
   Select,
   SelectContent,
@@ -62,7 +63,7 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const { showcaseMode } = useDebug();
   const { logUIEvent } = useUIEventLogger();
-  const { enabledPresets, recentPresets, activePreset, setActivePreset } = useAgents();
+  const { enabledModels, recentModels, selectedModel: activeModel, selectModel } = useCustomModels();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -101,14 +102,14 @@ export function ChatHeader({
     else if (agentMenuOpen) setAgentMenuOpen(false);
   }, [settingsOpen, aboutOpen, helpOpen, keyboardShortcutsOpen, moreMenuOpen, modelSelectOpen, agentMenuOpen]);
 
-  const handleAgentChange = useCallback((agentId: string) => {
-    const agent = enabledPresets.find(a => a.id === agentId);
-    if (agent) {
-      setActivePreset(agentId);
-      logUIEvent(`Agent changed to: ${agent.name}`, 'ui:agent:change', { agentId, name: agent.name });
+  const handleAgentChange = useCallback((modelId: string) => {
+    const model = enabledModels.find(m => m.id === modelId);
+    if (model) {
+      selectModel(modelId);
+      logUIEvent(`Custom model changed to: ${model.name}`, 'ui:customModel:change', { modelId, name: model.name });
       setAgentMenuOpen(false);
     }
-  }, [enabledPresets, setActivePreset, logUIEvent]);
+  }, [enabledModels, selectModel, logUIEvent]);
 
   // Create keyboard shortcuts
   const shortcuts = useMemo(() => createDefaultShortcuts({
@@ -187,7 +188,7 @@ export function ChatHeader({
               </SelectContent>
             </Select>
 
-            {/* Agent Selector */}
+            {/* Custom Model Selector */}
             <DropdownMenu open={agentMenuOpen} onOpenChange={setAgentMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -197,37 +198,37 @@ export function ChatHeader({
                   <div
                     className="w-6 h-6 rounded-md flex items-center justify-center text-sm"
                     style={{
-                      backgroundColor: (activePreset?.color || '#8b5cf6') + '20',
-                      borderColor: activePreset?.color || '#8b5cf6',
+                      backgroundColor: (activeModel?.color || '#8b5cf6') + '20',
+                      borderColor: activeModel?.color || '#8b5cf6',
                       borderWidth: 1
                     }}
                   >
-                    {activePreset?.icon || '🤖'}
+                    {activeModel?.avatar || '🤖'}
                   </div>
-                  <span className="hidden sm:inline truncate max-w-[100px]">{activePreset?.name || 'Agent'}</span>
+                  <span className="hidden sm:inline truncate max-w-[100px]">{activeModel?.name || 'Assistant'}</span>
                   <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-[220px]">
-                {recentPresets.length > 0 && (
+                {recentModels.length > 0 && (
                   <>
                     <DropdownMenuLabel className="text-xs text-gray-500">Recent</DropdownMenuLabel>
-                    {recentPresets.slice(0, 3).map(agent => (
+                    {recentModels.slice(0, 3).map(model => (
                       <DropdownMenuItem
-                        key={agent.id}
-                        onClick={() => handleAgentChange(agent.id)}
+                        key={model.id}
+                        onClick={() => handleAgentChange(model.id)}
                         className="gap-2 cursor-pointer"
                       >
                         <div
                           className="w-6 h-6 rounded-md flex items-center justify-center text-sm"
                           style={{
-                            backgroundColor: (agent.color || '#8b5cf6') + '20',
+                            backgroundColor: (model.color || '#8b5cf6') + '20',
                           }}
                         >
-                          {agent.icon || '🤖'}
+                          {model.avatar || '🤖'}
                         </div>
-                        <span className="flex-1 truncate">{agent.name}</span>
-                        {activePreset?.id === agent.id && (
+                        <span className="flex-1 truncate">{model.name}</span>
+                        {activeModel?.id === model.id && (
                           <Check className="h-4 w-4 text-purple-500" />
                         )}
                       </DropdownMenuItem>
@@ -235,23 +236,23 @@ export function ChatHeader({
                     <DropdownMenuSeparator />
                   </>
                 )}
-                <DropdownMenuLabel className="text-xs text-gray-500">All Agents</DropdownMenuLabel>
-                {enabledPresets.map(agent => (
+                <DropdownMenuLabel className="text-xs text-gray-500">All Custom Models</DropdownMenuLabel>
+                {enabledModels.map(model => (
                   <DropdownMenuItem
-                    key={agent.id}
-                    onClick={() => handleAgentChange(agent.id)}
+                    key={model.id}
+                    onClick={() => handleAgentChange(model.id)}
                     className="gap-2 cursor-pointer"
                   >
                     <div
                       className="w-6 h-6 rounded-md flex items-center justify-center text-sm"
                       style={{
-                        backgroundColor: (agent.color || '#8b5cf6') + '20',
+                        backgroundColor: (model.color || '#8b5cf6') + '20',
                       }}
                     >
-                      {agent.icon || '🤖'}
+                      {model.avatar || '🤖'}
                     </div>
-                    <span className="flex-1 truncate">{agent.name}</span>
-                    {activePreset?.id === agent.id && (
+                    <span className="flex-1 truncate">{model.name}</span>
+                    {activeModel?.id === model.id && (
                       <Check className="h-4 w-4 text-purple-500" />
                     )}
                   </DropdownMenuItem>

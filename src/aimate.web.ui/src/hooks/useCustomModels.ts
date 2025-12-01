@@ -19,12 +19,17 @@ import { injectDynamicVariables, DynamicVariableContext } from '../utils/dynamic
 
 interface UseCustomModelsOptions {
   autoLoad?: boolean;
+  persistSelection?: boolean; // Persist selected model ID to localStorage
 }
+
+const SELECTED_MODEL_KEY = 'aiMate_activeCustomModelId';
+const RECENT_MODELS_KEY = 'aiMate_recentCustomModelIds';
 
 interface UseCustomModelsReturn {
   // State
   customModels: CustomModelDto[];
   enabledModels: CustomModelDto[];
+  recentModels: CustomModelDto[];
   isLoading: boolean;
   selectedModelId: string | null;
   selectedModel: CustomModelDto | null;
@@ -65,11 +70,26 @@ interface UseCustomModelsReturn {
 }
 
 export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustomModelsReturn {
-  const { autoLoad = true } = options;
+  const { autoLoad = true, persistSelection = true } = options;
 
   const [customModels, setCustomModels] = useState<CustomModelDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [recentModelIds, setRecentModelIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(RECENT_MODELS_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(() => {
+    if (!persistSelection) return null;
+    try {
+      return localStorage.getItem(SELECTED_MODEL_KEY);
+    } catch {
+      return null;
+    }
+  });
 
   // Load models on mount
   useEffect(() => {
@@ -91,9 +111,37 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
     }
   }, []);
 
+  // Persist selection to localStorage
+  useEffect(() => {
+    if (persistSelection) {
+      if (selectedModelId) {
+        localStorage.setItem(SELECTED_MODEL_KEY, selectedModelId);
+      } else {
+        localStorage.removeItem(SELECTED_MODEL_KEY);
+      }
+    }
+  }, [selectedModelId, persistSelection]);
+
+  // Persist recent models to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(RECENT_MODELS_KEY, JSON.stringify(recentModelIds.slice(0, 10)));
+    } catch {
+      // Ignore storage errors
+    }
+  }, [recentModelIds]);
+
   const enabledModels = useMemo(
     () => customModels.filter(m => m.isEnabled && !m.isHidden),
     [customModels]
+  );
+
+  const recentModels = useMemo(
+    () => recentModelIds
+      .map(id => customModels.find(m => m.id === id))
+      .filter((m): m is CustomModelDto => m !== undefined && m.isEnabled && !m.isHidden)
+      .slice(0, 5),
+    [customModels, recentModelIds]
   );
 
   const selectedModel = useMemo(
@@ -174,6 +222,10 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
 
   const selectModel = useCallback((id: string | null) => {
     setSelectedModelId(id);
+    // Track in recent models
+    if (id) {
+      setRecentModelIds(prev => [id, ...prev.filter(rid => rid !== id)].slice(0, 10));
+    }
   }, []);
 
   const recordUsage = useCallback(async (id: string) => {
@@ -246,6 +298,7 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
     // State
     customModels,
     enabledModels,
+    recentModels,
     isLoading,
     selectedModelId,
     selectedModel,

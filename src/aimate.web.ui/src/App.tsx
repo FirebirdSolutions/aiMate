@@ -8,7 +8,7 @@ import { ChatInput, AttachmentData } from "./components/ChatInput";
 import { DebugPanel } from "./components/DebugPanel";
 import { useMemories } from "./hooks/useMemories";
 import { useTools, ToolCall } from "./hooks/useTools";
-import { useAgents } from "./hooks/useAgents";
+import { useCustomModels } from "./hooks/useCustomModels";
 import { ShowcaseModeIndicator } from "./components/ShowcaseModeIndicator";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { DebugProvider, useDebug } from "./components/DebugContext";
@@ -50,7 +50,7 @@ function ChatApp() {
   const { settings: userSettings } = useUserSettings();
   const memories = useMemories();
   const tools = useTools();
-  const { activePreset } = useAgents();
+  const { selectedModel: activeCustomModel } = useCustomModels();
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -192,23 +192,24 @@ function ChatApp() {
       };
       const defaultMaxTokens = styleToTokens[userSettings.personalisation?.responseStyle || 'balanced'];
 
-      // Agent configuration takes priority over user settings
-      const agentSystemPrompt = activePreset?.systemPrompt;
+      // Custom model configuration takes priority over user settings
+      const customModelSystemPrompt = activeCustomModel?.systemPrompt;
       const userSystemPrompt = userSettings.general?.systemPrompt;
 
-      // Combine prompts: agent prompt first, then user's custom prompt
-      const combinedSystemPrompt = [agentSystemPrompt, userSystemPrompt]
+      // Combine prompts: custom model prompt first, then user's custom prompt
+      const combinedSystemPrompt = [customModelSystemPrompt, userSystemPrompt]
         .filter(Boolean)
         .join('\n\n');
 
-      // Use agent's temperature/maxTokens if specified, otherwise use user settings
-      const temperature = activePreset?.temperature ?? defaultTemperature;
-      const maxTokens = activePreset?.maxTokens ?? defaultMaxTokens;
+      // Use custom model's temperature/maxTokens if specified, otherwise use user settings
+      const temperature = activeCustomModel?.parameters?.temperature ?? defaultTemperature;
+      const maxTokens = activeCustomModel?.parameters?.maxTokens ?? defaultMaxTokens;
 
-      // Merge knowledge IDs from attachments and agent preset
+      // Merge knowledge IDs from attachments and custom model bindings
       const knowledgeIds = [
         ...(attachments?.knowledgeIds || []),
-        ...(activePreset?.knowledgeIds || []),
+        ...(activeCustomModel?.knowledgeCollectionIds || []),
+        ...(activeCustomModel?.knowledgeFileIds || []),
       ];
 
       await chat.sendMessage(content, {
