@@ -249,13 +249,15 @@
 |------|--------|-------|
 | Populate existing | ✅ | Done - useProjects hook with mock data |
 | Allow editing | ✅ | Done - ProjectModal supports create/edit/delete |
+| Project-conversation linking | ✅ | Done - addConversation/removeConversation wired |
+| ProjectModal chats tab | ✅ | Done - fetches real conversations from conversationIds |
 
 ### Chat List
 
 | Item | Status | Notes |
 |------|--------|-------|
 | Virtualization | ✅ | Done - @tanstack/react-virtual |
-| Kebab menu functionality | ⚠️ | TODO: Quick test Move to Project works |
+| Kebab menu functionality | ✅ | Done - Move to Project properly wired |
 | Vertical scroll styling | ❌ | TODO |
 
 ---

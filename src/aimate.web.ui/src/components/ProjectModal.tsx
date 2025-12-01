@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -70,8 +70,43 @@ interface ProjectModalProps {
 }
 
 export function ProjectModal({ open, onOpenChange, project, mode, onCreateProject }: ProjectModalProps) {
-  const { projects: projectsHook } = useAppData();
+  const { projects: projectsHook, conversations: conversationsHook } = useAppData();
   const { addLog } = useDebug();
+
+  // Get the full project data from the hook to access conversationIds
+  const fullProject = useMemo(() =>
+    project ? projectsHook.projects.find(p => p.id === project.id) : null,
+    [project, projectsHook.projects]
+  );
+
+  // Map conversation IDs to actual conversation data
+  const projectChats = useMemo(() => {
+    if (!fullProject?.conversationIds?.length) return [];
+    return fullProject.conversationIds
+      .map(id => conversationsHook.conversations.find(c => c.id === id))
+      .filter((c): c is NonNullable<typeof c> => c !== undefined)
+      .map(conv => ({
+        id: conv.id,
+        title: conv.title,
+        lastMessage: '', // We don't have last message in ConversationDto
+        timestamp: formatRelativeTime(new Date(conv.lastMessageAt || conv.updatedAt)),
+        pinned: conv.isPinned,
+      }));
+  }, [fullProject?.conversationIds, conversationsHook.conversations]);
+
+  // Helper to format relative time
+  function formatRelativeTime(date: Date): string {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+
+    if (hours < 1) return 'Just now';
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    return date.toLocaleDateString();
+  }
 
   const [activeTab, setActiveTab] = useState("general");
   const [name, setName] = useState(project?.name || "");
@@ -85,13 +120,7 @@ export function ProjectModal({ open, onOpenChange, project, mode, onCreateProjec
       { id: "3", name: "data.xlsx", size: "1.1 MB", uploadedAt: "Nov 1, 2025" },
     ] : []
   );
-  const [chats, setChats] = useState<ProjectChat[]>(
-    mode === "view" ? [
-      { id: "c1", title: "Project brainstorming session", lastMessage: "Let's think about the core features...", timestamp: "2 hours ago", pinned: true },
-      { id: "c2", title: "Technical architecture discussion", lastMessage: "We should use a microservices approach...", timestamp: "Yesterday" },
-      { id: "c3", title: "Design review", lastMessage: "The mockups look great, but...", timestamp: "Nov 2" },
-    ] : []
-  );
+  // Use projectChats from the hook data - no longer using local state for chat list
   const [deleteFileId, setDeleteFileId] = useState<string | null>(null);
   const [pinnedChats, setPinnedChats] = useState<string[]>(["c1"]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -254,26 +283,40 @@ export function ProjectModal({ open, onOpenChange, project, mode, onCreateProjec
     }
   };
 
-  const handleMoveToMainList = (chatId: string) => {
-    const chat = chats.find(c => c.id === chatId);
+  const handleMoveToMainList = async (chatId: string) => {
+    if (!project) return;
+    const chat = projectChats.find(c => c.id === chatId);
     if (chat) {
-      toast.success(`"${chat.title}" moved to main chat list`);
-      setChats(chats.filter(c => c.id !== chatId));
+      try {
+        await projectsHook.removeConversation(project.id, chatId);
+        toast.success(`"${chat.title}" removed from project`);
+        setSelectedChats(prev => prev.filter(id => id !== chatId));
+      } catch (err) {
+        toast.error('Failed to remove from project');
+      }
     }
   };
 
-  const handleDeleteChat = (chatId: string) => {
-    const chat = chats.find(c => c.id === chatId);
+  const handleDeleteChat = async (chatId: string) => {
+    // Note: This removes from project, not deleting the conversation entirely
+    // To delete entirely, user should use the main chat list
+    if (!project) return;
+    const chat = projectChats.find(c => c.id === chatId);
     if (chat) {
-      toast.success(`"${chat.title}" deleted`);
-      setChats(chats.filter(c => c.id !== chatId));
+      try {
+        await projectsHook.removeConversation(project.id, chatId);
+        toast.success(`"${chat.title}" removed from project`);
+        setSelectedChats(prev => prev.filter(id => id !== chatId));
+      } catch (err) {
+        toast.error('Failed to remove from project');
+      }
     }
   };
 
   const handleArchiveChat = (chatId: string) => {
-    const chat = chats.find(c => c.id === chatId);
+    const chat = projectChats.find(c => c.id === chatId);
     if (chat) {
-      toast.success(`"${chat.title}" archived`);
+      toast.info(`Archive not available from project view`);
     }
   };
 
@@ -294,22 +337,10 @@ export function ProjectModal({ open, onOpenChange, project, mode, onCreateProjec
 
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
-    if (!draggedChat) return;
-
-    const draggedIndex = chats.findIndex(c => c.id === draggedChat);
-    if (draggedIndex === -1 || draggedIndex === targetIndex) {
-      setDraggedChat(null);
-      setDragOverIndex(null);
-      return;
-    }
-
-    const newChats = [...chats];
-    const [removed] = newChats.splice(draggedIndex, 1);
-    newChats.splice(targetIndex, 0, removed);
-    setChats(newChats);
+    // Reordering not persisted for now - would need backend support
     setDraggedChat(null);
     setDragOverIndex(null);
-    toast.success("Chat reordered");
+    toast.info("Chat reordering not yet supported");
   };
 
   const handleDragEnd = () => {
@@ -333,24 +364,38 @@ export function ProjectModal({ open, onOpenChange, project, mode, onCreateProjec
     }
   };
 
-  const handleBulkDelete = () => {
-    setChats(chats.filter(c => !selectedChats.includes(c.id)));
-    toast.success(`${selectedChats.length} chat(s) deleted`);
-    setSelectedChats([]);
+  const handleBulkDelete = async () => {
+    if (!project) return;
+    try {
+      for (const chatId of selectedChats) {
+        await projectsHook.removeConversation(project.id, chatId);
+      }
+      toast.success(`${selectedChats.length} chat(s) removed from project`);
+      setSelectedChats([]);
+    } catch (err) {
+      toast.error('Failed to remove chats');
+    }
   };
 
   const handleBulkArchive = () => {
-    toast.success(`${selectedChats.length} chat(s) archived`);
+    toast.info(`Archive not available from project view`);
     setSelectedChats([]);
   };
 
-  const handleBulkMoveToMain = () => {
-    setChats(chats.filter(c => !selectedChats.includes(c.id)));
-    toast.success(`${selectedChats.length} chat(s) moved to main list`);
-    setSelectedChats([]);
+  const handleBulkMoveToMain = async () => {
+    if (!project) return;
+    try {
+      for (const chatId of selectedChats) {
+        await projectsHook.removeConversation(project.id, chatId);
+      }
+      toast.success(`${selectedChats.length} chat(s) removed from project`);
+      setSelectedChats([]);
+    } catch (err) {
+      toast.error('Failed to remove chats');
+    }
   };
 
-  const filteredChats = chats.filter(chat =>
+  const filteredChats = projectChats.filter(chat =>
     chat.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
   );

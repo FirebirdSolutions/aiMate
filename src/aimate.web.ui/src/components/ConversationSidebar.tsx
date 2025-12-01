@@ -544,21 +544,37 @@ export function ConversationSidebar({
                         <div className="px-3 py-2 text-sm text-gray-400">No projects available</div>
                       ) : (
                         <SimpleVirtualList
-                          items={projects}
+                          items={projectsHook.projects}
                           estimatedItemHeight={40}
                           maxHeight={320}
                           getItemKey={(project) => project.id}
-                          renderItem={(project) => (
-                            <button
-                              className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
-                              onClick={() => {
-                                toast.success(`Moved to "${project.name}"`);
-                              }}
-                            >
-                              <FolderKanban className="h-4 w-4" />
-                              <span>{project.name}</span>
-                            </button>
-                          )}
+                          renderItem={(project) => {
+                            const isInProject = project.conversationIds?.includes(conversation.id);
+                            return (
+                              <button
+                                className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer ${isInProject ? 'bg-gray-800' : ''}`}
+                                onClick={async () => {
+                                  try {
+                                    if (isInProject) {
+                                      await projectsHook.removeConversation(project.id, conversation.id);
+                                      toast.success(`Removed from "${project.name}"`);
+                                    } else {
+                                      await projectsHook.addConversation(project.id, conversation.id);
+                                      toast.success(`Added to "${project.name}"`);
+                                    }
+                                  } catch (err) {
+                                    toast.error('Failed to update project');
+                                  }
+                                }}
+                              >
+                                <FolderKanban className="h-4 w-4" style={{ color: project.color }} />
+                                <span className="flex-1 truncate">{project.name}</span>
+                                {isInProject && (
+                                  <Check className="h-3 w-3 text-green-400" />
+                                )}
+                              </button>
+                            );
+                          }}
                         />
                       )}
                     </div>
