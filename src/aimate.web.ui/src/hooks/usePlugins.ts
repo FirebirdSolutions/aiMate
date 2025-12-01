@@ -282,16 +282,24 @@ const translationPlugin: PluginDefinition = {
   ],
 };
 
+/**
+ * Web Search Plugin
+ *
+ * Search the web for information and optionally inject into context.
+ * Note: The "Attach Webpage" feature in ChatInput is for fetching full page content
+ * as context, while this plugin is for quick web searches from message content.
+ */
 const searchPlugin: PluginDefinition = {
   id: 'web-search',
   name: 'Web Search',
   version: '1.0.0',
   description: 'Search the web for information related to messages',
   author: 'aiMate',
-  enabled: false, // Disabled by default
+  enabled: true, // Enabled by default
   settings: {
-    searchEngine: 'google',
+    searchEngine: 'duckduckgo', // 'google' | 'duckduckgo' | 'bing'
     maxResults: 5,
+    injectSearchHint: true, // Add hint to assistant about outdated info
   },
   messageActions: [
     {
@@ -300,21 +308,105 @@ const searchPlugin: PluginDefinition = {
       icon: 'Search',
       onClick: (ctx) => {
         if (ctx.messageContent) {
-          // Extract key terms and open search
-          const query = encodeURIComponent(ctx.messageContent.slice(0, 200));
-          window.open(`https://www.google.com/search?q=${query}`, '_blank');
+          // Extract first meaningful sentence or first 150 chars as search query
+          const content = ctx.messageContent.trim();
+          const firstSentence = content.split(/[.!?]/)[0] || content;
+          const query = encodeURIComponent(firstSentence.slice(0, 150).trim());
+
+          // Get search engine from settings
+          const engine = ctx.settings?.searchEngine || 'duckduckgo';
+          const searchUrls: Record<string, string> = {
+            google: `https://www.google.com/search?q=${query}`,
+            duckduckgo: `https://duckduckgo.com/?q=${query}`,
+            bing: `https://www.bing.com/search?q=${query}`,
+          };
+
+          const url = searchUrls[engine] || searchUrls.duckduckgo;
+          window.open(url, '_blank');
+
+          console.log('[Web Search] Opening search:', url);
+        }
+      },
+    },
+    {
+      id: 'search-selection',
+      label: 'Search selected text',
+      icon: 'TextSearch',
+      onClick: (ctx) => {
+        // Get selected text from the page
+        const selection = window.getSelection()?.toString();
+        if (selection) {
+          const engine = ctx.settings?.searchEngine || 'duckduckgo';
+          const query = encodeURIComponent(selection.slice(0, 150).trim());
+          const searchUrls: Record<string, string> = {
+            google: `https://www.google.com/search?q=${query}`,
+            duckduckgo: `https://duckduckgo.com/?q=${query}`,
+            bing: `https://www.bing.com/search?q=${query}`,
+          };
+          window.open(searchUrls[engine] || searchUrls.duckduckgo, '_blank');
+        }
+      },
+      condition: () => {
+        const selection = window.getSelection()?.toString();
+        return !!selection && selection.trim().length > 0;
+      },
+    },
+    {
+      id: 'copy-search-url',
+      label: 'Copy search URL',
+      icon: 'Link',
+      onClick: async (ctx) => {
+        if (ctx.messageContent) {
+          const content = ctx.messageContent.trim();
+          const firstSentence = content.split(/[.!?]/)[0] || content;
+          const query = encodeURIComponent(firstSentence.slice(0, 150).trim());
+          const engine = ctx.settings?.searchEngine || 'duckduckgo';
+          const searchUrls: Record<string, string> = {
+            google: `https://www.google.com/search?q=${query}`,
+            duckduckgo: `https://duckduckgo.com/?q=${query}`,
+            bing: `https://www.bing.com/search?q=${query}`,
+          };
+          const url = searchUrls[engine] || searchUrls.duckduckgo;
+          await navigator.clipboard.writeText(url);
+          console.log('[Web Search] Copied search URL:', url);
         }
       },
     },
   ],
   hooks: {
-    // Could inject search results into context before request
+    // Detect search intent and add helpful context
     beforeRequest: [
       async (request, ctx) => {
-        // In a real implementation, this would:
-        // 1. Extract search query from user message
-        // 2. Call search API
-        // 3. Inject results into system context
+        if (!ctx.settings?.injectSearchHint) return request;
+
+        // Detect search intent in user message
+        const lastMessage = request.messages?.[request.messages.length - 1];
+        if (lastMessage?.role !== 'user') return request;
+
+        const content = lastMessage.content?.toLowerCase() || '';
+        const searchIntents = [
+          'search for', 'look up', 'find information', 'what is the latest',
+          'current news', 'recent updates', 'what happened'
+        ];
+
+        const hasSearchIntent = searchIntents.some(intent => content.includes(intent));
+
+        if (hasSearchIntent) {
+          console.log('[Web Search] Search intent detected');
+
+          // Add system hint about potential need for web search
+          return {
+            ...request,
+            messages: [
+              {
+                role: 'system',
+                content: '[Context: User may be asking for current/recent information. If your knowledge seems outdated, suggest they use web search for the latest data.]'
+              },
+              ...(request.messages || []),
+            ]
+          };
+        }
+
         return request;
       },
     ],
@@ -817,7 +909,8 @@ const readingTimePlugin: PluginDefinition = {
 /**
  * Sentiment Analysis Plugin
  *
- * Basic sentiment detection for messages.
+ * Enhanced sentiment detection for messages using keyword scoring.
+ * Detects positive, negative, and neutral tones plus specific emotions.
  */
 const sentimentPlugin: PluginDefinition = {
   id: 'sentiment',
@@ -825,57 +918,163 @@ const sentimentPlugin: PluginDefinition = {
   version: '1.0.0',
   description: 'Detect emotional tone of messages',
   author: 'aiMate',
-  enabled: false,  // Disabled by default
+  enabled: true, // Now enabled by default
+  settings: {
+    showIndicator: true, // Show sentiment indicator on messages
+    detectEmotions: true, // Detect specific emotions beyond positive/negative
+  },
   hooks: {
     afterResponse: [
       (response, ctx) => {
         if (!response?.content) return response;
 
-        // Very simple keyword-based sentiment (production would use ML)
         const content = response.content.toLowerCase();
+        const words = content.split(/\W+/);
 
-        const positiveWords = ['great', 'good', 'excellent', 'happy', 'love', 'wonderful', 'fantastic', 'amazing', 'helpful', 'thanks', 'thank'];
-        const negativeWords = ['bad', 'terrible', 'awful', 'hate', 'wrong', 'error', 'fail', 'problem', 'issue', 'bug', 'broken'];
+        // Expanded sentiment lexicons with weights
+        const positiveTerms: Record<string, number> = {
+          // Strong positive
+          'excellent': 3, 'amazing': 3, 'wonderful': 3, 'fantastic': 3, 'outstanding': 3,
+          'brilliant': 3, 'perfect': 3, 'incredible': 3, 'superb': 3,
+          // Moderate positive
+          'great': 2, 'good': 2, 'nice': 2, 'helpful': 2, 'useful': 2, 'love': 2,
+          'enjoy': 2, 'happy': 2, 'pleased': 2, 'glad': 2, 'delighted': 2,
+          // Mild positive
+          'thanks': 1, 'thank': 1, 'appreciate': 1, 'like': 1, 'fine': 1, 'okay': 1,
+          'interesting': 1, 'works': 1, 'correct': 1, 'right': 1, 'yes': 1,
+        };
 
-        let score = 0;
-        positiveWords.forEach(word => {
-          if (content.includes(word)) score += 1;
+        const negativeTerms: Record<string, number> = {
+          // Strong negative
+          'terrible': 3, 'awful': 3, 'horrible': 3, 'worst': 3, 'hate': 3,
+          'disaster': 3, 'catastrophe': 3, 'devastating': 3,
+          // Moderate negative
+          'bad': 2, 'wrong': 2, 'error': 2, 'fail': 2, 'failed': 2, 'broken': 2,
+          'problem': 2, 'issue': 2, 'bug': 2, 'crash': 2, 'frustrating': 2,
+          // Mild negative
+          'unfortunately': 1, 'sorry': 1, 'difficult': 1, 'confusing': 1,
+          'unclear': 1, 'missing': 1, 'cannot': 1, "can't": 1, 'no': 1, 'not': 1,
+        };
+
+        // Calculate sentiment score
+        let positiveScore = 0;
+        let negativeScore = 0;
+
+        words.forEach(word => {
+          if (positiveTerms[word]) positiveScore += positiveTerms[word];
+          if (negativeTerms[word]) negativeScore += negativeTerms[word];
         });
-        negativeWords.forEach(word => {
-          if (content.includes(word)) score -= 1;
-        });
 
-        const sentiment = score > 1 ? 'positive' : score < -1 ? 'negative' : 'neutral';
+        const totalScore = positiveScore - negativeScore;
+        const magnitude = positiveScore + negativeScore;
+
+        // Determine sentiment label
+        let label: 'positive' | 'negative' | 'neutral' | 'mixed';
+        if (magnitude < 2) {
+          label = 'neutral';
+        } else if (positiveScore > negativeScore * 2) {
+          label = 'positive';
+        } else if (negativeScore > positiveScore * 2) {
+          label = 'negative';
+        } else if (magnitude > 4 && Math.abs(totalScore) < magnitude * 0.3) {
+          label = 'mixed';
+        } else {
+          label = totalScore > 0 ? 'positive' : totalScore < 0 ? 'negative' : 'neutral';
+        }
+
+        // Detect specific emotions if enabled
+        let emotions: string[] = [];
+        if (ctx.settings?.detectEmotions) {
+          const emotionPatterns: Record<string, RegExp[]> = {
+            'excited': [/excited/i, /can't wait/i, /thrilled/i, /eager/i],
+            'grateful': [/thank/i, /appreciate/i, /grateful/i],
+            'confused': [/confused/i, /don't understand/i, /unclear/i, /what do you mean/i],
+            'frustrated': [/frustrat/i, /annoyed/i, /stuck/i, /not working/i],
+            'curious': [/wondering/i, /curious/i, /how does/i, /what if/i],
+            'confident': [/certain/i, /sure/i, /definitely/i, /absolutely/i],
+            'uncertain': [/maybe/i, /perhaps/i, /not sure/i, /might/i],
+          };
+
+          for (const [emotion, patterns] of Object.entries(emotionPatterns)) {
+            if (patterns.some(pattern => pattern.test(content))) {
+              emotions.push(emotion);
+            }
+          }
+        }
+
+        // Emoji mapping
+        const emojiMap: Record<string, string> = {
+          'positive': '😊',
+          'negative': '😟',
+          'neutral': '😐',
+          'mixed': '🤔',
+        };
 
         return {
           ...response,
           sentiment: {
-            score,
-            label: sentiment,
-            emoji: sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😟' : '😐',
+            score: totalScore,
+            magnitude,
+            label,
+            emotions,
+            emoji: emojiMap[label] || '😐',
+            breakdown: {
+              positive: positiveScore,
+              negative: negativeScore,
+            },
           },
         };
       },
     ],
   },
+  messageActions: [
+    {
+      id: 'show-sentiment',
+      label: 'Show sentiment',
+      icon: 'Activity',
+      onClick: (ctx) => {
+        if (ctx.sentiment) {
+          const { label, score, emotions, breakdown } = ctx.sentiment;
+          const info = [
+            `Sentiment: ${label} (score: ${score})`,
+            `Breakdown: +${breakdown.positive} / -${breakdown.negative}`,
+            emotions.length > 0 ? `Detected emotions: ${emotions.join(', ')}` : null,
+          ].filter(Boolean).join('\n');
+
+          console.log('[Sentiment Analysis]', info);
+          navigator.clipboard.writeText(info);
+        }
+      },
+      condition: (ctx) => !!ctx.sentiment,
+    },
+  ],
 };
 
 // All built-in plugins
 const BUILTIN_PLUGINS: PluginDefinition[] = [
+  // Core plugins (always enabled)
   messageActionsPlugin,
   codeHighlightPlugin,
   textToSpeechPlugin,
   exportPlugin,
   bookmarkPlugin,
+
+  // Content processing
   structuredContentPlugin,
+  readingTimePlugin,
+  sentimentPlugin,     // Now enabled by default
+
+  // Input/output plugins
   voiceInputPlugin,
   memoryExtractionPlugin,
   summarizationPlugin,
-  readingTimePlugin,
+  searchPlugin,        // Now enabled by default
+
+  // Utility plugins
   keyboardShortcutsPlugin,
-  translationPlugin,   // Disabled by default
-  searchPlugin,        // Disabled by default
-  sentimentPlugin,     // Disabled by default
+
+  // Optional plugins (disabled by default - need configuration)
+  translationPlugin,   // Needs API key
 ];
 
 // ============================================================================
