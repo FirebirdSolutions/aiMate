@@ -16,6 +16,7 @@ interface UserSettings {
     notifications?: string;
     defaultModel?: string;
     systemPrompt?: string;
+    userName?: string;
   };
   interface?: {
     theme?: string;

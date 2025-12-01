@@ -562,6 +562,9 @@ class CustomModelsService {
           parameters: data.parameters
             ? { ...models[index].parameters, ...data.parameters }
             : models[index].parameters,
+          visibility: data.visibility
+            ? { ...models[index].visibility, ...data.visibility }
+            : models[index].visibility,
           updatedAt: new Date().toISOString(),
         };
         saveModels(models);
