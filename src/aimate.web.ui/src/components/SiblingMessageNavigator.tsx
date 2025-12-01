@@ -4,6 +4,7 @@
  * Navigation controls for browsing message variants/regenerations
  */
 
+import { useState, useCallback, useMemo } from 'react';
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
@@ -191,16 +192,60 @@ export function SiblingMessageNavigator({
 /**
  * Helper hook for managing sibling navigation state
  */
-export function useSiblingNavigation(initialSiblings: string[] = []) {
-  // This would integrate with useChat to track variants
-  // For now, this is a placeholder for the data structure
+export function useSiblingNavigation(
+  initialSiblings: string[] = [],
+  onVariantChange?: (variantId: string, index: number) => void
+) {
+  const [siblings, setSiblings] = useState<string[]>(initialSiblings);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const totalVariants = useMemo(() => Math.max(siblings.length, 1), [siblings]);
+
+  const navigateTo = useCallback((index: number) => {
+    if (index >= 0 && index < siblings.length) {
+      setCurrentIndex(index);
+      onVariantChange?.(siblings[index], index);
+    }
+  }, [siblings, onVariantChange]);
+
+  const navigatePrev = useCallback(() => {
+    if (currentIndex > 0) {
+      const newIndex = currentIndex - 1;
+      setCurrentIndex(newIndex);
+      onVariantChange?.(siblings[newIndex], newIndex);
+    }
+  }, [currentIndex, siblings, onVariantChange]);
+
+  const navigateNext = useCallback(() => {
+    if (currentIndex < siblings.length - 1) {
+      const newIndex = currentIndex + 1;
+      setCurrentIndex(newIndex);
+      onVariantChange?.(siblings[newIndex], newIndex);
+    }
+  }, [currentIndex, siblings, onVariantChange]);
+
+  const addVariant = useCallback((variantId: string) => {
+    setSiblings(prev => [...prev, variantId]);
+    // Optionally navigate to the new variant
+    const newIndex = siblings.length;
+    setCurrentIndex(newIndex);
+    onVariantChange?.(variantId, newIndex);
+  }, [siblings.length, onVariantChange]);
+
+  const currentVariantId = useMemo(
+    () => siblings[currentIndex] || null,
+    [siblings, currentIndex]
+  );
 
   return {
-    currentIndex: 0,
-    totalVariants: initialSiblings.length || 1,
-    siblings: initialSiblings,
-    navigateTo: (index: number) => { /* TODO */ },
-    navigatePrev: () => { /* TODO */ },
-    navigateNext: () => { /* TODO */ },
+    currentIndex,
+    totalVariants,
+    siblings,
+    currentVariantId,
+    navigateTo,
+    navigatePrev,
+    navigateNext,
+    addVariant,
+    setSiblings,
   };
 }

@@ -111,11 +111,6 @@ export function useChat(conversationId?: string) {
     return connections.find(c => c.enabled && c.url);
   }, [adminSettings.settings.connections]);
   
-  // Debug: Log streaming state changes
-  useEffect(() => {
-    console.log('[useChat] Streaming state changed to:', streaming);
-  }, [streaming]);
-
   // Sync messages to cache whenever they change (in offline mode)
   useEffect(() => {
     if (AppConfig.isOfflineMode() && conversationId && messages.length > 0) {
@@ -128,26 +123,20 @@ export function useChat(conversationId?: string) {
   // ============================================================================
 
   const loadMessages = useCallback(async (convId: string) => {
-    console.log('[useChat] Loading messages for conversation:', convId);
-    console.log('[useChat] Current streaming state before load:', streaming);
-    
     // Reset streaming state when loading new conversation
     setStreaming(false);
-    console.log('[useChat] Streaming state reset to false');
     setError(null);
     
     if (AppConfig.isOfflineMode()) {
       // Check cache first
       const cachedMessages = conversationMessagesCache.get(convId);
       if (cachedMessages) {
-        console.log('[useChat] Loading messages from cache:', cachedMessages.length, 'messages');
         setMessages(cachedMessages);
         return;
       }
-      
+
       // Use mock messages for the default conversation only
       if (convId === 'conv-1') {
-        console.log('[useChat] Using mock messages for default conversation (offline mode)');
         const mockMessages: ChatMessage[] = [
           {
             id: '1',
@@ -169,7 +158,6 @@ export function useChat(conversationId?: string) {
         conversationMessagesCache.set(convId, mockMessages);
       } else {
         // New conversation - start with empty messages
-        console.log('[useChat] New conversation - empty messages');
         setMessages([]);
       }
       return;
@@ -226,23 +214,10 @@ export function useChat(conversationId?: string) {
       includeHistory?: boolean;
     }
   ) => {
-    const isOffline = AppConfig.isOfflineMode();
     const activeConnection = getActiveLmConnection();
-
-    console.log('[useChat] sendMessage called:', {
-      content: content.substring(0, 50) + '...',
-      options,
-      isOfflineMode: isOffline,
-      activeConnection: activeConnection ? {
-        name: activeConnection.name,
-        url: activeConnection.url,
-        enabled: activeConnection.enabled,
-      } : 'NONE',
-    });
 
     // PRIORITY 1: If we have an active LM server connection, use it directly (regardless of offline mode)
     if (activeConnection?.url) {
-      console.log('[useChat] Using LM server connection (connection-first mode)');
 
       const userMsg: ChatMessage = {
         id: `msg-${Date.now()}`,
@@ -263,12 +238,6 @@ export function useChat(conversationId?: string) {
       };
 
       const chatUrl = activeConnection.url.replace(/\/$/, '') + '/chat/completions';
-      console.log('[useChat] CALLING LM SERVER:', {
-        connectionName: activeConnection.name,
-        baseUrl: activeConnection.url,
-        chatUrl: chatUrl,
-        model: options?.model || 'default',
-      });
 
       try {
         const headers: Record<string, string> = {
@@ -285,7 +254,6 @@ export function useChat(conversationId?: string) {
 
         // 1. Knowledge documents (RAG chunks)
         if (options?.knowledgeIds && options.knowledgeIds.length > 0) {
-          console.log('[useChat] Fetching knowledge chunks for:', options.knowledgeIds);
           try {
             const chunkPromises = options.knowledgeIds.map(id =>
               knowledgeService.getDocumentChunks(id)
@@ -300,7 +268,6 @@ export function useChat(conversationId?: string) {
                 ).join('\n\n') +
                 '\n--- END KNOWLEDGE DOCUMENTS ---'
               );
-              console.log('[useChat] Injecting', chunks.length, 'knowledge chunks');
             }
           } catch (err) {
             console.error('[useChat] Failed to fetch knowledge chunks:', err);
@@ -309,7 +276,6 @@ export function useChat(conversationId?: string) {
 
         // 2. Notes
         if (options?.noteIds && options.noteIds.length > 0) {
-          console.log('[useChat] Fetching notes for:', options.noteIds);
           try {
             const notes = await notesService.getNotesByIds(options.noteIds);
             if (notes.length > 0) {
@@ -320,7 +286,6 @@ export function useChat(conversationId?: string) {
                 ).join('\n\n') +
                 '\n--- END NOTES ---'
               );
-              console.log('[useChat] Injecting', notes.length, 'notes');
             }
           } catch (err) {
             console.error('[useChat] Failed to fetch notes:', err);
@@ -329,7 +294,6 @@ export function useChat(conversationId?: string) {
 
         // 3. Files (fetch metadata + content if text-based)
         if (options?.fileIds && options.fileIds.length > 0) {
-          console.log('[useChat] Fetching files for:', options.fileIds);
           try {
             const workspaceId = options.workspaceId || 'default';
             const filePromises = options.fileIds.map(id =>
@@ -344,7 +308,6 @@ export function useChat(conversationId?: string) {
                 ).join('\n\n') +
                 '\n--- END FILES ---'
               );
-              console.log('[useChat] Injecting', files.length, 'file references');
             }
           } catch (err) {
             console.error('[useChat] Failed to fetch files:', err);
@@ -353,7 +316,6 @@ export function useChat(conversationId?: string) {
 
         // 4. Chat history from other conversations
         if (options?.chatIds && options.chatIds.length > 0) {
-          console.log('[useChat] Fetching chat history for:', options.chatIds);
           try {
             const chatHistoryParts: string[] = [];
             for (const convId of options.chatIds) {
@@ -376,7 +338,6 @@ export function useChat(conversationId?: string) {
                 chatHistoryParts.join('\n\n') +
                 '\n--- END CHAT HISTORY ---'
               );
-              console.log('[useChat] Injecting', chatHistoryParts.length, 'chat histories');
             }
           } catch (err) {
             console.error('[useChat] Failed to fetch chat histories:', err);
@@ -385,7 +346,6 @@ export function useChat(conversationId?: string) {
 
         // 5. Webpage URLs (include as references - actual fetching would need server-side proxy)
         if (options?.webpageUrls && options.webpageUrls.length > 0) {
-          console.log('[useChat] Including webpage URLs:', options.webpageUrls);
           attachmentContexts.push(
             '--- ATTACHED WEBPAGE REFERENCES ---\n' +
             'The user has attached the following webpages for reference:\n' +
@@ -550,7 +510,6 @@ export function useChat(conversationId?: string) {
         }
 
         if (!streamInterrupted) {
-          console.log('[useChat] LM server streaming complete');
           // Send notification if user switched tabs during generation
           sendCompletionNotification(fullContent);
         }
@@ -615,8 +574,8 @@ export function useChat(conversationId?: string) {
     }
 
     // PRIORITY 2: No active LM connection - check offline mode
+    const isOffline = AppConfig.isOfflineMode();
     if (isOffline) {
-      console.log('[useChat] No active LM connection, using mock responses (offline mode)');
 
       const userMsg: ChatMessage = {
         id: `msg-${Date.now()}`,
@@ -796,9 +755,7 @@ export function useChat(conversationId?: string) {
       return assistantMsg;
       
     } catch (err: any) {
-      if (err.name === 'AbortError') {
-        console.log('[useChat] Message sending cancelled');
-      } else {
+      if (err.name !== 'AbortError') {
         console.error('[useChat] Failed to send message:', err);
         setError('Failed to send message');
       }
@@ -1029,8 +986,6 @@ export function useChat(conversationId?: string) {
           }
         }
       }
-
-        console.log('[useChat] Continue message complete');
       toast.success('Message continued');
     } catch (err) {
       console.error('[useChat] Continue failed:', err);

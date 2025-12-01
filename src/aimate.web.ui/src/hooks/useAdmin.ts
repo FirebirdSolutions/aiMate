@@ -280,14 +280,11 @@ export function useAdmin() {
 
   // Add multiple models from a connection (works in all modes - persists to localStorage)
   const addModelsFromConnection = useCallback((modelsToAdd: Array<{ id: string; name: string; connectionName: string }>) => {
-    console.log('[useAdmin] addModelsFromConnection called with:', modelsToAdd);
-
     // Filter out models that already exist
     const existingIds = new Set(adminSettings.settings.models.map(m => m.id));
     const newModels = modelsToAdd.filter(m => !existingIds.has(m.id));
 
     if (newModels.length === 0) {
-      console.log('[useAdmin] All models already exist, skipping');
       return;
     }
 
@@ -300,14 +297,11 @@ export function useAdmin() {
       connection: m.connectionName,
     }));
     const updatedModels = [...adminSettings.settings.models, ...newAdminModels];
-    console.log('[useAdmin] Persisting models to localStorage:', updatedModels);
     adminSettings.updateModels(updatedModels);
 
     // Also update local state
     const newModelDtos = newAdminModels.map(toModelDto);
     setModels(prev => [...prev, ...newModelDtos]);
-
-    console.log(`[useAdmin] Added ${newModels.length} models from connection`);
   }, [adminSettings]);
 
   // ============================================================================
@@ -370,8 +364,6 @@ export function useAdmin() {
   }, [loadConnections, adminSettings]);
 
   const createConnection = useCallback(async (data: any) => {
-    console.log('[useAdmin] createConnection called with:', data);
-
     const newId = `conn-${Date.now()}`;
     const apiKey = extractApiKeyFromHeaders(data);
 
@@ -400,16 +392,14 @@ export function useAdmin() {
     };
 
     const updatedConnections = [...adminSettings.settings.connections, newAdminConnection];
-    console.log('[useAdmin] Persisting connections to localStorage:', updatedConnections);
     adminSettings.updateConnections(updatedConnections);
 
     // If not offline, also try to sync with backend (but don't fail if it errors)
     if (!AppConfig.isOfflineMode()) {
       try {
         await connectionsService.createConnection(data);
-        console.log('[useAdmin] Synced connection to backend');
       } catch (err) {
-        console.warn('[useAdmin] Failed to sync connection to backend (will use localStorage):', err);
+        console.warn('[useAdmin] Failed to sync connection to backend:', err);
       }
     }
 
@@ -417,8 +407,6 @@ export function useAdmin() {
   }, [adminSettings]);
 
   const updateConnection = useCallback(async (connectionId: string, data: any) => {
-    console.log('[useAdmin] updateConnection called:', { connectionId, data });
-
     const apiKey = extractApiKeyFromHeaders(data);
 
     // Optimistic update to local state
@@ -439,16 +427,14 @@ export function useAdmin() {
           }
         : c
     );
-    console.log('[useAdmin] Updating connections in localStorage:', updatedConnections);
     adminSettings.updateConnections(updatedConnections);
 
     // If not offline, also try to sync with backend
     if (!AppConfig.isOfflineMode()) {
       try {
         await connectionsService.updateConnection(connectionId, data);
-        console.log('[useAdmin] Synced connection update to backend');
       } catch (err) {
-        console.warn('[useAdmin] Failed to sync connection update to backend (using localStorage):', err);
+        console.warn('[useAdmin] Failed to sync connection update:', err);
       }
     }
   }, [adminSettings]);

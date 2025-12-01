@@ -29,11 +29,8 @@ export function useConversations(workspaceId?: string) {
     // Skip reload if already initialized in offline mode (preserve created conversations)
     // Use global flag to survive StrictMode remounts
     if (AppConfig.isOfflineMode() && globalConversationsInitialized && !forceReload) {
-      console.log('[useConversations] Skipping reload - already initialized');
       return;
     }
-
-    console.log('[useConversations] Loading conversations...');
 
     if (AppConfig.isOfflineMode()) {
       // Use mock conversations in offline mode
@@ -398,8 +395,6 @@ export function useConversations(workspaceId?: string) {
     // Add to state immediately (optimistic)
     setConversations(prev => [clonedConv, ...prev]);
 
-    console.log('[useConversations] Cloned conversation:', original.title, '→', clonedConv.title);
-
     // If not offline, try to sync with backend
     if (!AppConfig.isOfflineMode()) {
       try {
@@ -441,8 +436,6 @@ export function useConversations(workspaceId?: string) {
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading) return;
-
-    console.log('[useConversations] Loading more conversations, page:', page + 1);
 
     if (AppConfig.isOfflineMode()) {
       // In offline mode, all conversations are already loaded
