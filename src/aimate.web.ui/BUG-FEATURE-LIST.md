@@ -96,7 +96,7 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Test connection button | ❌ | TODO: Implement |
+| Test connection button | ✅ | Done - Shows success/failure with latency |
 | General functionality | ✅ | Working - list/enable/disable/add/edit/delete |
 | Tool list retrieval | ✅ | Working - useTools hook discovers from enabled servers |
 | Tool authorisation | ❌ | TODO |
@@ -211,7 +211,7 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Add to knowledge | ❌ | TODO: Implement |
+| Add to knowledge | ✅ | Done - Brain icon saves message to knowledge |
 | "Not implemented" items | ✅ | Audited - removed non-working buttons, implemented TTS |
 
 ---
@@ -247,8 +247,8 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Populate existing | ❌ | TODO |
-| Allow editing | ❌ | TODO |
+| Populate existing | ✅ | Done - useProjects hook with mock data |
+| Allow editing | ✅ | Done - ProjectModal supports create/edit/delete |
 
 ### Chat List
 

@@ -444,7 +444,6 @@ export function ProjectModal({ open, onOpenChange, project, mode, onCreateProjec
                     placeholder="Enter project name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    disabled={mode === "view"}
                   />
                 </div>
 
@@ -455,7 +454,6 @@ export function ProjectModal({ open, onOpenChange, project, mode, onCreateProjec
                     placeholder="Enter project description (optional)"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    disabled={mode === "view"}
                     className="min-h-[100px]"
                   />
                 </div>
@@ -761,6 +759,22 @@ export function ProjectModal({ open, onOpenChange, project, mode, onCreateProjec
             >
               {mode === "view" ? "Close" : "Cancel"}
             </Button>
+            {mode === "view" && activeTab === "general" && (
+              <Button
+                onClick={handleSave}
+                disabled={saving || (name === project?.name && description === project?.description)}
+                className="cursor-pointer"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
+            )}
             {mode === "create" && (
               <Button
                 onClick={handleSave}
