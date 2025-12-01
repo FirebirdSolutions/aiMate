@@ -1,5 +1,15 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+export type CompressionStrategy = 'hybrid' | 'summarize' | 'drop-low-value' | 'sliding-window';
+
+export interface ContextManagementSettings {
+  enabled: boolean;
+  threshold: number;  // Trigger compression at this % (default: 80)
+  strategy: CompressionStrategy;
+  preserveRecentMessages: number;  // Always keep last N messages (default: 5)
+  showIndicator: boolean;  // Show compression indicator in UI
+}
+
 interface UserSettings {
   general?: {
     language?: string;
@@ -45,6 +55,7 @@ interface UserSettings {
     customInstructions?: string;
     rememberContext?: boolean;
   };
+  contextManagement?: ContextManagementSettings;
   account?: {
     email?: string;
     username?: string;
@@ -60,6 +71,7 @@ interface UserSettingsContextType {
   updateInterface: (updates: Partial<UserSettings['interface']>) => void;
   updateConnections: (updates: Partial<UserSettings['connections']>) => void;
   updatePersonalisation: (updates: Partial<UserSettings['personalisation']>) => void;
+  updateContextManagement: (updates: Partial<ContextManagementSettings>) => void;
   updateAccount: (updates: Partial<UserSettings['account']>) => void;
   resetSettings: () => void;
 }
@@ -111,6 +123,13 @@ const defaultSettings: UserSettings = {
     customInstructions: '',
     rememberContext: true,
   },
+  contextManagement: {
+    enabled: true,
+    threshold: 80,
+    strategy: 'hybrid',
+    preserveRecentMessages: 5,
+    showIndicator: true,
+  },
   account: {
     email: '',
     username: '',
@@ -150,6 +169,13 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateContextManagement = (updates: Partial<ContextManagementSettings>) => {
+    setSettings((prev) => ({
+      ...prev,
+      contextManagement: { ...prev.contextManagement, ...updates } as ContextManagementSettings,
+    }));
+  };
+
   const updateAccount = (updates: Partial<UserSettings['account']>) => {
     setSettings((prev) => ({
       ...prev,
@@ -169,6 +195,7 @@ export function UserSettingsProvider({ children }: { children: ReactNode }) {
         updateInterface,
         updateConnections,
         updatePersonalisation,
+        updateContextManagement,
         updateAccount,
         resetSettings,
       }}
