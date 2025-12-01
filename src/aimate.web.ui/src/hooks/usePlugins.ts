@@ -483,6 +483,383 @@ const structuredContentPlugin: PluginDefinition = {
   ],
 };
 
+/**
+ * Voice Input Plugin
+ *
+ * Speech-to-text using Web Speech API for dictation.
+ */
+const voiceInputPlugin: PluginDefinition = {
+  id: 'voice-input',
+  name: 'Voice Input',
+  version: '1.0.0',
+  description: 'Dictate messages using speech recognition',
+  author: 'aiMate',
+  enabled: true,
+  settings: {
+    language: 'en-NZ',  // Default to NZ English
+    continuous: false,
+    interimResults: true,
+  },
+  messageActions: [
+    {
+      id: 'start-dictation',
+      label: 'Start dictation',
+      icon: 'Mic',
+      onClick: (ctx) => {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+          console.warn('[Voice Input] Speech recognition not supported');
+          return;
+        }
+
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+
+        recognition.lang = ctx.settings?.language || 'en-NZ';
+        recognition.continuous = ctx.settings?.continuous || false;
+        recognition.interimResults = ctx.settings?.interimResults || true;
+
+        recognition.onresult = (event: any) => {
+          const transcript = Array.from(event.results)
+            .map((result: any) => result[0].transcript)
+            .join('');
+
+          console.log('[Voice Input] Transcript:', transcript);
+
+          // Call the onTranscript callback if provided
+          if (ctx.onTranscript) {
+            ctx.onTranscript(transcript);
+          }
+        };
+
+        recognition.onerror = (event: any) => {
+          console.error('[Voice Input] Error:', event.error);
+        };
+
+        recognition.start();
+
+        // Store recognition instance for stopping
+        (window as any).__aiMateVoiceRecognition = recognition;
+      },
+      condition: () =>
+        'webkitSpeechRecognition' in window || 'SpeechRecognition' in window,
+    },
+    {
+      id: 'stop-dictation',
+      label: 'Stop dictation',
+      icon: 'MicOff',
+      onClick: () => {
+        const recognition = (window as any).__aiMateVoiceRecognition;
+        if (recognition) {
+          recognition.stop();
+          (window as any).__aiMateVoiceRecognition = null;
+        }
+      },
+      condition: () => !!(window as any).__aiMateVoiceRecognition,
+    },
+  ],
+};
+
+/**
+ * Memory Extraction Plugin
+ *
+ * Automatically extracts key facts, entities, and preferences from conversations.
+ */
+const memoryExtractionPlugin: PluginDefinition = {
+  id: 'memory-extraction',
+  name: 'Memory Extraction',
+  version: '1.0.0',
+  description: 'Auto-extract and save important facts from conversations',
+  author: 'aiMate',
+  enabled: true,
+  settings: {
+    autoExtract: true,
+    extractTypes: ['facts', 'preferences', 'entities', 'dates'],
+    minConfidence: 0.7,
+  },
+  hooks: {
+    // Process responses to extract memories
+    afterResponse: [
+      (response, ctx) => {
+        if (!response?.content || !ctx.settings?.autoExtract) return response;
+
+        // Simple extraction patterns (in production, use NLP/LLM)
+        const memories: Array<{ type: string; content: string; confidence: number }> = [];
+
+        // Extract dates mentioned
+        const datePattern = /\b(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})\b/g;
+        const dates = response.content.match(datePattern);
+        if (dates) {
+          dates.forEach((date: string) => {
+            memories.push({ type: 'date', content: date, confidence: 0.9 });
+          });
+        }
+
+        // Extract "I am/I'm" statements (preferences/facts about user)
+        const preferencePattern = /(?:I am|I'm|I prefer|I like|I want|I need|My name is|I work|I live)\s+([^.!?]+)/gi;
+        let match;
+        while ((match = preferencePattern.exec(response.content)) !== null) {
+          memories.push({
+            type: 'preference',
+            content: match[0].trim(),
+            confidence: 0.8,
+          });
+        }
+
+        // Extract email addresses
+        const emailPattern = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+        const emails = response.content.match(emailPattern);
+        if (emails) {
+          emails.forEach((email: string) => {
+            memories.push({ type: 'email', content: email, confidence: 0.95 });
+          });
+        }
+
+        // Extract URLs
+        const urlPattern = /https?:\/\/[^\s]+/g;
+        const urls = response.content.match(urlPattern);
+        if (urls) {
+          urls.forEach((url: string) => {
+            memories.push({ type: 'url', content: url, confidence: 0.95 });
+          });
+        }
+
+        // Add extracted memories to response
+        if (memories.length > 0) {
+          console.log('[Memory Extraction] Found memories:', memories);
+          return {
+            ...response,
+            extractedMemories: memories,
+            hasExtractedMemories: true,
+          };
+        }
+
+        return response;
+      },
+    ],
+  },
+  messageActions: [
+    {
+      id: 'extract-memories',
+      label: 'Extract memories',
+      icon: 'Brain',
+      onClick: (ctx) => {
+        console.log('[Memory Extraction] Manual extraction for:', ctx.messageId);
+        // Would trigger memory extraction and saving
+        if (ctx.onExtractMemories) {
+          ctx.onExtractMemories(ctx.messageContent);
+        }
+      },
+      condition: (ctx) => ctx.messageRole === 'assistant',
+    },
+    {
+      id: 'view-memories',
+      label: 'View extracted',
+      icon: 'List',
+      onClick: (ctx) => {
+        if (ctx.extractedMemories) {
+          console.log('[Memory Extraction] Extracted:', ctx.extractedMemories);
+        }
+      },
+      condition: (ctx) => ctx.hasExtractedMemories === true,
+    },
+  ],
+};
+
+/**
+ * Summarization Plugin
+ *
+ * Summarize long messages or conversations.
+ */
+const summarizationPlugin: PluginDefinition = {
+  id: 'summarization',
+  name: 'Summarization',
+  version: '1.0.0',
+  description: 'Summarize long messages and conversations',
+  author: 'aiMate',
+  enabled: true,
+  settings: {
+    maxLength: 200,
+    style: 'bullet',  // 'bullet' | 'paragraph' | 'tldr'
+  },
+  messageActions: [
+    {
+      id: 'summarize',
+      label: 'Summarize',
+      icon: 'AlignLeft',
+      onClick: (ctx) => {
+        if (ctx.messageContent) {
+          // Simple extractive summarization (first sentences)
+          // In production, use an LLM for better results
+          const sentences = ctx.messageContent.split(/[.!?]+/).filter(s => s.trim());
+          const summary = sentences.slice(0, 3).join('. ').trim();
+
+          console.log('[Summarization] Summary:', summary);
+
+          if (ctx.onShowSummary) {
+            ctx.onShowSummary(summary);
+          } else {
+            // Fallback: copy to clipboard
+            navigator.clipboard.writeText(`Summary:\n${summary}`);
+          }
+        }
+      },
+      condition: (ctx) =>
+        ctx.messageContent && ctx.messageContent.length > 500,
+    },
+    {
+      id: 'tldr',
+      label: 'TL;DR',
+      icon: 'Zap',
+      onClick: (ctx) => {
+        if (ctx.messageContent) {
+          // Very short summary - just first sentence or first 100 chars
+          const firstSentence = ctx.messageContent.split(/[.!?]/)[0]?.trim() || '';
+          const tldr = firstSentence.length > 100
+            ? firstSentence.slice(0, 100) + '...'
+            : firstSentence;
+
+          console.log('[Summarization] TL;DR:', tldr);
+          navigator.clipboard.writeText(`TL;DR: ${tldr}`);
+        }
+      },
+      condition: (ctx) =>
+        ctx.messageContent && ctx.messageContent.length > 300,
+    },
+  ],
+};
+
+/**
+ * Keyboard Shortcuts Plugin
+ *
+ * Provides customizable keyboard shortcuts for common actions.
+ */
+const keyboardShortcutsPlugin: PluginDefinition = {
+  id: 'keyboard-shortcuts',
+  name: 'Keyboard Shortcuts',
+  version: '1.0.0',
+  description: 'Customizable keyboard shortcuts for quick actions',
+  author: 'aiMate',
+  enabled: true,
+  settings: {
+    shortcuts: {
+      'copy': 'Ctrl+Shift+C',
+      'regenerate': 'Ctrl+Shift+R',
+      'newChat': 'Ctrl+N',
+      'search': 'Ctrl+K',
+      'settings': 'Ctrl+,',
+    },
+  },
+  // Note: Actual keyboard handling is done at the app level
+  // This plugin provides configuration and the action registry
+  messageActions: [
+    {
+      id: 'show-shortcuts',
+      label: 'Keyboard shortcuts',
+      icon: 'Keyboard',
+      onClick: (ctx) => {
+        const shortcuts = ctx.settings?.shortcuts || {};
+        const text = Object.entries(shortcuts)
+          .map(([action, key]) => `${action}: ${key}`)
+          .join('\n');
+
+        console.log('[Keyboard Shortcuts] Available:\n', text);
+
+        if (ctx.onShowShortcuts) {
+          ctx.onShowShortcuts(shortcuts);
+        }
+      },
+    },
+  ],
+};
+
+/**
+ * Reading Time Plugin
+ *
+ * Estimates reading time for messages.
+ */
+const readingTimePlugin: PluginDefinition = {
+  id: 'reading-time',
+  name: 'Reading Time',
+  version: '1.0.0',
+  description: 'Show estimated reading time for messages',
+  author: 'aiMate',
+  enabled: true,
+  settings: {
+    wordsPerMinute: 200,
+    showForMinLength: 100,  // Only show for messages > 100 words
+  },
+  hooks: {
+    afterResponse: [
+      (response, ctx) => {
+        if (!response?.content) return response;
+
+        const words = response.content.split(/\s+/).length;
+        const wpm = ctx.settings?.wordsPerMinute || 200;
+        const minutes = Math.ceil(words / wpm);
+
+        if (words >= (ctx.settings?.showForMinLength || 100)) {
+          return {
+            ...response,
+            readingTime: {
+              words,
+              minutes,
+              formatted: minutes === 1 ? '1 min read' : `${minutes} min read`,
+            },
+          };
+        }
+
+        return response;
+      },
+    ],
+  },
+};
+
+/**
+ * Sentiment Analysis Plugin
+ *
+ * Basic sentiment detection for messages.
+ */
+const sentimentPlugin: PluginDefinition = {
+  id: 'sentiment',
+  name: 'Sentiment Analysis',
+  version: '1.0.0',
+  description: 'Detect emotional tone of messages',
+  author: 'aiMate',
+  enabled: false,  // Disabled by default
+  hooks: {
+    afterResponse: [
+      (response, ctx) => {
+        if (!response?.content) return response;
+
+        // Very simple keyword-based sentiment (production would use ML)
+        const content = response.content.toLowerCase();
+
+        const positiveWords = ['great', 'good', 'excellent', 'happy', 'love', 'wonderful', 'fantastic', 'amazing', 'helpful', 'thanks', 'thank'];
+        const negativeWords = ['bad', 'terrible', 'awful', 'hate', 'wrong', 'error', 'fail', 'problem', 'issue', 'bug', 'broken'];
+
+        let score = 0;
+        positiveWords.forEach(word => {
+          if (content.includes(word)) score += 1;
+        });
+        negativeWords.forEach(word => {
+          if (content.includes(word)) score -= 1;
+        });
+
+        const sentiment = score > 1 ? 'positive' : score < -1 ? 'negative' : 'neutral';
+
+        return {
+          ...response,
+          sentiment: {
+            score,
+            label: sentiment,
+            emoji: sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😟' : '😐',
+          },
+        };
+      },
+    ],
+  },
+};
+
 // All built-in plugins
 const BUILTIN_PLUGINS: PluginDefinition[] = [
   messageActionsPlugin,
@@ -491,8 +868,14 @@ const BUILTIN_PLUGINS: PluginDefinition[] = [
   exportPlugin,
   bookmarkPlugin,
   structuredContentPlugin,
-  translationPlugin,  // Disabled by default
-  searchPlugin,       // Disabled by default
+  voiceInputPlugin,
+  memoryExtractionPlugin,
+  summarizationPlugin,
+  readingTimePlugin,
+  keyboardShortcutsPlugin,
+  translationPlugin,   // Disabled by default
+  searchPlugin,        // Disabled by default
+  sentimentPlugin,     // Disabled by default
 ];
 
 // ============================================================================
