@@ -2,6 +2,93 @@
 
 This document outlines the server-side plugin architecture using C# / ASP.NET Core, complementing the frontend TypeScript plugins.
 
+## Architectural Decision: MCP for External Only
+
+**Key Principle**: Use MCP for external tool integration, native APIs for internal communication.
+
+```
+❌ Over-engineered (avoid):
+Frontend → MCP Client → MCP Server (C#) → Plugin System → MCP Client → External MCP
+
+✅ Recommended:
+Frontend → REST/SignalR → C# Plugin System → MCP Client → External MCP Servers
+                              ↓
+                         Native C# Plugins
+```
+
+### Why Not MCP Internally?
+
+| Concern | MCP Internal | Native API |
+|---------|--------------|------------|
+| Performance | Protocol overhead | Direct calls |
+| Type Safety | JSON schema | C# generics + TS codegen |
+| Debugging | Protocol inspection | Standard .NET debugging |
+| Flexibility | MCP spec constraints | Full control |
+| Complexity | Extra translation layer | Simpler stack |
+
+### Where MCP Makes Sense
+
+| Use Case | Protocol | Reason |
+|----------|----------|--------|
+| Frontend ↔ Backend | REST + SignalR | Fast, typed, you control it |
+| Backend ↔ External MCP | MCP | Interop with ecosystem |
+| Internal C# Plugins | Native .NET | No translation overhead |
+| LLM ↔ Tools | Function calling | Standard AI interface |
+
+### The C# Backend as MCP Client
+
+The backend connects TO external MCP servers (filesystem, databases, etc.) but does NOT expose itself as an MCP server:
+
+```csharp
+// C# backend is an MCP CLIENT, not server
+public class McpClientService : IHostedService
+{
+    private readonly ConcurrentDictionary<string, McpConnection> _connections = new();
+    private readonly ILogger<McpClientService> _logger;
+
+    public async Task StartAsync(CancellationToken ct)
+    {
+        var configs = _configuration.GetSection("McpServers").Get<List<McpServerConfig>>();
+
+        foreach (var config in configs ?? [])
+        {
+            try
+            {
+                var conn = await McpConnection.CreateAsync(config);
+                _connections[config.Name] = conn;
+                _logger.LogInformation("Connected to MCP server: {Name}", config.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to connect to MCP server: {Name}", config.Name);
+            }
+        }
+    }
+
+    public async Task<ToolResult> CallToolAsync(string serverName, string toolName, JsonDocument args)
+    {
+        if (!_connections.TryGetValue(serverName, out var conn))
+            return ToolResult.Error($"MCP server '{serverName}' not connected");
+
+        return await conn.CallToolAsync(toolName, args);
+    }
+
+    public IEnumerable<(string Server, ToolDefinition Tool)> GetAllTools()
+    {
+        return _connections.SelectMany(kvp =>
+            kvp.Value.Tools.Select(t => (kvp.Key, t)));
+    }
+
+    public async Task StopAsync(CancellationToken ct)
+    {
+        foreach (var conn in _connections.Values)
+            await conn.DisposeAsync();
+    }
+}
+```
+
+---
+
 ## Overview
 
 ```
