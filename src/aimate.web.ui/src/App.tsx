@@ -10,6 +10,8 @@ import { useMemories } from "./hooks/useMemories";
 import { useTools, ToolCall } from "./hooks/useTools";
 import { useCustomModels } from "./hooks/useCustomModels";
 import { useContextMeter } from "./components/ContextMeter";
+import { useContextCompression, getCompressionInfo } from "./hooks/useContextCompression";
+import { getContextLimit } from "./utils/modelLimits";
 import { ShowcaseModeIndicator } from "./components/ShowcaseModeIndicator";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { DebugProvider, useDebug } from "./components/DebugContext";
@@ -72,6 +74,28 @@ function ChatApp() {
     systemPrompt: currentSystemPrompt,
     memoryContext: currentMemoryContext,
   });
+
+  // Context compression - optimize long conversations
+  const compressionSettings = userSettings.contextManagement || {
+    enabled: true,
+    threshold: 80,
+    strategy: 'hybrid' as const,
+    preserveRecentMessages: 5,
+    showIndicator: true,
+  };
+
+  const compression = useContextCompression({
+    messages: chat.messages,
+    contextLimit: getContextLimit(selectedModel),
+    settings: compressionSettings,
+    systemPromptTokens: contextMeter.breakdown.systemPrompt,
+    memoryTokens: contextMeter.breakdown.memories,
+  });
+
+  const compressionInfo = useMemo(() => {
+    if (!compressionSettings.showIndicator) return undefined;
+    return getCompressionInfo(compression, compressionSettings.strategy);
+  }, [compression, compressionSettings.showIndicator, compressionSettings.strategy]);
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -630,6 +654,7 @@ function ChatApp() {
           contextUsedTokens={contextMeter.usedTokens}
           contextMaxTokens={contextMeter.maxTokens}
           contextBreakdown={contextMeter.breakdown}
+          contextCompression={compressionInfo}
         />
 
         <div className="flex-1 overflow-hidden">

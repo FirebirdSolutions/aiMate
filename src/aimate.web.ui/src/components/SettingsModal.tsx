@@ -25,6 +25,7 @@ import {
 import { Separator } from "./ui/separator";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
+import { Slider } from "./ui/slider";
 import {
   Table,
   TableBody,
@@ -409,8 +410,15 @@ function ConnectionsTab() {
 }
 
 function PersonalisationTab() {
-  const { settings, updatePersonalisation } = useUserSettings();
+  const { settings, updatePersonalisation, updateContextManagement } = useUserSettings();
   const pers = settings.personalisation || {};
+  const ctx = settings.contextManagement || {
+    enabled: true,
+    threshold: 80,
+    strategy: 'hybrid' as const,
+    preserveRecentMessages: 5,
+    showIndicator: true,
+  };
 
   return (
     <div className="space-y-4">
@@ -480,6 +488,114 @@ function PersonalisationTab() {
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Context Management */}
+      <div>
+        <h3 className="font-semibold mb-3">Context Management</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Automatically optimize long conversations to fit within model limits
+        </p>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="context-compression">Enable smart compression</Label>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Compress older messages when approaching context limit
+              </p>
+            </div>
+            <Switch
+              id="context-compression"
+              checked={ctx.enabled}
+              onCheckedChange={(v) => updateContextManagement({ enabled: v })}
+              className="data-[state=checked]:bg-purple-600"
+            />
+          </div>
+
+          {ctx.enabled && (
+            <>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="threshold">Compression threshold</Label>
+                  <span className="text-sm font-mono text-muted-foreground">{ctx.threshold}%</span>
+                </div>
+                <Slider
+                  id="threshold"
+                  value={[ctx.threshold]}
+                  onValueChange={(v) => updateContextManagement({ threshold: v[0] })}
+                  min={50}
+                  max={95}
+                  step={5}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Compress when context usage exceeds this percentage
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="strategy">Compression strategy</Label>
+                <Select
+                  value={ctx.strategy}
+                  onValueChange={(v) => updateContextManagement({ strategy: v as any })}
+                >
+                  <SelectTrigger className="mt-2" id="strategy">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hybrid">Hybrid (Recommended)</SelectItem>
+                    <SelectItem value="drop-low-value">Drop Low-Value Messages</SelectItem>
+                    <SelectItem value="sliding-window">Sliding Window</SelectItem>
+                    <SelectItem value="summarize">Summarize (Uses AI)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {ctx.strategy === 'hybrid' && 'Drop low-value messages first, then use sliding window'}
+                  {ctx.strategy === 'drop-low-value' && 'Remove short acknowledgments like "ok", "thanks"'}
+                  {ctx.strategy === 'sliding-window' && 'Keep only the most recent messages'}
+                  {ctx.strategy === 'summarize' && 'Summarize older messages (requires additional API call)'}
+                </p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="preserve">Preserve recent messages</Label>
+                  <span className="text-sm font-mono text-muted-foreground">{ctx.preserveRecentMessages}</span>
+                </div>
+                <Slider
+                  id="preserve"
+                  value={[ctx.preserveRecentMessages]}
+                  onValueChange={(v) => updateContextManagement({ preserveRecentMessages: v[0] })}
+                  min={2}
+                  max={20}
+                  step={1}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Always keep the last N messages intact
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="show-indicator">Show compression indicator</Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Display when context has been compressed
+                  </p>
+                </div>
+                <Switch
+                  id="show-indicator"
+                  checked={ctx.showIndicator}
+                  onCheckedChange={(v) => updateContextManagement({ showIndicator: v })}
+                  className="data-[state=checked]:bg-purple-600"
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
