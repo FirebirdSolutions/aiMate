@@ -1,0 +1,181 @@
+
+> ai-chat-interface@1.0.0 build
+> tsc && vite build
+
+api/chat.ts(1,57): error TS6133: 'StreamChunk' is declared but its value is never read.
+api/services/customModels.service.ts(17,3): error TS6133: 'PromptSuggestionDto' is declared but its value is never read.
+api/services/customModels.service.ts(733,27): error TS6133: 'id' is declared but its value is never read.
+api/services/customModels.service.ts(741,32): error TS6133: 'shareId' is declared but its value is never read.
+api/services/messages.service.ts(48,5): error TS6133: 'signal' is declared but its value is never read.
+App.tsx(706,11): error TS2322: Type '{ enabled: boolean; originalTokens: number; compressedTokens: number; strategy: string; } | null | undefined' is not assignable to type 'CompressionInfo | undefined'.
+  Type 'null' is not assignable to type 'CompressionInfo | undefined'.
+components/AdminModal.tsx(13,3): error TS6133: 'DialogDescription' is declared but its value is never read.
+components/AdminModal.tsx(18,184): error TS6133: 'Bot' is declared but its value is never read.
+components/AdminModal.tsx(18,233): error TS6133: 'Image' is declared but its value is never read.
+components/AdminModal.tsx(18,240): error TS6133: 'Link2' is declared but its value is never read.
+components/AdminModal.tsx(23,29): error TS6133: 'CardHeader' is declared but its value is never read.
+components/AdminModal.tsx(23,41): error TS6133: 'CardTitle' is declared but its value is never read.
+components/AdminModal.tsx(1033,27): error TS6133: 'onSave' is declared but its value is never read.
+components/AdminModal.tsx(1123,28): error TS6133: 'onSave' is declared but its value is never read.
+components/AdminModal.tsx(1248,117): error TS6133: 'testConnection' is declared but its value is never read.
+components/AdminModal.tsx(1453,20): error TS6198: All destructured elements are unused.
+components/AdminModal.tsx(2003,20): error TS6133: 'setDocStats' is declared but its value is never read.
+components/AdminModal.tsx(2579,10): error TS6133: 'showAddProvider' is declared but its value is never read.
+components/AdminModal.tsx(2989,5): error TS6133: 'enabledModels' is declared but its value is never read.
+components/AdminModal.tsx(3002,9): error TS6133: 'fileInputRef' is declared but its value is never read.
+components/ArenaComparison.tsx(16,3): error TS6133: 'ThumbsDown' is declared but its value is never read.
+components/ArenaComparison.tsx(28,1): error TS6133: 'toast' is declared but its value is never read.
+components/AttachedContext.tsx(10,3): error TS6133: 'Paperclip' is declared but its value is never read.
+components/BaseModal.tsx(12,1): error TS6133: 'X' is declared but its value is never read.
+components/ChatHeader.tsx(1,20): error TS6133: 'useEffect' is declared but its value is never read.
+components/ChatHeader.tsx(3,10): error TS6133: 'Menu' is declared but its value is never read.
+components/ChatHeader.tsx(3,30): error TS6133: 'Plus' is declared but its value is never read.
+components/ChatHeader.tsx(3,111): error TS6133: 'Bot' is declared but its value is never read.
+components/ChatHeader.tsx(3,131): error TS6133: 'Trophy' is declared but its value is never read.
+components/ChatHeader.tsx(14,1): error TS6133: 'CustomModelDto' is declared but its value is never read.
+components/ChatHeader.tsx(31,77): error TS6133: 'KeyboardShortcut' is declared but its value is never read.
+components/ChatHeader.tsx(70,9): error TS6133: 'showcaseMode' is declared but its value is never read.
+components/ChatHeader.tsx(80,9): error TS6133: 'chatInputRef' is declared but its value is never read.
+components/ChatHeader.tsx(186,55): error TS7015: Element implicitly has an 'any' type because index expression is not of type 'number'.
+components/ChatInput.tsx(1,39): error TS6133: 'KeyboardEvent' is declared but its value is never read.
+components/ChatInput.tsx(2,27): error TS6133: 'Smile' is declared but its value is never read.
+components/ChatInput.tsx(2,34): error TS6133: 'Mic' is declared but its value is never read.
+components/ChatInput.tsx(2,39): error TS6133: 'Square' is declared but its value is never read.
+components/ChatInput.tsx(2,57): error TS6133: 'Database' is declared but its value is never read.
+components/ChatInput.tsx(2,67): error TS6133: 'FileImage' is declared but its value is never read.
+components/ChatInput.tsx(2,78): error TS6133: 'MessageCircle' is declared but its value is never read.
+components/ChatInput.tsx(2,124): error TS6133: 'Sparkles' is declared but its value is never read.
+components/ChatInput.tsx(2,198): error TS6133: 'Search' is declared but its value is never read.
+components/ChatInput.tsx(2,206): error TS6133: 'Code' is declared but its value is never read.
+components/ChatInput.tsx(2,212): error TS6133: 'Settings2' is declared but its value is never read.
+components/ChatInput.tsx(5,1): error TS6192: All imports in import declaration are unused.
+components/ChatInput.tsx(7,1): error TS6133: 'ScrollArea' is declared but its value is never read.
+components/ChatInput.tsx(593,35): error TS6133: 'collectionId' is declared but its value is never read.
+components/ChatMessage.tsx(9,10): error TS6133: 'Bot' is declared but its value is never read.
+components/ChatMessage.tsx(9,28): error TS6133: 'Check' is declared but its value is never read.
+components/ChatMessage.tsx(66,9): error TS6133: 'syntaxHighlighting' is declared but its value is never read.
+components/ChatMessage.tsx(123,9): error TS6133: 'handleRegenerateClick' is declared but its value is never read.
+components/ChatMessage.tsx(128,9): error TS6133: 'handleInfoClick' is declared but its value is never read.
+components/ChatMessage.tsx(133,9): error TS6133: 'handleShareClick' is declared but its value is never read.
+components/ChatMessage.tsx(138,9): error TS6133: 'handleRatingClick' is declared but its value is never read.
+components/ChatMessage.tsx(144,9): error TS6133: 'handleBrainClick' is declared but its value is never read.
+components/ChatMessage.tsx(370,72): error TS6133: 'props' is declared but its value is never read.
+components/CodeBlock.tsx(199,13): error TS6133: 'ext' is declared but its value is never read.
+components/ConnectionEditDialog.tsx(24,1): error TS6133: 'AppConfig' is declared but its value is never read.
+components/ConnectionEditDialog.tsx(63,3): error TS6133: 'onTestConnection' is declared but its value is never read.
+components/ConnectionHealthIndicator.tsx(8,10): error TS6133: 'Wifi' is declared but its value is never read.
+components/ContextMeter.tsx(13,1): error TS6133: 'Progress' is declared but its value is never read.
+components/ConversationSidebar.tsx(19,1): error TS6133: 'Badge' is declared but its value is never read.
+components/ConversationSidebar.tsx(44,1): error TS6192: All imports in import declaration are unused.
+components/ConversationSidebar.tsx(225,9): error TS6133: 'formatDate' is declared but its value is never read.
+components/ConversationSidebar.tsx(313,9): error TS6133: 'handleClone' is declared but its value is never read.
+components/ConversationSidebar.tsx(319,9): error TS6133: 'handleMoveToProject' is declared but its value is never read.
+components/CustomModelEditDialog.tsx(39,3): error TS6133: 'Sparkles' is declared but its value is never read.
+components/CustomModelEditDialog.tsx(44,3): error TS6133: 'Lightbulb' is declared but its value is never read.
+components/CustomModelEditDialog.tsx(47,3): error TS6133: 'Info' is declared but its value is never read.
+components/CustomModelEditDialog.tsx(48,3): error TS6133: 'Palette' is declared but its value is never read.
+components/CustomModelEditDialog.tsx(51,3): error TS6133: 'Code' is declared but its value is never read.
+components/DebugContext.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+components/DebugPanel.tsx(4,63): error TS6133: 'X' is declared but its value is never read.
+components/EmptyState.tsx(1,42): error TS6133: 'Pencil' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,27): error TS6133: 'FileType' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,37): error TS6133: 'Video' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,44): error TS6133: 'Headphones' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,56): error TS6133: 'Code' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,71): error TS6133: 'ImageIcon' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,141): error TS6133: 'EyeOff' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,149): error TS6133: 'X' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,152): error TS6133: 'ChevronDown' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,165): error TS6133: 'Grid3x3' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,174): error TS6133: 'List' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,218): error TS6133: 'User' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,224): error TS6133: 'Hash' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,240): error TS6133: 'Calendar' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,262): error TS6133: 'Layers' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,270): error TS6133: 'ArrowUpDown' is declared but its value is never read.
+components/KnowledgeModal.tsx(2,283): error TS6133: 'Check' is declared but its value is never read.
+components/KnowledgeModal.tsx(9,1): error TS6192: All imports in import declaration are unused.
+components/KnowledgeModal.tsx(11,1): error TS6133: 'Checkbox' is declared but its value is never read.
+components/KnowledgeModal.tsx(14,1): error TS6192: All imports in import declaration are unused.
+components/KnowledgeModal.tsx(15,1): error TS6192: All imports in import declaration are unused.
+components/KnowledgeModal.tsx(16,1): error TS6192: All imports in import declaration are unused.
+components/KnowledgeModal.tsx(17,1): error TS6192: All imports in import declaration are unused.
+components/KnowledgeModal.tsx(451,9): error TS6133: 'handleDownloadDocument' is declared but its value is never read.
+components/KnowledgeSuggestions.tsx(5,3): error TS6133: 'Brain' is declared but its value is never read.
+components/KnowledgeSuggestions.tsx(7,3): error TS6133: 'X' is declared but its value is never read.
+components/KnowledgeSuggestions.tsx(21,1): error TS6133: 'AppConfig' is declared but its value is never read.
+components/KnowledgeSuggestions.tsx(49,3): error TS6133: 'onDetach' is declared but its value is never read.
+components/MCPEditDialog.tsx(222,9): error TS6133: 'getPermissionBadge' is declared but its value is never read.
+components/ModelEditDialog.tsx(23,1): error TS6133: 'Switch' is declared but its value is never read.
+components/ModelEditDialog.tsx(25,34): error TS6133: 'Download' is declared but its value is never read.
+components/ModelEditDialog.tsx(79,10): error TS6133: 'jsonPreviewOpen' is declared but its value is never read.
+components/ModelEditDialog.tsx(79,27): error TS6133: 'setJsonPreviewOpen' is declared but its value is never read.
+components/ModelEditDialog.tsx(130,10): error TS6133: 'mirostatMode' is declared but its value is never read.
+components/ModelEditDialog.tsx(130,24): error TS6133: 'setMirostatMode' is declared but its value is never read.
+components/ModelEditDialog.tsx(131,10): error TS6133: 'mirostatTau' is declared but its value is never read.
+components/ModelEditDialog.tsx(131,23): error TS6133: 'setMirostatTau' is declared but its value is never read.
+components/ModelEditDialog.tsx(132,10): error TS6133: 'mirostatEta' is declared but its value is never read.
+components/ModelEditDialog.tsx(132,23): error TS6133: 'setMirostatEta' is declared but its value is never read.
+components/ModelEditDialog.tsx(136,10): error TS6133: 'stopSequence' is declared but its value is never read.
+components/ModelEditDialog.tsx(136,24): error TS6133: 'setStopSequence' is declared but its value is never read.
+components/ModelEditDialog.tsx(137,10): error TS6133: 'numPredict' is declared but its value is never read.
+components/ModelEditDialog.tsx(137,22): error TS6133: 'setNumPredict' is declared but its value is never read.
+components/ModelEditDialog.tsx(138,10): error TS6133: 'tfsZ' is declared but its value is never read.
+components/ModelEditDialog.tsx(138,16): error TS6133: 'setTfsZ' is declared but its value is never read.
+components/ModelEditDialog.tsx(139,10): error TS6133: 'numCtx' is declared but its value is never read.
+components/ModelEditDialog.tsx(139,18): error TS6133: 'setNumCtx' is declared but its value is never read.
+components/ModelEditDialog.tsx(140,10): error TS6133: 'numBatch' is declared but its value is never read.
+components/ModelEditDialog.tsx(140,20): error TS6133: 'setNumBatch' is declared but its value is never read.
+components/ModelEditDialog.tsx(141,10): error TS6133: 'typicalP' is declared but its value is never read.
+components/ModelEditDialog.tsx(141,20): error TS6133: 'setTypicalP' is declared but its value is never read.
+components/ModelLeaderboard.tsx(27,1): error TS6192: All imports in import declaration are unused.
+components/ModelLeaderboard.tsx(45,1): error TS6192: All imports in import declaration are unused.
+components/ModelLeaderboard.tsx(68,10): error TS6133: 'filterTopic' is declared but its value is never read.
+components/ModelLeaderboard.tsx(68,23): error TS6133: 'setFilterTopic' is declared but its value is never read.
+components/ProjectModal.tsx(1,31): error TS6133: 'useRef' is declared but its value is never read.
+components/ProjectModal.tsx(13,161): error TS6133: 'Check' is declared but its value is never read.
+components/ProjectModal.tsx(56,11): error TS6196: 'ProjectChat' is declared but never used.
+components/ProjectModal.tsx(165,13): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+components/ProjectModal.tsx(379,43): error TS6133: 'targetIndex' is declared but its value is never read.
+components/RatingModal.tsx(55,35): error TS6133: 'createTag' is declared but its value is never read.
+components/SearchModal.tsx(43,11): error TS6133: 'conversations' is declared but its value is never read.
+components/SearchModal.tsx(44,11): error TS6133: 'documents' is declared but its value is never read.
+components/StructuredPanel.tsx(245,33): error TS6133: 'onAction' is declared but its value is never read.
+components/StructuredPanel.tsx(297,31): error TS6133: 'onAction' is declared but its value is never read.
+components/UsageDetailsDialog.tsx(180,9): error TS6133: 'modelColors' is declared but its value is never read.
+components/UsageDetailsDialog.tsx(519,44): error TS6133: 'entry' is declared but its value is never read.
+components/UsageDetailsDialog.tsx(545,44): error TS6133: 'entry' is declared but its value is never read.
+components/UsageDetailsDialog.tsx(592,44): error TS6133: 'entry' is declared but its value is never read.
+components/UsageDetailsDialog.tsx(679,44): error TS6133: 'entry' is declared but its value is never read.
+components/UsageDetailsDialog.tsx(787,46): error TS6133: 'entry' is declared but its value is never read.
+components/UsageDetailsDialog.tsx(816,46): error TS6133: 'entry' is declared but its value is never read.
+context/AdminSettingsContext.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+context/AppDataContext.tsx(7,8): error TS6133: 'React' is declared but its value is never read.
+context/AuthContext.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+context/UserSettingsContext.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+hooks/useAdmin.ts(21,7): error TS6133: 'OFFLINE_STORAGE_KEY' is declared but its value is never read.
+hooks/useAdmin.ts(52,10): error TS6133: 'toAdminConnection' is declared but its value is never read.
+hooks/useAdmin.ts(64,10): error TS6133: 'toAdminModel' is declared but its value is never read.
+hooks/useAgents.ts(178,13): error TS6133: 'savedIds' is declared but its value is never read.
+hooks/useChat.ts(9,27): error TS6133: 'MessageDto' is declared but its value is never read.
+hooks/useContextCompression.ts(9,10): error TS6133: 'countTokens' is declared but its value is never read.
+hooks/useConversations.ts(404,11): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+hooks/useEvaluation.ts(15,3): error TS6133: 'CreateArenaMatchDto' is declared but its value is never read.
+hooks/useEvaluation.ts(19,3): error TS6133: 'EvaluationSnapshotDto' is declared but its value is never read.
+hooks/useFiles.ts(15,3): error TS6133: 'createDelayedMockResponse' is declared but its value is never read.
+hooks/useMemories.ts(9,1): error TS6133: 'AppConfig' is declared but its value is never read.
+hooks/usePlugins.ts(8,33): error TS6133: 'useEffect' is declared but its value is never read.
+hooks/usePlugins.ts(526,18): error TS6133: 'ctx' is declared but its value is never read.
+hooks/usePlugins.ts(860,7): error TS2322: Type '(ctx: PluginContext) => boolean | "" | undefined' is not assignable to type '(context: PluginContext) => boolean'.
+  Type 'string | boolean | undefined' is not assignable to type 'boolean'.
+    Type 'undefined' is not assignable to type 'boolean'.
+hooks/usePlugins.ts(879,7): error TS2322: Type '(ctx: PluginContext) => boolean | "" | undefined' is not assignable to type '(context: PluginContext) => boolean'.
+  Type 'string | boolean | undefined' is not assignable to type 'boolean'.
+    Type 'undefined' is not assignable to type 'boolean'.
+hooks/usePlugins.ts(1025,23): error TS7006: Parameter 'word' implicitly has an 'any' type.
+hooks/usePlugins.ts(1147,9): error TS6133: 'settings' is declared but its value is never read.
+utils/api-stubs.ts(487,3): error TS6133: 'apiKey' is declared but its value is never read.
+utils/api-stubs.ts(488,3): error TS6133: 'endpoint' is declared but its value is never read.
+utils/dynamicVariables.ts(95,15): error TS6133: 'name' is declared but its value is never read.
