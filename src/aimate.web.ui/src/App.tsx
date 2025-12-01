@@ -1,3 +1,4 @@
+console.log('[App.tsx] Module loading...');
 import { useState, useRef, useEffect, useMemo } from "react";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConversationSidebar, Conversation } from "./components/ConversationSidebar";
