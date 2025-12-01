@@ -43,6 +43,110 @@ const DEFAULT_PARAMETERS: InferenceParametersDto = {
 
 // Built-in custom models
 const BUILT_IN_MODELS: CustomModelDto[] = [
+  // General Assistant - migrated from Agents system
+  {
+    id: 'cm-general-assistant',
+    name: 'General Assistant',
+    description: 'A helpful, balanced AI assistant for everyday tasks',
+    avatar: '🤖',
+    color: '#8b5cf6',
+    tags: ['general', 'assistant'],
+    baseModelId: 'default',
+    baseModelProvider: 'default',
+    systemPrompt: `You are a helpful AI assistant for {{ USER_NAME }}.
+
+Today is {{ CURRENT_DATE }}.
+
+Be concise, accurate, and friendly. Help with a wide range of tasks including:
+- Answering questions
+- Writing and editing text
+- Explaining concepts
+- Problem-solving
+- Creative brainstorming
+
+Adapt your communication style to match the user's needs.`,
+    knowledgeCollectionIds: [],
+    knowledgeFileIds: [],
+    enabledToolIds: [],
+    enabledMcpServerIds: [],
+    filterIds: [],
+    capabilities: DEFAULT_CAPABILITIES,
+    parameters: {
+      ...DEFAULT_PARAMETERS,
+      temperature: 0.7,
+    },
+    promptSuggestions: [
+      { id: 'ps-1', text: 'Help me write an email', icon: '✉️' },
+      { id: 'ps-2', text: 'Explain this concept to me', icon: '💡' },
+      { id: 'ps-3', text: 'Brainstorm ideas for...', icon: '🧠' },
+      { id: 'ps-4', text: 'Review and improve this text', icon: '📝' },
+    ],
+    visibility: { isPublic: true, isPrivate: false },
+    createdBy: 'system',
+    defaultWebSearchEnabled: false,
+    defaultKnowledgeEnabled: false,
+    isBuiltIn: true,
+    isEnabled: true,
+    isHidden: false,
+    usageCount: 0,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  // Data Analyst - migrated from Agents system
+  {
+    id: 'cm-data-analyst',
+    name: 'Data Analyst',
+    description: 'Analyzes data patterns, creates insights, and suggests visualizations',
+    avatar: '📊',
+    color: '#10b981',
+    tags: ['data', 'analysis', 'visualization'],
+    baseModelId: 'default',
+    baseModelProvider: 'default',
+    systemPrompt: `You are a data analyst helping {{ USER_NAME }}.
+
+Today is {{ CURRENT_DATE }}.
+
+When analyzing data:
+1. Identify patterns, trends, and anomalies
+2. Provide statistical insights where relevant
+3. Suggest visualizations (describe or use mermaid charts)
+4. Explain findings in plain language
+5. Recommend next steps for deeper analysis
+
+Be precise with numbers and clear about assumptions. When possible, suggest:
+- Appropriate chart types for the data
+- Key metrics to track
+- Potential correlations to investigate`,
+    knowledgeCollectionIds: [],
+    knowledgeFileIds: [],
+    enabledToolIds: [],
+    enabledMcpServerIds: [],
+    filterIds: [],
+    capabilities: {
+      ...DEFAULT_CAPABILITIES,
+      codeInterpreter: true,
+    },
+    parameters: {
+      ...DEFAULT_PARAMETERS,
+      temperature: 0.4,
+    },
+    promptSuggestions: [
+      { id: 'ps-1', text: 'Analyze this data for trends', icon: '📈' },
+      { id: 'ps-2', text: 'Summarize these metrics', icon: '📋' },
+      { id: 'ps-3', text: 'What visualization would work best?', icon: '📊' },
+      { id: 'ps-4', text: 'Find outliers in this dataset', icon: '🔍' },
+    ],
+    visibility: { isPublic: true, isPrivate: false },
+    createdBy: 'system',
+    defaultWebSearchEnabled: false,
+    defaultKnowledgeEnabled: false,
+    isBuiltIn: true,
+    isEnabled: true,
+    isHidden: false,
+    usageCount: 0,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
   {
     id: 'cm-python-tutor',
     name: 'Python Tutor',

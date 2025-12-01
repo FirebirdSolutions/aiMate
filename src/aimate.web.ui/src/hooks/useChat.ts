@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { messagesService, MessageDto, SendMessageDto, knowledgeService } from '../api/services';
+import { messagesService, MessageDto, SendMessageDto, knowledgeService, notesService, filesService, conversationsService } from '../api/services';
 import { AppConfig } from '../utils/config';
 import { useAdminSettings } from '../context/AdminSettingsContext';
 import { toast } from 'sonner';
@@ -210,7 +210,16 @@ export function useChat(conversationId?: string) {
       model?: string;
       attachments?: string[];
       systemPrompt?: string;
+      // Knowledge/Document attachments
       knowledgeIds?: string[];
+      // Note attachments
+      noteIds?: string[];
+      // File attachments
+      fileIds?: string[];
+      // Chat history attachments (from other conversations)
+      chatIds?: string[];
+      // Webpage URL attachments
+      webpageUrls?: string[];
       memoryContext?: string;
       temperature?: number;
       maxTokens?: number;
@@ -269,8 +278,12 @@ export function useChat(conversationId?: string) {
           headers['Authorization'] = `Bearer ${activeConnection.apiKey}`;
         }
 
-        // Fetch document chunks if knowledge IDs are provided
-        let knowledgeContext = '';
+        // ======================================================================
+        // FETCH ALL ATTACHMENT CONTEXTS
+        // ======================================================================
+        const attachmentContexts: string[] = [];
+
+        // 1. Knowledge documents (RAG chunks)
         if (options?.knowledgeIds && options.knowledgeIds.length > 0) {
           console.log('[useChat] Fetching knowledge chunks for:', options.knowledgeIds);
           try {
@@ -278,28 +291,120 @@ export function useChat(conversationId?: string) {
               knowledgeService.getDocumentChunks(id)
             );
             const allChunks = await Promise.all(chunkPromises);
-
-            // Flatten and format chunks
             const chunks = allChunks.flat();
             if (chunks.length > 0) {
-              knowledgeContext = '\n\n--- ATTACHED KNOWLEDGE CONTEXT ---\n' +
+              attachmentContexts.push(
+                '--- ATTACHED KNOWLEDGE DOCUMENTS ---\n' +
                 chunks.map((chunk, i) =>
                   `[Document Chunk ${i + 1}]:\n${chunk.content}`
                 ).join('\n\n') +
-                '\n--- END KNOWLEDGE CONTEXT ---\n\n';
+                '\n--- END KNOWLEDGE DOCUMENTS ---'
+              );
               console.log('[useChat] Injecting', chunks.length, 'knowledge chunks');
             }
           } catch (err) {
             console.error('[useChat] Failed to fetch knowledge chunks:', err);
-            // Continue without knowledge context on error
           }
         }
 
-        // Build messages array for the API (prepend system prompt + knowledge context + memory context if provided)
+        // 2. Notes
+        if (options?.noteIds && options.noteIds.length > 0) {
+          console.log('[useChat] Fetching notes for:', options.noteIds);
+          try {
+            const notes = await notesService.getNotesByIds(options.noteIds);
+            if (notes.length > 0) {
+              attachmentContexts.push(
+                '--- ATTACHED NOTES ---\n' +
+                notes.map(note =>
+                  `[Note: ${note.title}]\n${note.content}`
+                ).join('\n\n') +
+                '\n--- END NOTES ---'
+              );
+              console.log('[useChat] Injecting', notes.length, 'notes');
+            }
+          } catch (err) {
+            console.error('[useChat] Failed to fetch notes:', err);
+          }
+        }
+
+        // 3. Files (fetch metadata + content if text-based)
+        if (options?.fileIds && options.fileIds.length > 0) {
+          console.log('[useChat] Fetching files for:', options.fileIds);
+          try {
+            const workspaceId = options.workspaceId || 'default';
+            const filePromises = options.fileIds.map(id =>
+              filesService.getFile(workspaceId, id)
+            );
+            const files = await Promise.all(filePromises);
+            if (files.length > 0) {
+              attachmentContexts.push(
+                '--- ATTACHED FILES ---\n' +
+                files.map(file =>
+                  `[File: ${file.fileName}] (${file.fileType}, ${filesService.formatFileSize(file.fileSize)})\nURL: ${file.url}`
+                ).join('\n\n') +
+                '\n--- END FILES ---'
+              );
+              console.log('[useChat] Injecting', files.length, 'file references');
+            }
+          } catch (err) {
+            console.error('[useChat] Failed to fetch files:', err);
+          }
+        }
+
+        // 4. Chat history from other conversations
+        if (options?.chatIds && options.chatIds.length > 0) {
+          console.log('[useChat] Fetching chat history for:', options.chatIds);
+          try {
+            const chatHistoryParts: string[] = [];
+            for (const convId of options.chatIds) {
+              try {
+                const messages = await messagesService.getMessages(convId, { limit: 20 });
+                if (messages.length > 0) {
+                  const conv = await conversationsService.getConversation(convId);
+                  chatHistoryParts.push(
+                    `[Conversation: ${conv?.title || convId}]\n` +
+                    messages.map(m => `${m.role}: ${m.content.substring(0, 500)}${m.content.length > 500 ? '...' : ''}`).join('\n')
+                  );
+                }
+              } catch (err) {
+                console.error(`[useChat] Failed to fetch chat ${convId}:`, err);
+              }
+            }
+            if (chatHistoryParts.length > 0) {
+              attachmentContexts.push(
+                '--- ATTACHED CHAT HISTORY ---\n' +
+                chatHistoryParts.join('\n\n') +
+                '\n--- END CHAT HISTORY ---'
+              );
+              console.log('[useChat] Injecting', chatHistoryParts.length, 'chat histories');
+            }
+          } catch (err) {
+            console.error('[useChat] Failed to fetch chat histories:', err);
+          }
+        }
+
+        // 5. Webpage URLs (include as references - actual fetching would need server-side proxy)
+        if (options?.webpageUrls && options.webpageUrls.length > 0) {
+          console.log('[useChat] Including webpage URLs:', options.webpageUrls);
+          attachmentContexts.push(
+            '--- ATTACHED WEBPAGE REFERENCES ---\n' +
+            'The user has attached the following webpages for reference:\n' +
+            options.webpageUrls.map((url, i) => `${i + 1}. ${url}`).join('\n') +
+            '\n\nNote: Please consider these URLs as context the user wants to reference or discuss.' +
+            '\n--- END WEBPAGE REFERENCES ---'
+          );
+        }
+
+        // Build the combined attachment context
+        const attachmentContext = attachmentContexts.length > 0
+          ? '\n\n' + attachmentContexts.join('\n\n') + '\n\n'
+          : '';
+
+        // Build messages array for the API (prepend system prompt + attachments + memory context if provided)
         const systemContent = [
           options?.systemPrompt || '',
           options?.memoryContext || '',
-          knowledgeContext,
+          attachmentContext,
         ].filter(Boolean).join('\n');
 
         // Build messages array - optionally include history based on rememberContext setting

@@ -216,7 +216,12 @@ function ChatApp() {
         workspaceId: workspaces.currentWorkspace?.id,
         model: selectedModel,
         systemPrompt: combinedSystemPrompt,
+        // Pass all attachment types
         knowledgeIds: knowledgeIds.length > 0 ? knowledgeIds : undefined,
+        noteIds: attachments?.noteIds.length ? attachments.noteIds : undefined,
+        fileIds: attachments?.fileIds.length ? attachments.fileIds : undefined,
+        chatIds: attachments?.chatIds.length ? attachments.chatIds : undefined,
+        webpageUrls: attachments?.webpageUrls.length ? attachments.webpageUrls : undefined,
         memoryContext: memories.getContextString(),
         temperature,
         maxTokens,

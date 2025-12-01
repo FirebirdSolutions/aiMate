@@ -1,8 +1,24 @@
 /**
  * Agent Presets Hook
  *
- * Manages AI agent presets - predefined configurations combining
- * system prompts, tools, and parameters for quick persona switching.
+ * @deprecated This hook is deprecated. Use useCustomModels from './useCustomModels' instead.
+ * The Custom Models feature provides all Agent functionality plus:
+ * - Knowledge bindings (RAG)
+ * - Tool bindings
+ * - MCP server bindings
+ * - Prompt suggestions
+ * - Dynamic variables ({{ USER_NAME }}, {{ CURRENT_DATE }}, etc.)
+ * - Import/export functionality
+ *
+ * Migration guide:
+ * - AgentPreset → CustomModelDto
+ * - systemPrompt → systemPrompt (same)
+ * - enabledToolIds → enabledToolIds (same)
+ * - knowledgeIds → knowledgeCollectionIds + knowledgeFileIds (expanded)
+ * - temperature → parameters.temperature
+ * - maxTokens → parameters.maxTokens
+ *
+ * This hook is kept for backward compatibility but will be removed in a future release.
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
@@ -192,7 +208,19 @@ function saveState(state: AgentState): void {
   }
 }
 
+/**
+ * @deprecated Use useCustomModels instead. See migration guide in file header.
+ */
 export function useAgents() {
+  // Deprecation warning
+  useEffect(() => {
+    console.warn(
+      '[useAgents] DEPRECATED: This hook is deprecated. ' +
+      'Please migrate to useCustomModels from "./useCustomModels". ' +
+      'See the migration guide in hooks/useAgents.ts for details.'
+    );
+  }, []);
+
   const [state, setState] = useState<AgentState>(loadState);
 
   // Persist to localStorage on change

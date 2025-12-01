@@ -70,7 +70,8 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
   }, [open, logUIEvent, addLog]);
 
   // MVP visible tabs - others hidden until needed
-  const visibleTabs = ['general', 'interface', 'connections', 'models', 'customModels', 'evaluation', 'agents', 'plugins', 'mcp', 'documents', 'websearch', 'images', 'audio', 'codeexecution'];
+  // NOTE: 'agents' tab removed - functionality merged into Custom Models
+  const visibleTabs = ['general', 'interface', 'connections', 'models', 'customModels', 'evaluation', 'plugins', 'mcp', 'documents', 'websearch', 'images', 'audio', 'codeexecution'];
 
   const tabs = useMemo(() => [
     {
