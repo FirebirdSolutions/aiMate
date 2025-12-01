@@ -99,6 +99,8 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
   const [deleteArtifactId, setDeleteArtifactId] = useState<string | null>(null);
   const [showImportMenu, setShowImportMenu] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [viewingItem, setViewingItem] = useState<KnowledgeItem | null>(null);
+  const [viewingArtifact, setViewingArtifact] = useState<ArtifactItem | null>(null);
 
   // Map documents from hook to KnowledgeItem format
   const items: KnowledgeItem[] = useMemo(() => {
@@ -248,6 +250,27 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
   const handleBulkOperation = (operation: string) => {
     toast.success(`${operation} ${selectedItems.length} items`);
     setSelectedItems([]);
+  };
+
+  const handleViewCollectionItems = (collectionName: string) => {
+    setFilterCollection(collectionName);
+    setActiveTab("knowledge");
+    toast.success(`Showing items in "${collectionName}"`);
+  };
+
+  const handleViewItem = (item: KnowledgeItem) => {
+    setViewingItem(item);
+    addLog({
+      category: 'knowledge:modal',
+      action: 'View Document',
+      api: '/api/v1/knowledge',
+      payload: { id: item.id, title: item.title },
+      type: 'info'
+    });
+  };
+
+  const handleViewArtifact = (artifact: ArtifactItem) => {
+    setViewingArtifact(artifact);
   };
 
   const toggleItemSelection = (id: string) => {
@@ -592,13 +615,19 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
 
                               {/* Actions */}
                               <div className="flex gap-0.5 sm:gap-1 flex-shrink-0">
-                                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 hidden sm:flex">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 sm:h-8 sm:w-8"
+                                  onClick={() => handleViewItem(item)}
+                                  title="View document"
+                                >
                                   <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 hidden sm:flex">
+                                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 hidden sm:flex" title="Version history">
                                   <History className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
+                                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 hidden sm:flex" title="Share">
                                   <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
                                 <Button
@@ -606,6 +635,7 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
                                   size="icon"
                                   className="h-7 w-7 sm:h-8 sm:w-8 text-red-600 hover:text-red-700 dark:text-red-400"
                                   onClick={() => setDeleteItemId(item.id)}
+                                  title="Delete"
                                 >
                                   <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
@@ -644,10 +674,21 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
                       <h3 className="font-semibold mb-1 text-sm sm:text-base">{collection.name}</h3>
                       <p className="text-xs sm:text-sm opacity-80 mb-3 sm:mb-4 line-clamp-2">{collection.description}</p>
                       <div className="flex gap-2">
-                        <Button size="sm" variant="secondary" className="flex-1 text-xs sm:text-sm">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="flex-1 text-xs sm:text-sm"
+                          onClick={() => handleViewCollectionItems(collection.name)}
+                        >
                           View Items
                         </Button>
-                        <Button size="sm" variant="ghost" className="px-2 sm:px-3">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="px-2 sm:px-3"
+                          onClick={() => toast.info("Collection settings coming soon")}
+                          title="Collection settings"
+                        >
                           <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </Button>
                       </div>
@@ -684,10 +725,22 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
                                 </p>
                               </div>
                               <div className="flex gap-0.5 sm:gap-1 flex-shrink-0">
-                                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 sm:h-8 sm:w-8"
+                                  onClick={() => handleViewArtifact(artifact)}
+                                  title="View artifact"
+                                >
                                   <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 sm:h-8 sm:w-8"
+                                  onClick={() => toast.info("Download coming soon")}
+                                  title="Download"
+                                >
                                   <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
                                 <Button
@@ -695,6 +748,7 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
                                   size="icon"
                                   className="h-7 w-7 sm:h-8 sm:w-8 text-red-600 hover:text-red-700 dark:text-red-400"
                                   onClick={() => setDeleteArtifactId(artifact.id)}
+                                  title="Delete"
                                 >
                                   <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
@@ -909,6 +963,114 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Document Preview Dialog */}
+      <Dialog open={!!viewingItem} onOpenChange={(open) => !open && setViewingItem(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {viewingItem && getIcon(viewingItem.type)}
+              {viewingItem?.title}
+            </DialogTitle>
+            <DialogDescription>
+              {viewingItem?.type} • {viewingItem?.size} • Added {viewingItem?.date}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 mt-4">
+            <div className="space-y-4">
+              {viewingItem?.summary && (
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Summary</h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{viewingItem.summary}</p>
+                </div>
+              )}
+              {viewingItem?.tags && viewingItem.tags.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Tags</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {viewingItem.tags.map(tag => (
+                      <Badge key={tag} variant="secondary">{tag}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {viewingItem?.entities && viewingItem.entities.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Entities</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {viewingItem.entities.map(entity => (
+                      <Badge key={entity} variant="outline">{entity}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <Separator />
+              <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                <p>Source: {viewingItem?.source || 'Unknown'}</p>
+                {viewingItem?.collection && <p>Collection: {viewingItem.collection}</p>}
+                <p>Used {viewingItem?.usageCount || 0} times</p>
+                {viewingItem?.lastUsed && <p>Last used: {viewingItem.lastUsed}</p>}
+              </div>
+            </div>
+          </ScrollArea>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setViewingItem(null)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              toast.success("Opening document...");
+              // In a real implementation, this would open the document
+            }}>
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Artifact Preview Dialog */}
+      <Dialog open={!!viewingArtifact} onOpenChange={(open) => !open && setViewingArtifact(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-500" />
+              {viewingArtifact?.title}
+            </DialogTitle>
+            <DialogDescription>
+              {viewingArtifact?.type} • {viewingArtifact?.date}
+              {viewingArtifact?.version && viewingArtifact.version > 1 && ` • v${viewingArtifact.version}`}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 mt-4">
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <p className="text-sm whitespace-pre-wrap">{viewingArtifact?.content}</p>
+              </div>
+              {viewingArtifact?.tags && viewingArtifact.tags.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Tags</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {viewingArtifact.tags.map(tag => (
+                      <Badge key={tag} variant="secondary">{tag}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setViewingArtifact(null)}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              navigator.clipboard.writeText(viewingArtifact?.content || '');
+              toast.success("Copied to clipboard");
+            }}>
+              Copy Content
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Hidden file input for uploads */}
       <input
