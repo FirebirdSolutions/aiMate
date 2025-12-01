@@ -17,11 +17,18 @@ This is a **true open source (MIT) alternative** to OpenWebUI, which has moved t
 
 We're building the foundation others can build on, not a walled garden.
 
+## Documentation
+
+All documentation to be stored in [repo root]/docs
+Review the "README.MD" for an overview of the project and its purpose and origins.
+
+
 ## Current State (Post-First Light)
 
 We have achieved **first light** - the first successful live connection to an inference server with streaming responses working.
 
 ### What's Working
+
 - **Core chat with SSE streaming** to live LM server
 - **Direct LM server connection** (bypasses backend, works in offline mode)
 - **Conversation management** - create, delete, archive, pin, search, export
@@ -31,6 +38,7 @@ We have achieved **first light** - the first successful live connection to an in
 - **Offline mode** - full mock data fallback with 50 sample conversations
 
 ### What's Stubbed/Placeholder
+
 - Text-to-speech (hook ready, UI shows toast)
 - Email/social sharing (link sharing works)
 - MCP import/export (TODOs in code)
@@ -40,6 +48,7 @@ We have achieved **first light** - the first successful live connection to an in
 The chat experience is the product. Everything else supports it.
 
 ### Critical Path (in order)
+
 1. **Stable streaming** - robust reconnection, error handling
 2. **Conversation context** - proper message history sent to LM
 3. **System prompts** - personality/instruction configuration
@@ -49,19 +58,19 @@ The chat experience is the product. Everything else supports it.
 
 The admin panel (`AdminModal.tsx`) has 11 tabs. For MVP, we show only essential ones:
 
-| Tab | Status | Notes |
-|-----|--------|-------|
-| General | **SHOW** | Debug settings, offline mode toggle |
-| Interface | **SHOW** | UI customization |
-| Users & Groups | HIDE | Not needed for single-user alpha |
-| Connections | **SHOW** | Critical - LM server configuration |
-| Models | **SHOW** | Critical - model enable/disable |
-| Plugins | HIDE | Future feature |
-| MCP | **SHOW** | First-class citizen - tool integration |
-| Documents | HIDE | RAG - Phase 2 |
-| Web Search | HIDE | Future feature |
-| Code Execution | HIDE | Future feature |
-| Images | HIDE | Future feature |
+| Tab            | Status   | Notes                                  |
+| -------------- | -------- | -------------------------------------- |
+| General        | **SHOW** | Debug settings, offline mode toggle    |
+| Interface      | **SHOW** | UI customization                       |
+| Users & Groups | HIDE     | Not needed for single-user alpha       |
+| Connections    | **SHOW** | Critical - LM server configuration     |
+| Models         | **SHOW** | Critical - model enable/disable        |
+| Plugins        | HIDE     | Future feature                         |
+| MCP            | **SHOW** | First-class citizen - tool integration |
+| Documents      | HIDE     | RAG - Phase 2                          |
+| Web Search     | HIDE     | Future feature                         |
+| Code Execution | HIDE     | Future feature                         |
+| Images         | HIDE     | Future feature                         |
 
 To hide tabs, filter the `tabs` array in `AdminModal.tsx` around line 58.
 
@@ -69,15 +78,15 @@ To hide tabs, filter the `tabs` array in `AdminModal.tsx` around line 58.
 
 The settings modal (`SettingsModal.tsx`) has 7 tabs:
 
-| Tab | Status | Notes |
-|-----|--------|-------|
-| General | **SHOW** | Language, notifications |
-| Interface | **SHOW** | Theme, appearance |
-| Connections | HIDE | BYOK - Phase 3 |
-| Personalisation | **SHOW** | AI personality settings |
-| Memories | **SHOW** | Persistent user facts/preferences |
-| Account | **SHOW** | User profile |
-| Usage | **SHOW** | Usage stats |
+| Tab             | Status   | Notes                             |
+| --------------- | -------- | --------------------------------- |
+| General         | **SHOW** | Language, notifications           |
+| Interface       | **SHOW** | Theme, appearance                 |
+| Connections     | HIDE     | BYOK - Phase 3                    |
+| Personalisation | **SHOW** | AI personality settings           |
+| Memories        | **SHOW** | Persistent user facts/preferences |
+| Account         | **SHOW** | User profile                      |
+| Usage           | **SHOW** | Usage stats                       |
 
 To hide tabs, filter the `tabs` array in `SettingsModal.tsx` around line 66.
 
@@ -123,21 +132,21 @@ src/aimate.web.ui/
 
 ## Key Code Locations
 
-| Feature | File | Notes |
-|---------|------|-------|
-| Chat streaming | `hooks/useChat.ts` | SSE handling, abort, retry |
-| LM server connection | `hooks/useChat.ts:sendMessage` | Checks for enabled LM connection first |
-| RAG injection | `hooks/useChat.ts:sendMessage` | Fetches document chunks, injects to system context |
-| Knowledge search | `components/KnowledgeSuggestions.tsx` | Debounced semantic search with fallback |
-| Memory persistence | `hooks/useMemories.ts` | localStorage with auto-extraction from messages |
-| Memories UI | `components/MemoriesPanel.tsx` | View/add/delete memories |
-| MCP tool discovery | `hooks/useTools.ts` | Load tools from enabled MCP servers |
-| MCP tool execution | `api/services/tools.service.ts` | Execute tools, validate params, mock responses |
-| MCP design patterns | `docs/MCP_DESIGN_SPEC.md` | Domain facades, context optimization |
-| Tool call UI | `components/ToolCallCard.tsx` | Render tool calls with status, params, results |
-| Admin connections | `context/AdminSettingsContext.tsx` | Persisted to localStorage |
-| API client | `api/client.ts` | Axios instance, JWT, retry logic |
-| Message rendering | `components/ChatMessage.tsx` | Markdown, code blocks, actions, tool calls |
+| Feature              | File                                  | Notes                                              |
+| -------------------- | ------------------------------------- | -------------------------------------------------- |
+| Chat streaming       | `hooks/useChat.ts`                    | SSE handling, abort, retry                         |
+| LM server connection | `hooks/useChat.ts:sendMessage`        | Checks for enabled LM connection first             |
+| RAG injection        | `hooks/useChat.ts:sendMessage`        | Fetches document chunks, injects to system context |
+| Knowledge search     | `components/KnowledgeSuggestions.tsx` | Debounced semantic search with fallback            |
+| Memory persistence   | `hooks/useMemories.ts`                | localStorage with auto-extraction from messages    |
+| Memories UI          | `components/MemoriesPanel.tsx`        | View/add/delete memories                           |
+| MCP tool discovery   | `hooks/useTools.ts`                   | Load tools from enabled MCP servers                |
+| MCP tool execution   | `api/services/tools.service.ts`       | Execute tools, validate params, mock responses     |
+| MCP design patterns  | `docs/MCP_DESIGN_SPEC.md`             | Domain facades, context optimization               |
+| Tool call UI         | `components/ToolCallCard.tsx`         | Render tool calls with status, params, results     |
+| Admin connections    | `context/AdminSettingsContext.tsx`    | Persisted to localStorage                          |
+| API client           | `api/client.ts`                       | Axios instance, JWT, retry logic                   |
+| Message rendering    | `components/ChatMessage.tsx`          | Markdown, code blocks, actions, tool calls         |
 
 ## Chat Flow (Priority System)
 
@@ -155,34 +164,40 @@ src/aimate.web.ui/
 ## Development Stages
 
 ### Stage 1: Stabilize First Light ✓
+
 - [x] Connection health indicator in UI (`ConnectionHealthIndicator.tsx`)
 - [x] Reconnection logic with exponential backoff (3 retries)
 - [x] Graceful error messages with toast notifications
 - [x] Model validation with available models suggestion
 
 ### Stage 2: Core UX Polish ✓
+
 - [x] System prompt configuration (wired from Settings → General)
 - [x] Continue message feature (appends to last assistant message)
 - [x] Handle mid-stream network drops (partial content saved)
 - [x] Mobile responsive fixes (ChatHeader, model selector)
 
 ### Stage 3: BYOK & Multi-Provider ✓
+
 - [x] Connection testing (ModelEditDialog tests /models endpoint)
 - [x] Multiple provider support (dropdown with auto-configured URLs)
 - [x] Usage tracking per connection (getUsageByConnection, local tracking)
 
 ### Stage 4: Knowledge & Memory ✓
+
 - [x] Document upload end-to-end (ChatInput → App → useChat → knowledgeService)
 - [x] Semantic search in chat context (KnowledgeSuggestions with debounced API)
 - [x] Memory persistence (useMemories hook, MemoriesPanel in Settings)
 
 ### Stage 5: MCP & Tools ✓
+
 - [x] MCP server integration (tools.service.ts with mock data fallback)
 - [x] Tool execution in chat (useTools hook, ToolCallCard rendering)
 - [x] Tool call parsing (XML and JSON formats from assistant messages)
 - [x] Custom MCP server configuration (MCPEditDialog already existed)
 
 ### Stage 6: Production Readiness (Next)
+
 - [x] Error boundary for graceful failures (ErrorBoundary.tsx with fallback variants)
 - [x] Performance optimization (@tanstack/react-virtual for lists)
 - [ ] Accessibility improvements (ARIA labels, keyboard nav)

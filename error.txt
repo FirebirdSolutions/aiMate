@@ -1,0 +1,3 @@
+src/App.tsx:518:52 - error TS2550: Property 'at' does not exist on type 'ChatMessage[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2022' or later.
+
+518                   {chat.streaming && chat.messages.at(-1)?.role !== 'assistant' && (
