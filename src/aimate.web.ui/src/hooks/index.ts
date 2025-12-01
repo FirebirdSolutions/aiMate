@@ -1,6 +1,6 @@
 /**
  * Hooks Index
- * 
+ *
  * Central export point for all custom hooks
  */
 
@@ -14,3 +14,5 @@ export { useKnowledge } from './useKnowledge';
 export { useProjects } from './useProjects';
 export { useFiles } from './useFiles';
 export { useTools } from './useTools';
+export { useKeyboardShortcuts, createDefaultShortcuts, formatShortcut } from './useKeyboardShortcuts';
+export type { KeyboardShortcut } from './useKeyboardShortcuts';

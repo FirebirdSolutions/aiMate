@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Button } from "./ui/button";
-import { Menu, MoreVertical, Plus, PanelLeftClose, PanelLeft, ChevronDown, Sparkles, MessageSquare } from "lucide-react";
+import { Menu, MoreVertical, Plus, PanelLeftClose, PanelLeft, ChevronDown, Sparkles, MessageSquare, Keyboard } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,10 +18,12 @@ import {
 import { SettingsModal } from "./SettingsModal";
 import { AboutModal } from "./AboutModal";
 import { HelpModal } from "./HelpModal";
+import { KeyboardShortcutsModal } from "./KeyboardShortcutsModal";
 import { OfflineModeIndicator } from "./OfflineModeIndicator";
 import { ErrorBoundary, ModalErrorFallback } from "./ErrorBoundary";
 import { ConnectionHealthIndicator } from "./ConnectionHealthIndicator";
 import { useDebug, useUIEventLogger } from "./DebugContext";
+import { useKeyboardShortcuts, createDefaultShortcuts, formatShortcut, type KeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 
 interface ModelOption {
   id: string;
@@ -55,18 +57,51 @@ export function ChatHeader({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [keyboardShortcutsOpen, setKeyboardShortcutsOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [modelSelectOpen, setModelSelectOpen] = useState(false);
-  
-  const handleNewChat = () => {
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleNewChat = useCallback(() => {
     logUIEvent('New chat clicked', 'ui:chat:new');
     onNewChat();
-  };
-  
-  const handleToggleSidebar = () => {
+  }, [logUIEvent, onNewChat]);
+
+  const handleToggleSidebar = useCallback(() => {
     logUIEvent(`Sidebar ${sidebarOpen ? 'closed' : 'opened'}`, 'ui:sidebar:toggle', { open: !sidebarOpen });
     if (onToggleSidebar) onToggleSidebar();
-  };
+  }, [logUIEvent, onToggleSidebar, sidebarOpen]);
+
+  const handleFocusInput = useCallback(() => {
+    // Focus the main chat input
+    const input = document.querySelector('textarea[placeholder*="Message"]') as HTMLTextAreaElement;
+    if (input) {
+      input.focus();
+    }
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    // Close any open modal
+    if (settingsOpen) setSettingsOpen(false);
+    else if (aboutOpen) setAboutOpen(false);
+    else if (helpOpen) setHelpOpen(false);
+    else if (keyboardShortcutsOpen) setKeyboardShortcutsOpen(false);
+    else if (moreMenuOpen) setMoreMenuOpen(false);
+    else if (modelSelectOpen) setModelSelectOpen(false);
+  }, [settingsOpen, aboutOpen, helpOpen, keyboardShortcutsOpen, moreMenuOpen, modelSelectOpen]);
+
+  // Create keyboard shortcuts
+  const shortcuts = useMemo(() => createDefaultShortcuts({
+    onNewChat: handleNewChat,
+    onToggleSidebar: handleToggleSidebar,
+    onFocusInput: handleFocusInput,
+    onSettings: () => setSettingsOpen(true),
+    onHelp: () => setKeyboardShortcutsOpen(true),
+    onCloseModal: handleCloseModal,
+  }), [handleNewChat, handleToggleSidebar, handleFocusInput, handleCloseModal]);
+
+  // Initialize keyboard shortcuts
+  useKeyboardShortcuts({ shortcuts });
 
   // Use provided models or fall back to static list
   const defaultModels: ModelOption[] = [
@@ -91,6 +126,9 @@ export function ChatHeader({
       </ErrorBoundary>
       <ErrorBoundary context="help-modal" fallback={<ModalErrorFallback onClose={() => setHelpOpen(false)} />}>
         <HelpModal open={helpOpen} onOpenChange={setHelpOpen} />
+      </ErrorBoundary>
+      <ErrorBoundary context="keyboard-shortcuts-modal" fallback={<ModalErrorFallback onClose={() => setKeyboardShortcutsOpen(false)} />}>
+        <KeyboardShortcutsModal open={keyboardShortcutsOpen} onOpenChange={setKeyboardShortcutsOpen} shortcuts={shortcuts} />
       </ErrorBoundary>
       
       <header className="border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
@@ -167,6 +205,11 @@ export function ChatHeader({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setHelpOpen(true)}>
                   Help & FAQ
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setKeyboardShortcutsOpen(true)}>
+                  <Keyboard className="h-4 w-4 mr-2" />
+                  Keyboard Shortcuts
+                  <span className="ml-auto text-xs text-muted-foreground">{formatShortcut(['mod', '?'])}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setAboutOpen(true)}>
