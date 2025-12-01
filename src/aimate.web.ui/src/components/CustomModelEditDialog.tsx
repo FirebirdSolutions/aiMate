@@ -327,7 +327,7 @@ export function CustomModelEditDialog({
       onOpenChange={onOpenChange}
       title={isEditing ? 'Edit Custom Model' : 'Create Custom Model'}
       description="Configure a wrapped model with custom system prompt, knowledge, and tools"
-      size="xl"
+      size="lg"
       onSave={handleSave}
       onDelete={isEditing && onDelete ? handleDelete : undefined}
       showSave={true}

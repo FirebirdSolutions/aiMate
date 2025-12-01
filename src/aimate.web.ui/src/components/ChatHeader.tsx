@@ -42,7 +42,6 @@ interface ChatHeaderProps {
   sidebarOpen?: boolean;
   selectedModel?: string;
   onModelChange?: (model: string) => void;
-  enabledModels?: Record<string, boolean>;
   availableModels?: ModelOption[];
   // Arena mode props
   isArenaMode?: boolean;
@@ -60,9 +59,6 @@ export function ChatHeader({
   sidebarOpen,
   selectedModel = "simulated",
   onModelChange,
-  enabledModels = {
-    "simulated": true,
-  },
   availableModels,
   isArenaMode = false,
   onToggleArenaMode,

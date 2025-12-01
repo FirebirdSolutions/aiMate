@@ -66,7 +66,7 @@ function ChatApp() {
 
   // Build memory context for context meter
   const currentMemoryContext = useMemo(() => {
-    return memories.getMemoryContext();
+    return memories.getContextString();
   }, [memories]);
 
   // Context meter - tracks token usage

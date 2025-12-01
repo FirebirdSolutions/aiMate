@@ -320,7 +320,7 @@ export function useChat(conversationId?: string) {
             const chatHistoryParts: string[] = [];
             for (const convId of options.chatIds) {
               try {
-                const messages = await messagesService.getMessages(convId, { limit: 20 });
+                const messages = await messagesService.getMessages(convId);
                 if (messages.length > 0) {
                   const conv = await conversationsService.getConversation(convId);
                   chatHistoryParts.push(
