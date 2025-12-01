@@ -76,18 +76,25 @@ export function BaseModal({
   // Users can still click/tap tabs to navigate
 
   const sizeClasses = {
-    md: "max-w-2xl",
-    lg: "max-w-2xl lg:max-w-5xl",
-    xl: "max-w-2xl lg:max-w-7xl",
+    md: "sm:max-w-xl md:max-w-2xl",
+    lg: "sm:max-w-2xl md:max-w-3xl lg:max-w-5xl",
+    xl: "sm:max-w-3xl md:max-w-5xl lg:max-w-7xl",
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`${sizeClasses[size]} w-full h-full sm:w-[90vw] sm:h-auto sm:max-h-[85vh] md:w-[80vw] md:max-h-[90vh] md:h-[90vh] p-0 gap-0 flex flex-col`}
+        className={`
+          ${sizeClasses[size]}
+          w-[100vw] h-[100vh] max-w-none rounded-none
+          sm:w-[95vw] sm:h-auto sm:max-h-[90vh] sm:rounded-lg
+          md:w-[85vw] md:max-h-[90vh] md:h-auto
+          lg:w-[80vw]
+          p-0 gap-0 flex flex-col overflow-hidden
+        `}
       >
         {/* Header */}
-        <DialogHeader className="flex-shrink-0 px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+        <DialogHeader className="flex-shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-800">
           <DialogTitle className="flex items-center gap-2">
             {Icon && <Icon className="h-5 w-5 text-purple-500" />}
             {title}
@@ -100,7 +107,7 @@ export function BaseModal({
         {/* Horizontal Scrolling Tabs */}
         {tabs && tabs.length > 0 && (
           <div className="flex-shrink-0 border-b border-gray-200 dark:border-gray-800 overflow-x-auto tab-scrollbar">
-            <div className="flex px-6 gap-1 min-w-max h-full">
+            <div className="flex px-4 sm:px-6 gap-1 min-w-max h-full">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
@@ -110,7 +117,7 @@ export function BaseModal({
                       handleTabChange(tab.id, tab.label);
                       e.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
                     }}
-                    className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+                    className={`flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-2 border-b-2 transition-colors whitespace-nowrap cursor-pointer text-sm ${
                       activeTab === tab.id
                         ? "border-purple-500 text-purple-600 dark:text-purple-400"
                         : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
@@ -126,9 +133,9 @@ export function BaseModal({
         )}
 
         {/* Content with Vertical Scrolling */}
-        <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="px-6 py-4 space-y-4">
+        <div className="flex-1 overflow-hidden min-h-0">
+          <ScrollArea className="h-full custom-scrollbar">
+            <div className="px-4 sm:px-6 py-4 space-y-4">
               {tabs
                 ? tabs.map(
                     (tab) =>
@@ -143,7 +150,7 @@ export function BaseModal({
 
         {/* Footer */}
         {(showSave || showDelete) && (
-          <div className="px-6 h-[60px] flex-shrink-0 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+          <div className="px-4 sm:px-6 h-[56px] sm:h-[60px] flex-shrink-0 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
             <div>
               {showDelete && onDelete && (
                 <Button

@@ -231,7 +231,50 @@ export function MCPEditDialog({
   };
 
   const handleImport = () => {
-    toast.info("Import MCP connector - coming soon");
+    // Create file input and trigger click
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const importedData = JSON.parse(text);
+
+        // Validate required fields
+        if (!importedData.url) {
+          toast.error("Invalid connector file: missing URL");
+          return;
+        }
+
+        // Merge imported data with defaults, preserving the current ID if editing
+        const newFormData: MCPConnector = {
+          id: connector?.id || Date.now().toString(),
+          name: importedData.name || '',
+          type: importedData.type || 'MCP Streamable HTTP',
+          url: importedData.url || '',
+          auth: importedData.auth || 'None',
+          authToken: '', // Never import auth tokens for security
+          mcpId: importedData.mcpId || '',
+          description: importedData.description || '',
+          visibility: importedData.visibility || 'private',
+          groups: importedData.groups || [],
+          enabled: importedData.enabled ?? true,
+          tools: importedData.tools || [],
+          connectionStatus: 'unknown',
+        };
+
+        setFormData(newFormData);
+        setTestResult(null);
+        toast.success(`Imported "${newFormData.name || 'connector'}" - please add auth token if required`);
+      } catch (err) {
+        toast.error("Failed to parse JSON file");
+        console.error('[MCPEditDialog] Import error:', err);
+      }
+    };
+    input.click();
   };
 
   const handleExport = () => {

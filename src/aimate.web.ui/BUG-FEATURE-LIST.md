@@ -34,6 +34,8 @@
 - [ ] Vibe Coding (see `code_generation_spec.md`)
 - [ ] Structured Content (see `structure_content_spec.md`)
 - [ ] Full review of `/src/aimate.Api|Shared|Core` for backend/DB alignment
+- [ ] Agentic Tools - Create and manage custom AI agents with tool access
+- [ ] Advanced RAG - Enhanced retrieval with hybrid search and reranking
 
 ---
 
@@ -51,8 +53,8 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Resize for mobile/desktop | ❌ | TODO |
-| Consistent vertical scrolling | ❌ | TODO |
+| Resize for mobile/desktop | ✅ | Done - Full-screen on mobile, responsive on tablet/desktop |
+| Consistent vertical scrolling | ✅ | Done - ScrollArea with custom-scrollbar |
 | Tab content complete | ✅ | Done |
 
 ### Interface
@@ -94,11 +96,11 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Test connection button | ❌ | TODO: Implement |
+| Test connection button | ✅ | Done - Shows success/failure with latency |
 | General functionality | ✅ | Working - list/enable/disable/add/edit/delete |
 | Tool list retrieval | ✅ | Working - useTools hook discovers from enabled servers |
 | Tool authorisation | ❌ | TODO |
-| Import/Export | ❌ | Buttons present but not implemented (MCPEditDialog:86-92) |
+| Import/Export | ✅ | Done - Import parses JSON, Export downloads JSON (auth tokens excluded) |
 
 ---
 
@@ -108,8 +110,8 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Resize for mobile/desktop | ❌ | TODO |
-| Consistent vertical scrolling | ❌ | TODO |
+| Resize for mobile/desktop | ✅ | Done - Full-screen on mobile, responsive on tablet/desktop |
+| Consistent vertical scrolling | ✅ | Done - ScrollArea with custom-scrollbar |
 
 ### Notifications
 
@@ -162,11 +164,11 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Update Profile | ❌ | Implement mock workflow |
-| Change Password | ❌ | Implement mock workflow |
-| Download My Data | ❌ | Implement mock workflow |
-| Subscription | ❌ | Implement mock workflow |
-| Danger Zone | ❌ | Implement mock workflow |
+| Update Profile | ✅ | Done - validates and shows success toast |
+| Change Password | ✅ | Done - validates length, match, clears fields |
+| Download My Data | ✅ | Done - exports settings as JSON file |
+| Subscription | ✅ | Done - shows "free for Kiwis" message |
+| Danger Zone | ✅ | Done - Clear Conversations, Reset Settings, Delete Account with confirmations |
 
 ### Memories
 
@@ -209,7 +211,7 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Add to knowledge | ❌ | TODO: Implement |
+| Add to knowledge | ✅ | Done - Brain icon saves message to knowledge |
 | "Not implemented" items | ✅ | Audited - removed non-working buttons, implemented TTS |
 
 ---
@@ -240,21 +242,29 @@
 |------|--------|-------|
 | Full audit | ❌ | TODO |
 | Consolidated from Notes/Files | ✅ | Notes and Files buttons removed, Knowledge is unified |
+| Project cross-linking | ✅ | Done - Project chats can be saved to Knowledge with context |
+| Project source display | ✅ | Done - Knowledge items show project badge and source type |
 
 ### Projects
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Populate existing | ❌ | TODO |
-| Allow editing | ❌ | TODO |
+| Populate existing | ✅ | Done - useProjects hook with mock data |
+| Allow editing | ✅ | Done - ProjectModal supports create/edit/delete |
+| Project-conversation linking | ✅ | Done - addConversation/removeConversation wired |
+| ProjectModal chats tab | ✅ | Done - fetches real conversations from conversationIds |
+| Project view mode | ✅ | Done - Click project to filter to its chats only |
+| Project-scoped chat creation | ✅ | Done - New chats auto-added to active project |
+| Project indicator in chat | ✅ | Done - Banner in ChatInput shows active project |
+| Save chats to Knowledge | ✅ | Done - Brain icon in chat menu saves with project context |
 
 ### Chat List
 
 | Item | Status | Notes |
 |------|--------|-------|
 | Virtualization | ✅ | Done - @tanstack/react-virtual |
-| Kebab menu functionality | ⚠️ | TODO: Quick test Move to Project works |
-| Vertical scroll styling | ❌ | TODO |
+| Kebab menu functionality | ✅ | Done - Move to Project properly wired |
+| Vertical scroll styling | ✅ | Done - custom-scrollbar with auto-hide on hover |
 
 ---
 

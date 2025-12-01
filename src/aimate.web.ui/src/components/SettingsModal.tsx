@@ -6,6 +6,16 @@ import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { useUsage } from "../hooks/useUsage";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -480,159 +490,303 @@ function AccountTab() {
   const { settings, updateAccount, resetSettings } = useUserSettings();
   const account = settings.account || {};
 
+  // Password state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Confirmation dialog state
+  const [showClearConversations, setShowClearConversations] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+
   const handleResetSettings = () => {
     resetSettings();
     toast.success("All settings have been reset to defaults");
   };
 
+  const handleUpdateProfile = () => {
+    if (!account.email && !account.username) {
+      toast.error("Please enter email or username");
+      return;
+    }
+    // In a real app, this would call an API
+    toast.success("Profile updated successfully");
+  };
+
+  const handleChangePassword = () => {
+    if (!currentPassword) {
+      toast.error("Please enter current password");
+      return;
+    }
+    if (!newPassword) {
+      toast.error("Please enter new password");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    // In a real app, this would call an API
+    toast.success("Password changed successfully");
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleDownloadData = () => {
+    // Export all user settings and data as JSON
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      account: {
+        email: account.email,
+        username: account.username,
+        allowAnalytics: account.allowAnalytics,
+        personalization: account.personalization,
+      },
+      settings: settings,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `aimate-data-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Your data has been downloaded");
+  };
+
+  const handleUpgrade = () => {
+    toast.info("Upgrade options coming soon! aiMate is free for Kiwis.");
+  };
+
+  const handleClearConversations = () => {
+    // In a real app, this would clear all conversations
+    setShowClearConversations(false);
+    toast.success("All conversations have been cleared");
+  };
+
+  const handleDeleteAccount = () => {
+    // In a real app, this would delete the account
+    setShowDeleteAccount(false);
+    toast.success("Account deletion requested. You will receive a confirmation email.");
+  };
+
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="font-semibold mb-3">Account Information</h3>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="your.email@example.com"
-              value={account.email}
-              onChange={(e) => updateAccount({ email: e.target.value })}
-              className="mt-2"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              placeholder="username"
-              value={account.username}
-              onChange={(e) => updateAccount({ username: e.target.value })}
-              className="mt-2"
-            />
-          </div>
-
-          <Button variant="outline">Update Profile</Button>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div>
-        <h3 className="font-semibold mb-3">Password</h3>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="current-password">Current Password</Label>
-            <Input
-              id="current-password"
-              type="password"
-              placeholder="Enter current password"
-              className="mt-2"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="new-password">New Password</Label>
-            <Input
-              id="new-password"
-              type="password"
-              placeholder="Enter new password"
-              className="mt-2"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="confirm-password">Confirm Password</Label>
-            <Input
-              id="confirm-password"
-              type="password"
-              placeholder="Confirm new password"
-              className="mt-2"
-            />
-          </div>
-
-          <Button variant="outline">Change Password</Button>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div>
-        <h3 className="font-semibold mb-3">Privacy & Data</h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+    <>
+      <div className="space-y-4">
+        <div>
+          <h3 className="font-semibold mb-3">Account Information</h3>
+          <div className="space-y-4">
             <div>
-              <Label htmlFor="analytics">Allow Analytics</Label>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Help improve the app with anonymous usage data
-              </p>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="your.email@example.com"
+                value={account.email}
+                onChange={(e) => updateAccount({ email: e.target.value })}
+                className="mt-2"
+              />
             </div>
-            <Switch
-              id="analytics"
-              checked={account.allowAnalytics}
-              onCheckedChange={(v) => updateAccount({ allowAnalytics: v })}
-              className="data-[state=checked]:bg-purple-600"
-            />
-          </div>
 
-          <div className="flex items-center justify-between">
             <div>
-              <Label htmlFor="personalization">Personalization</Label>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Use data to personalize your experience
-              </p>
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                placeholder="username"
+                value={account.username}
+                onChange={(e) => updateAccount({ username: e.target.value })}
+                className="mt-2"
+              />
             </div>
-            <Switch
-              id="personalization"
-              checked={account.personalization}
-              onCheckedChange={(v) => updateAccount({ personalization: v })}
-              className="data-[state=checked]:bg-purple-600"
-            />
+
+            <Button variant="outline" onClick={handleUpdateProfile}>
+              Update Profile
+            </Button>
           </div>
-
-          <Button variant="outline">Download My Data</Button>
         </div>
-      </div>
 
-      <Separator />
+        <Separator />
 
-      <div>
-        <h3 className="font-semibold mb-4">Subscription</h3>
-        <div className="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
-          <div className="flex items-center justify-between mb-2">
+        <div>
+          <h3 className="font-semibold mb-3">Password</h3>
+          <div className="space-y-4">
             <div>
-              <h4 className="font-medium">Free Plan</h4>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Basic features with limited usage
-              </p>
+              <Label htmlFor="current-password">Current Password</Label>
+              <Input
+                id="current-password"
+                type="password"
+                placeholder="Enter current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="mt-2"
+              />
             </div>
-            <Button>Upgrade</Button>
+
+            <div>
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                placeholder="Enter new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="mt-2"
+              />
+            </div>
+
+            <Button variant="outline" onClick={handleChangePassword}>
+              Change Password
+            </Button>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div>
+          <h3 className="font-semibold mb-3">Privacy & Data</h3>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="analytics">Allow Analytics</Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Help improve the app with anonymous usage data
+                </p>
+              </div>
+              <Switch
+                id="analytics"
+                checked={account.allowAnalytics}
+                onCheckedChange={(v) => updateAccount({ allowAnalytics: v })}
+                className="data-[state=checked]:bg-purple-600"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <Label htmlFor="personalization">Personalization</Label>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Use data to personalize your experience
+                </p>
+              </div>
+              <Switch
+                id="personalization"
+                checked={account.personalization}
+                onCheckedChange={(v) => updateAccount({ personalization: v })}
+                className="data-[state=checked]:bg-purple-600"
+              />
+            </div>
+
+            <Button variant="outline" onClick={handleDownloadData}>
+              Download My Data
+            </Button>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div>
+          <h3 className="font-semibold mb-4">Subscription</h3>
+          <div className="p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h4 className="font-medium">Free Plan</h4>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Basic features with limited usage
+                </p>
+              </div>
+              <Button onClick={handleUpgrade}>Upgrade</Button>
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div>
+          <h3 className="font-semibold mb-4 text-red-600 dark:text-red-400">Danger Zone</h3>
+          <div className="space-y-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950"
+              onClick={() => setShowClearConversations(true)}
+            >
+              Clear All Conversations
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950"
+              onClick={handleResetSettings}
+            >
+              Reset All Settings
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950"
+              onClick={() => setShowDeleteAccount(true)}
+            >
+              Delete Account
+            </Button>
           </div>
         </div>
       </div>
 
-      <Separator />
+      {/* Clear Conversations Confirmation */}
+      <AlertDialog open={showClearConversations} onOpenChange={setShowClearConversations}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear All Conversations?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all your conversations. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearConversations}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Clear All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      <div>
-        <h3 className="font-semibold mb-4 text-red-600 dark:text-red-400">Danger Zone</h3>
-        <div className="space-y-3">
-          <Button variant="outline" className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950">
-            Clear All Conversations
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950"
-            onClick={handleResetSettings}
-          >
-            Reset All Settings
-          </Button>
-          <Button variant="outline" className="w-full justify-start text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950">
-            Delete Account
-          </Button>
-        </div>
-      </div>
-    </div>
+      {/* Delete Account Confirmation */}
+      <AlertDialog open={showDeleteAccount} onOpenChange={setShowDeleteAccount}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Account?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete your account and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 

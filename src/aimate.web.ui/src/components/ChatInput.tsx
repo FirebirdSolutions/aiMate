@@ -30,9 +30,17 @@ export interface AttachmentData {
   webpageUrls: string[];
 }
 
+interface ActiveProjectInfo {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+}
+
 interface ChatInputProps {
   onSend: (message: string, attachments?: AttachmentData) => void;
   disabled?: boolean;
+  activeProject?: ActiveProjectInfo | null;
 }
 
 interface AttachedItem {
@@ -43,7 +51,7 @@ interface AttachedItem {
   preview?: string;
 }
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, activeProject }: ChatInputProps) {
   const { addLog, showcaseMode } = useDebug();
   const { logUIEvent } = useUIEventLogger();
   const { settings } = useAdminSettings();
@@ -698,6 +706,21 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         onChange={handleFileInputChange}
         accept="image/*,application/pdf,text/plain,text/markdown,.doc,.docx,.xls,.xlsx"
       />
+
+      {/* Project Context Indicator */}
+      {activeProject && (
+        <div className="flex items-center gap-2 px-4 py-1.5 bg-purple-50 dark:bg-purple-950/30 border-b border-purple-200 dark:border-purple-800">
+          <div
+            className="w-5 h-5 rounded flex items-center justify-center text-xs shrink-0"
+            style={{ backgroundColor: (activeProject.color || '#8b5cf6') + '20' }}
+          >
+            {activeProject.icon || '📁'}
+          </div>
+          <span className="text-xs text-purple-700 dark:text-purple-300">
+            New messages will be added to <span className="font-medium">{activeProject.name}</span>
+          </span>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-2">
         {/* Attached Items Display */}
