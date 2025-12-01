@@ -691,7 +691,6 @@ function ChatApp() {
           sidebarOpen={sidebarOpen || mobileSidebarOpen}
           selectedModel={selectedModel}
           onModelChange={setSelectedModel}
-          enabledModels={enabledModels}
           availableModels={availableModels.map(m => ({
             id: m.id,
             name: m.name,

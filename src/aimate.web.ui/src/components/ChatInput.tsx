@@ -17,6 +17,7 @@ import { Progress } from "./ui/progress";
 import { useDebug, useUIEventLogger } from "./DebugContext";
 import { useAppData } from "../context/AppDataContext";
 import { useAdminSettings } from "../context/AdminSettingsContext";
+import { useUserSettings } from "../context/UserSettingsContext";
 import { toast } from "sonner";
 import { KnowledgeSuggestions } from "./KnowledgeSuggestions";
 import { AttachedContext } from "./AttachedContext";
@@ -55,6 +56,7 @@ export function ChatInput({ onSend, disabled, activeProject }: ChatInputProps) {
   const { addLog, showcaseMode } = useDebug();
   const { logUIEvent } = useUIEventLogger();
   const { settings } = useAdminSettings();
+  const { settings: userSettings } = useUserSettings();
 
   // Get files hook from context for real file uploads
   const { files: filesHook, workspaces } = useAppData();
@@ -124,7 +126,7 @@ export function ChatInput({ onSend, disabled, activeProject }: ChatInputProps) {
       let finalMessage = message.trim();
       if (hasVariables(finalMessage)) {
         const context: PromptVariableContext = {
-          userName: settings.general?.userName || undefined,
+          userName: userSettings.general?.userName || undefined,
           userLanguage: navigator.language,
           userLocation: null, // Could be set from geolocation API if enabled
         };
