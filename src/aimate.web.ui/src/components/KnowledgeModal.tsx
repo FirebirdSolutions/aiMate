@@ -69,6 +69,127 @@ interface KnowledgeModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Collection Settings Dialog Component
+function CollectionSettingsDialog({
+  open,
+  onOpenChange,
+  collection,
+  onSave,
+  onDelete,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  collection: Collection | null;
+  onSave: (collection: Collection) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [name, setName] = useState(collection?.name || "");
+  const [description, setDescription] = useState(collection?.description || "");
+  const [color, setColor] = useState(collection?.color || "#8b5cf6");
+
+  useEffect(() => {
+    if (collection) {
+      setName(collection.name);
+      setDescription(collection.description);
+      setColor(collection.color);
+    }
+  }, [collection]);
+
+  const colors = [
+    "#8b5cf6", // purple
+    "#3b82f6", // blue
+    "#10b981", // green
+    "#f59e0b", // amber
+    "#ef4444", // red
+    "#ec4899", // pink
+    "#06b6d4", // cyan
+    "#84cc16", // lime
+  ];
+
+  const handleSave = () => {
+    if (!collection) return;
+    onSave({
+      ...collection,
+      name,
+      description,
+      color,
+    });
+    onOpenChange(false);
+  };
+
+  if (!collection) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Collection Settings</DialogTitle>
+          <DialogDescription>
+            Configure settings for "{collection.name}"
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Name</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Collection name"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What is this collection for?"
+              className="min-h-[80px]"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Color</Label>
+            <div className="flex gap-2 flex-wrap">
+              {colors.map((c) => (
+                <button
+                  key={c}
+                  className={`w-8 h-8 rounded-full border-2 ${
+                    color === c ? "border-white ring-2 ring-offset-2 ring-offset-background" : "border-transparent"
+                  }`}
+                  style={{ backgroundColor: c }}
+                  onClick={() => setColor(c)}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="pt-4">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>{collection.itemCount} items in collection</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-between">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              onDelete(collection.id);
+              onOpenChange(false);
+            }}
+          >
+            Delete Collection
+          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave}>Save Changes</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
   const { addLog } = useDebug();
   const { knowledge } = useAppData();
@@ -106,6 +227,8 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [viewingItem, setViewingItem] = useState<KnowledgeItem | null>(null);
   const [viewingArtifact, setViewingArtifact] = useState<ArtifactItem | null>(null);
+  const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
+  const [collectionSettingsOpen, setCollectionSettingsOpen] = useState(false);
 
   // Map documents from hook to KnowledgeItem format
   const items: KnowledgeItem[] = useMemo(() => {
@@ -266,6 +389,88 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
     setFilterCollection(collectionName);
     setActiveTab("knowledge");
     toast.success(`Showing items in "${collectionName}"`);
+  };
+
+  const handleOpenCollectionSettings = (collection: Collection) => {
+    setEditingCollection(collection);
+    setCollectionSettingsOpen(true);
+    addLog({
+      action: `Opening collection settings: ${collection.name}`,
+      category: 'knowledge:collection:settings',
+      type: 'info',
+    });
+  };
+
+  const handleSaveCollectionSettings = (updatedCollection: Collection) => {
+    setCollections(prev =>
+      prev.map(c => c.id === updatedCollection.id ? updatedCollection : c)
+    );
+    toast.success(`Collection "${updatedCollection.name}" updated`);
+    addLog({
+      action: `Collection updated: ${updatedCollection.name}`,
+      category: 'knowledge:collection:update',
+      type: 'success',
+    });
+  };
+
+  const handleDeleteCollection = (collectionId: string) => {
+    const collection = collections.find(c => c.id === collectionId);
+    setCollections(prev => prev.filter(c => c.id !== collectionId));
+    toast.success(`Collection "${collection?.name}" deleted`);
+    addLog({
+      action: `Collection deleted: ${collection?.name}`,
+      category: 'knowledge:collection:delete',
+      type: 'warning',
+    });
+  };
+
+  const handleDownloadArtifact = (artifact: ArtifactItem) => {
+    // Create a blob with the artifact content
+    const blob = new Blob([artifact.content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+
+    // Create a temporary link and trigger download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${artifact.title.replace(/[^a-z0-9]/gi, '_')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Clean up
+    URL.revokeObjectURL(url);
+
+    toast.success(`Downloaded "${artifact.title}"`);
+    addLog({
+      action: `Artifact downloaded: ${artifact.title}`,
+      category: 'knowledge:artifact:download',
+      type: 'info',
+    });
+  };
+
+  const handleDownloadDocument = (item: KnowledgeItem) => {
+    // For documents, we would typically fetch from the backend
+    // For now, create a simple text export
+    const content = `Title: ${item.title}\nType: ${item.type}\nDate: ${item.date}\nTags: ${item.tags.join(', ')}\n\n${item.summary || 'No summary available'}`;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${item.title.replace(/[^a-z0-9]/gi, '_')}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+
+    toast.success(`Downloaded "${item.title}"`);
+    addLog({
+      action: `Document downloaded: ${item.title}`,
+      category: 'knowledge:document:download',
+      type: 'info',
+    });
   };
 
   const handleViewItem = (item: KnowledgeItem) => {
@@ -713,7 +918,7 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
                           size="sm"
                           variant="ghost"
                           className="px-2 sm:px-3"
-                          onClick={() => toast.info("Collection settings coming soon")}
+                          onClick={() => handleOpenCollectionSettings(collection)}
                           title="Collection settings"
                         >
                           <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -765,7 +970,7 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7 sm:h-8 sm:w-8"
-                                  onClick={() => toast.info("Download coming soon")}
+                                  onClick={() => handleDownloadArtifact(artifact)}
                                   title="Download"
                                 >
                                   <Download className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -990,6 +1195,15 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Collection Settings Dialog */}
+      <CollectionSettingsDialog
+        open={collectionSettingsOpen}
+        onOpenChange={setCollectionSettingsOpen}
+        collection={editingCollection}
+        onSave={handleSaveCollectionSettings}
+        onDelete={handleDeleteCollection}
+      />
 
       {/* Document Preview Dialog */}
       <Dialog open={!!viewingItem} onOpenChange={(open) => !open && setViewingItem(null)}>

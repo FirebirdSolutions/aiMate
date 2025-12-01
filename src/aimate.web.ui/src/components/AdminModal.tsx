@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { ShieldCheck, Users, Database, FileText, BarChart3, Pencil, Sparkles, Search, Code, Wrench, CloudSun, Plus, Settings, Layers, Download, X, Upload, Eye, Trash2, Edit2, Puzzle, Bot, Copy, Trophy, Boxes, MoreVertical } from "lucide-react";
+import { ShieldCheck, Users, Database, FileText, BarChart3, Pencil, Sparkles, Search, Code, Wrench, CloudSun, Plus, Settings, Layers, Download, X, Upload, Eye, Trash2, Edit2, Puzzle, Bot, Copy, Trophy, Boxes, MoreVertical, Volume2, Image, Link2 } from "lucide-react";
 import { ModelLeaderboard } from "./ModelLeaderboard";
 import { CustomModelEditDialog } from "./CustomModelEditDialog";
 import { useCustomModels } from "../hooks/useCustomModels";
@@ -44,6 +44,7 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Slider } from "./ui/slider";
 import { BaseModal } from "./BaseModal";
+import { toast } from "sonner";
 
 interface AdminModalProps {
   open: boolean;
@@ -69,7 +70,7 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
   }, [open, logUIEvent, addLog]);
 
   // MVP visible tabs - others hidden until needed
-  const visibleTabs = ['general', 'interface', 'connections', 'models', 'customModels', 'evaluation', 'agents', 'plugins', 'mcp', 'websearch'];
+  const visibleTabs = ['general', 'interface', 'connections', 'models', 'customModels', 'evaluation', 'agents', 'plugins', 'mcp', 'documents', 'websearch', 'images', 'audio', 'codeexecution'];
 
   const tabs = useMemo(() => [
     {
@@ -148,6 +149,12 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
       id: "codeexecution",
       label: "Code Execution",
       icon: Code,
+      content: <CodeExecutionTab />,
+    },
+    {
+      id: "audio",
+      label: "Audio",
+      icon: Volume2,
       content: <AudioTab />,
     },
     {
@@ -2271,32 +2278,80 @@ function MCPTab() {
 }
 
 function DocumentsTab() {
-  const [contentExtractionEngine, setContentExtractionEngine] = useState("Default");
-  const [pdfExtractImages, setPdfExtractImages] = useState(false);
-  const [bypassEmbedding, setBypassEmbedding] = useState(false);
-  const [textSplitter, setTextSplitter] = useState("RecursiveCharacter");
-  const [chunkSize, setChunkSize] = useState("1500");
-  const [chunkOverlap, setChunkOverlap] = useState("100");
-  const [embeddingModelEngine, setEmbeddingModelEngine] = useState("Default");
-  const [embeddingModel, setEmbeddingModel] = useState("sentence-transformers/all-MiniLM-L6-v2");
-  const [fullContextMode, setFullContextMode] = useState(false);
-  const [hybridSearch, setHybridSearch] = useState(true);
-  const [rerankingEngine, setRerankingEngine] = useState("Default");
-  const [rerankingModel, setRerankingModel] = useState("ms-marco-TinyBERT-L-2-v2");
-  const [topKReranker, setTopKReranker] = useState("5");
-  const [relevanceThreshold, setRelevanceThreshold] = useState("0");
-  const [bm25Weight, setBm25Weight] = useState([0.5]);
-  const [ragTemplate, setRagTemplate] = useState("Use the following context to answer the question:\n\nContext: {{CONTEXT}}\n\nQuestion: {{QUERY}}");
+  const { settings, updateDocuments } = useAdminSettings();
+  const { addLog } = useDebug();
+  const docs = settings.documents;
+
+  // Get knowledge stats from AppData context (if available) - for display purposes
+  const [docStats, setDocStats] = useState({ total: 0, embedded: 0, pending: 0 });
+
+  const handleUpdate = (key: string, value: any) => {
+    updateDocuments({ [key]: value });
+    addLog({
+      action: `Documents setting updated: ${key}`,
+      category: 'admin:documents:update',
+      type: 'info',
+    });
+  };
 
   return (
     <div className="space-y-6">
+      {/* Knowledge Overview */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-semibold">Knowledge Base Overview</h3>
+            <p className="text-xs text-muted-foreground">Manage documents and RAG settings</p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              // Trigger opening Knowledge modal - this would need to be wired up through props
+              addLog({
+                action: 'Opening Knowledge modal from Documents tab',
+                category: 'admin:documents:openKnowledge',
+                type: 'info',
+              });
+              // For now show a toast - full integration would require lifting state
+              toast.info("Open Knowledge from the main menu to manage documents");
+            }}
+          >
+            <Database className="h-4 w-4 mr-2" />
+            Manage Documents
+          </Button>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-4 text-center">
+              <div className="text-2xl font-bold text-purple-600">{docStats.total}</div>
+              <div className="text-xs text-muted-foreground">Total Documents</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 text-center">
+              <div className="text-2xl font-bold text-green-600">{docStats.embedded}</div>
+              <div className="text-xs text-muted-foreground">Embedded</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 text-center">
+              <div className="text-2xl font-bold text-yellow-600">{docStats.pending}</div>
+              <div className="text-xs text-muted-foreground">Pending</div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <Separator />
+
       {/* Content Extraction Engine */}
       <div>
         <h3 className="font-semibold mb-3">Content Extraction</h3>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Content Extraction Engine</Label>
-            <Select value={contentExtractionEngine} onValueChange={setContentExtractionEngine}>
+            <Select value={docs.contentExtractionEngine} onValueChange={(v) => handleUpdate('contentExtractionEngine', v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -2309,19 +2364,25 @@ function DocumentsTab() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label>PDF Extract Images</Label>
+            <div>
+              <Label>PDF Extract Images</Label>
+              <p className="text-xs text-muted-foreground">Extract and embed images from PDF files</p>
+            </div>
             <Switch
-              checked={pdfExtractImages}
-              onCheckedChange={setPdfExtractImages}
+              checked={docs.pdfExtractImages}
+              onCheckedChange={(v) => handleUpdate('pdfExtractImages', v)}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label>Bypass Embedding</Label>
+            <div>
+              <Label>Bypass Embedding</Label>
+              <p className="text-xs text-muted-foreground">Store documents without generating embeddings</p>
+            </div>
             <Switch
-              checked={bypassEmbedding}
-              onCheckedChange={setBypassEmbedding}
+              checked={docs.bypassEmbedding}
+              onCheckedChange={(v) => handleUpdate('bypassEmbedding', v)}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -2336,7 +2397,7 @@ function DocumentsTab() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Text Splitter</Label>
-            <Select value={textSplitter} onValueChange={setTextSplitter}>
+            <Select value={docs.textSplitter} onValueChange={(v) => handleUpdate('textSplitter', v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -2351,11 +2412,11 @@ function DocumentsTab() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Chunk Size</Label>
-              <Input value={chunkSize} onChange={(e) => setChunkSize(e.target.value)} />
+              <Input value={docs.chunkSize} onChange={(e) => handleUpdate('chunkSize', e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Chunk Overlap</Label>
-              <Input value={chunkOverlap} onChange={(e) => setChunkOverlap(e.target.value)} />
+              <Input value={docs.chunkOverlap} onChange={(e) => handleUpdate('chunkOverlap', e.target.value)} />
             </div>
           </div>
         </div>
@@ -2369,7 +2430,7 @@ function DocumentsTab() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Embedding Model Engine</Label>
-            <Select value={embeddingModelEngine} onValueChange={setEmbeddingModelEngine}>
+            <Select value={docs.embeddingModelEngine} onValueChange={(v) => handleUpdate('embeddingModelEngine', v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -2385,8 +2446,8 @@ function DocumentsTab() {
             <Label>Embedding Model</Label>
             <div className="flex gap-2">
               <Input
-                value={embeddingModel}
-                onChange={(e) => setEmbeddingModel(e.target.value)}
+                value={docs.embeddingModel}
+                onChange={(e) => handleUpdate('embeddingModel', e.target.value)}
                 className="flex-1"
               />
               <Button size="icon" variant="outline" className="cursor-pointer">
@@ -2404,19 +2465,25 @@ function DocumentsTab() {
         <h3 className="font-semibold mb-3">Query Settings</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label>Full Context Mode</Label>
+            <div>
+              <Label>Full Context Mode</Label>
+              <p className="text-xs text-muted-foreground">Include full document content instead of chunks</p>
+            </div>
             <Switch
-              checked={fullContextMode}
-              onCheckedChange={setFullContextMode}
+              checked={docs.fullContextMode}
+              onCheckedChange={(v) => handleUpdate('fullContextMode', v)}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label>Hybrid Search</Label>
+            <div>
+              <Label>Hybrid Search</Label>
+              <p className="text-xs text-muted-foreground">Combine semantic and lexical search</p>
+            </div>
             <Switch
-              checked={hybridSearch}
-              onCheckedChange={setHybridSearch}
+              checked={docs.hybridSearch}
+              onCheckedChange={(v) => handleUpdate('hybridSearch', v)}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -2431,7 +2498,7 @@ function DocumentsTab() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Reranking Engine</Label>
-            <Select value={rerankingEngine} onValueChange={setRerankingEngine}>
+            <Select value={docs.rerankingEngine} onValueChange={(v) => handleUpdate('rerankingEngine', v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -2445,17 +2512,17 @@ function DocumentsTab() {
 
           <div className="space-y-2">
             <Label>Reranking Model</Label>
-            <Input value={rerankingModel} onChange={(e) => setRerankingModel(e.target.value)} />
+            <Input value={docs.rerankingModel} onChange={(e) => handleUpdate('rerankingModel', e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Top K (Reranker)</Label>
-              <Input value={topKReranker} onChange={(e) => setTopKReranker(e.target.value)} />
+              <Input value={docs.topKReranker} onChange={(e) => handleUpdate('topKReranker', e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Relevance Threshold</Label>
-              <Input value={relevanceThreshold} onChange={(e) => setRelevanceThreshold(e.target.value)} />
+              <Input value={docs.relevanceThreshold} onChange={(e) => handleUpdate('relevanceThreshold', e.target.value)} />
             </div>
           </div>
 
@@ -2466,12 +2533,12 @@ function DocumentsTab() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>BM25 Weight</Label>
-              <span className="text-sm">Custom</span>
+              <span className="text-sm">{docs.bm25Weight[0]}</span>
             </div>
             <div className="space-y-2">
               <Slider
-                value={bm25Weight}
-                onValueChange={setBm25Weight}
+                value={docs.bm25Weight}
+                onValueChange={(v) => handleUpdate('bm25Weight', v)}
                 min={0}
                 max={1}
                 step={0.1}
@@ -2479,7 +2546,7 @@ function DocumentsTab() {
               />
               <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>semantic</span>
-                <span className="font-medium">{bm25Weight[0]}</span>
+                <span className="font-medium">{docs.bm25Weight[0]}</span>
                 <span>lexical</span>
               </div>
             </div>
@@ -2488,10 +2555,13 @@ function DocumentsTab() {
           <div className="space-y-2">
             <Label>RAG Template</Label>
             <Textarea
-              value={ragTemplate}
-              onChange={(e) => setRagTemplate(e.target.value)}
+              value={docs.ragTemplate}
+              onChange={(e) => handleUpdate('ragTemplate', e.target.value)}
               className="min-h-[100px] font-mono text-sm"
             />
+            <p className="text-xs text-muted-foreground">
+              Use {"{{CONTEXT}}"} for retrieved content and {"{{QUERY}}"} for user question
+            </p>
           </div>
         </div>
       </div>
@@ -2785,35 +2855,396 @@ function AudioTab() {
 }
 
 function ImagesTab() {
-  const { settings, updateImages } = useAdminSettings();
+  const { settings, updateImages, updateImageProvider, updateImageProviders } = useAdminSettings();
+  const { addLog } = useDebug();
   const images = settings.images;
+  const [editingProvider, setEditingProvider] = useState<string | null>(null);
+  const [showAddProvider, setShowAddProvider] = useState(false);
+
+  const providerTypeLabels: Record<string, string> = {
+    openai: 'OpenAI (DALL-E)',
+    stability: 'Stability AI',
+    comfyui: 'ComfyUI',
+    automatic1111: 'Automatic1111',
+    sora: 'OpenAI Sora',
+    midjourney: 'Midjourney',
+    replicate: 'Replicate',
+    custom: 'Custom API',
+  };
+
+  const providerTypeDescriptions: Record<string, string> = {
+    openai: 'Cloud-based image generation via OpenAI API',
+    stability: 'High-quality image generation via Stability AI',
+    comfyui: 'Local node-based image generation workflow',
+    automatic1111: 'Local Stable Diffusion web UI',
+    sora: 'Video generation via OpenAI Sora API',
+    midjourney: 'AI art generation via Midjourney API',
+    replicate: 'Run open-source models in the cloud',
+    custom: 'Custom image generation API endpoint',
+  };
+
+  const handleToggleProvider = (providerId: string, enabled: boolean) => {
+    updateImageProvider(providerId, { enabled });
+    addLog({
+      action: `Image provider ${enabled ? 'enabled' : 'disabled'}: ${providerId}`,
+      category: 'admin:images:provider:toggle',
+      type: 'info',
+    });
+  };
+
+  const handleSetDefault = (providerId: string) => {
+    const updatedProviders = images.providers.map(p => ({
+      ...p,
+      isDefault: p.id === providerId,
+    }));
+    updateImageProviders(updatedProviders);
+    updateImages({ defaultProvider: providerId });
+    addLog({
+      action: `Default image provider set: ${providerId}`,
+      category: 'admin:images:provider:default',
+      type: 'info',
+    });
+  };
+
+  const handleDeleteProvider = (providerId: string) => {
+    const updatedProviders = images.providers.filter(p => p.id !== providerId);
+    updateImageProviders(updatedProviders);
+    addLog({
+      action: `Image provider deleted: ${providerId}`,
+      category: 'admin:images:provider:delete',
+      type: 'warning',
+    });
+  };
+
+  const handleAddProvider = (type: string) => {
+    const newProvider = {
+      id: `${type}-${Date.now()}`,
+      name: `New ${providerTypeLabels[type]} Provider`,
+      type: type as any,
+      baseUrl: type === 'comfyui' ? 'http://localhost:8188' : type === 'automatic1111' ? 'http://localhost:7860' : '',
+      enabled: false,
+      isDefault: false,
+      settings: {},
+      allowUserKeys: type !== 'comfyui' && type !== 'automatic1111',
+      requiresAuth: type !== 'comfyui' && type !== 'automatic1111',
+    };
+    updateImageProviders([...images.providers, newProvider]);
+    setEditingProvider(newProvider.id);
+    setShowAddProvider(false);
+  };
+
+  const handleUpdateProviderSettings = (providerId: string, key: string, value: any) => {
+    const provider = images.providers.find(p => p.id === providerId);
+    if (provider) {
+      updateImageProvider(providerId, {
+        settings: { ...provider.settings, [key]: value },
+      });
+    }
+  };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Global Settings */}
       <div>
-        <h3 className="font-semibold mb-3">Image Generation</h3>
+        <h3 className="font-semibold mb-3">Image Generation Settings</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label>Enable Image Generation</Label>
+            <div>
+              <Label>Enable Image Generation</Label>
+              <p className="text-xs text-muted-foreground">Allow AI to generate images in chat</p>
+            </div>
             <Switch
               checked={images.imageGenerationEnabled}
               onCheckedChange={(v) => updateImages({ imageGenerationEnabled: v })}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
-          <div>
-            <Label>Image Model</Label>
-            <Select value={images.imageModel} onValueChange={(v) => updateImages({ imageModel: v })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="dall-e-3">DALL-E 3</SelectItem>
-                <SelectItem value="dall-e-2">DALL-E 2</SelectItem>
-                <SelectItem value="stable-diffusion">Stable Diffusion</SelectItem>
-              </SelectContent>
-            </Select>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Default Provider</Label>
+              <Select
+                value={images.defaultProvider}
+                onValueChange={(v) => {
+                  updateImages({ defaultProvider: v });
+                  handleSetDefault(v);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {images.providers.filter(p => p.enabled).map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Max Images Per Request</Label>
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                value={images.maxImagesPerRequest}
+                onChange={(e) => updateImages({ maxImagesPerRequest: parseInt(e.target.value) || 1 })}
+              />
+            </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Default Size</Label>
+              <Select value={images.defaultSize} onValueChange={(v) => updateImages({ defaultSize: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="256x256">256x256</SelectItem>
+                  <SelectItem value="512x512">512x512</SelectItem>
+                  <SelectItem value="1024x1024">1024x1024</SelectItem>
+                  <SelectItem value="1024x1792">1024x1792 (Portrait)</SelectItem>
+                  <SelectItem value="1792x1024">1792x1024 (Landscape)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Default Quality</Label>
+              <Select value={images.defaultQuality} onValueChange={(v) => updateImages({ defaultQuality: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="hd">HD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Image Providers */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-semibold">Image Providers</h3>
+            <p className="text-xs text-muted-foreground">Configure cloud and local image generation services</p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Provider
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {Object.entries(providerTypeLabels).map(([type, label]) => (
+                <DropdownMenuItem key={type} onClick={() => handleAddProvider(type)}>
+                  {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="space-y-3">
+          {images.providers.map((provider) => (
+            <Card key={provider.id} className={`${!provider.enabled ? 'opacity-60' : ''}`}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{provider.name}</span>
+                      {provider.isDefault && (
+                        <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded">
+                          Default
+                        </span>
+                      )}
+                      <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">
+                        {providerTypeLabels[provider.type]}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {provider.baseUrl || providerTypeDescriptions[provider.type]}
+                    </p>
+                    {provider.allowUserKeys && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                        BYOK enabled - users can add their own API keys
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={provider.enabled}
+                      onCheckedChange={(v) => handleToggleProvider(provider.id, v)}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditingProvider(provider.id)}>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Configure
+                        </DropdownMenuItem>
+                        {!provider.isDefault && provider.enabled && (
+                          <DropdownMenuItem onClick={() => handleSetDefault(provider.id)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Set as Default
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteProvider(provider.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {/* Expanded Config */}
+                {editingProvider === provider.id && (
+                  <div className="mt-4 pt-4 border-t space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Provider Name</Label>
+                        <Input
+                          value={provider.name}
+                          onChange={(e) => updateImageProvider(provider.id, { name: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Base URL</Label>
+                        <Input
+                          value={provider.baseUrl}
+                          onChange={(e) => updateImageProvider(provider.id, { baseUrl: e.target.value })}
+                          placeholder={provider.type === 'comfyui' ? 'http://localhost:8188' : 'https://api.example.com/v1'}
+                        />
+                      </div>
+                    </div>
+
+                    {provider.requiresAuth && (
+                      <div className="space-y-2">
+                        <Label>API Key</Label>
+                        <Input
+                          type="password"
+                          value={provider.apiKey || ''}
+                          onChange={(e) => updateImageProvider(provider.id, { apiKey: e.target.value })}
+                          placeholder="sk-..."
+                        />
+                      </div>
+                    )}
+
+                    {/* Provider-specific settings */}
+                    {(provider.type === 'openai' || provider.type === 'stability' || provider.type === 'replicate') && (
+                      <div className="space-y-2">
+                        <Label>Model</Label>
+                        <Input
+                          value={provider.settings.model || ''}
+                          onChange={(e) => handleUpdateProviderSettings(provider.id, 'model', e.target.value)}
+                          placeholder={provider.type === 'openai' ? 'dall-e-3' : 'stable-diffusion-xl-1024-v1-0'}
+                        />
+                      </div>
+                    )}
+
+                    {(provider.type === 'comfyui' || provider.type === 'automatic1111' || provider.type === 'stability') && (
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Steps</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={150}
+                            value={provider.settings.steps || 20}
+                            onChange={(e) => handleUpdateProviderSettings(provider.id, 'steps', parseInt(e.target.value))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>CFG Scale</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={30}
+                            step={0.5}
+                            value={provider.settings.cfgScale || 7}
+                            onChange={(e) => handleUpdateProviderSettings(provider.id, 'cfgScale', parseFloat(e.target.value))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Sampler</Label>
+                          <Select
+                            value={provider.settings.sampler || 'euler'}
+                            onValueChange={(v) => handleUpdateProviderSettings(provider.id, 'sampler', v)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="euler">Euler</SelectItem>
+                              <SelectItem value="euler_ancestral">Euler Ancestral</SelectItem>
+                              <SelectItem value="heun">Heun</SelectItem>
+                              <SelectItem value="dpm_2">DPM2</SelectItem>
+                              <SelectItem value="dpm_2_ancestral">DPM2 Ancestral</SelectItem>
+                              <SelectItem value="lms">LMS</SelectItem>
+                              <SelectItem value="ddim">DDIM</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
+                    {provider.type === 'comfyui' && (
+                      <div className="space-y-2">
+                        <Label>Workflow</Label>
+                        <Input
+                          value={provider.settings.workflow || ''}
+                          onChange={(e) => handleUpdateProviderSettings(provider.id, 'workflow', e.target.value)}
+                          placeholder="default or workflow name"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label>Default Negative Prompt</Label>
+                      <Textarea
+                        value={provider.settings.negativePrompt || ''}
+                        onChange={(e) => handleUpdateProviderSettings(provider.id, 'negativePrompt', e.target.value)}
+                        placeholder="blurry, low quality, distorted..."
+                        className="min-h-[60px]"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Allow User API Keys (BYOK)</Label>
+                        <p className="text-xs text-muted-foreground">Let users provide their own API keys</p>
+                      </div>
+                      <Switch
+                        checked={provider.allowUserKeys}
+                        onCheckedChange={(v) => updateImageProvider(provider.id, { allowUserKeys: v })}
+                        className="data-[state=checked]:bg-purple-600"
+                      />
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button size="sm" onClick={() => setEditingProvider(null)}>
+                        Done
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     </div>
