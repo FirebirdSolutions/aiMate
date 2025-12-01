@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { ShieldCheck, Users, Database, FileText, BarChart3, Pencil, Sparkles, Search, Code, Wrench, CloudSun, Plus, Settings, Layers, Download, X, Upload, Eye, Trash2, Edit2 } from "lucide-react";
+import { ShieldCheck, Users, Database, FileText, BarChart3, Pencil, Sparkles, Search, Code, Wrench, CloudSun, Plus, Settings, Layers, Download, X, Upload, Eye, Trash2, Edit2, Puzzle } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
@@ -56,7 +56,7 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
   }, [open, logUIEvent, addLog]);
 
   // MVP visible tabs - others hidden until needed
-  const visibleTabs = ['general', 'interface', 'connections', 'models', 'mcp'];
+  const visibleTabs = ['general', 'interface', 'connections', 'models', 'plugins', 'mcp'];
 
   const tabs = useMemo(() => [
     {
@@ -92,7 +92,7 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
     {
       id: "plugins",
       label: "Plugins",
-      icon: FileText,
+      icon: Puzzle,
       content: <PluginsTab />,
     },
     {
