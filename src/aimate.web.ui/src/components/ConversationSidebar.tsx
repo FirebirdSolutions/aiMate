@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "./ui/button";
 import { VirtualizedList, SimpleVirtualList } from "./ui/virtualized-list";
-import { MessageSquare, Plus, Trash2, X, Search, FolderKanban, Sparkles, Settings, Archive, ShieldCheck, LogOut, ChevronUp, Info, ChevronDown, ChevronRight, Brain, MoreVertical, Share, Download, Edit, Pin, FolderInput, Check, Loader2 } from "lucide-react";
+import { MessageSquare, Plus, Trash2, X, Search, FolderKanban, Sparkles, Settings, Archive, ShieldCheck, LogOut, ChevronUp, Info, ChevronDown, ChevronRight, Brain, MoreVertical, Share, Download, Edit, Pin, FolderInput, Check, Loader2, Folder, FolderOpen, FolderPlus, FileText } from "lucide-react";
 import { useDebug } from "./DebugContext";
 import { ErrorBoundary, ModalErrorFallback } from "./ErrorBoundary";
 import { ConversationListSkeleton } from "./LoadingSkeletons";
@@ -41,6 +41,7 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { toast } from "sonner";
+import { exportToPdf, exportToJson, exportToMarkdown } from "../utils/exportPdf";
 
 export interface Conversation {
   id: string;
@@ -57,6 +58,7 @@ interface ConversationSidebarProps {
   onDeleteConversation: (id: string) => void;
   onRenameConversation?: (id: string, newTitle: string) => void;
   onCloneConversation?: (id: string) => void;
+  onExportConversation?: (id: string, format: 'pdf' | 'json' | 'md') => void;
   onClose?: () => void;
   enabledModels?: Record<string, boolean>;
   onToggleModel?: (modelId: string) => void;
@@ -73,6 +75,7 @@ export function ConversationSidebar({
   onDeleteConversation,
   onRenameConversation,
   onCloneConversation,
+  onExportConversation,
   onClose,
   enabledModels,
   onToggleModel,
@@ -102,6 +105,87 @@ export function ConversationSidebar({
   const [archivedOpen, setArchivedOpen] = useState(false);
   const [pinnedConversations, setPinnedConversations] = useState<string[]>([]);
   const [archivedConversationsLocal, setArchivedConversationsLocal] = useState<string[]>([]);
+
+  // Folder state management
+  interface ChatFolder {
+    id: string;
+    name: string;
+    color?: string;
+    conversationIds: string[];
+  }
+
+  const [folders, setFolders] = useState<ChatFolder[]>(() => {
+    const saved = localStorage.getItem('aimate-chat-folders');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [foldersExpanded, setFoldersExpanded] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editingFolderName, setEditingFolderName] = useState("");
+
+  // Persist folders to localStorage
+  useEffect(() => {
+    localStorage.setItem('aimate-chat-folders', JSON.stringify(folders));
+  }, [folders]);
+
+  const createFolder = () => {
+    if (!newFolderName.trim()) return;
+    const newFolder: ChatFolder = {
+      id: `folder-${Date.now()}`,
+      name: newFolderName.trim(),
+      color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+      conversationIds: [],
+    };
+    setFolders(prev => [...prev, newFolder]);
+    setNewFolderName("");
+    setCreatingFolder(false);
+    toast.success(`Folder "${newFolder.name}" created`);
+  };
+
+  const deleteFolder = (folderId: string) => {
+    setFolders(prev => prev.filter(f => f.id !== folderId));
+    toast.success("Folder deleted");
+  };
+
+  const renameFolder = (folderId: string, newName: string) => {
+    if (!newName.trim()) return;
+    setFolders(prev => prev.map(f =>
+      f.id === folderId ? { ...f, name: newName.trim() } : f
+    ));
+    setEditingFolderId(null);
+    toast.success("Folder renamed");
+  };
+
+  const moveToFolder = (conversationId: string, folderId: string | null) => {
+    setFolders(prev => prev.map(f => ({
+      ...f,
+      conversationIds: folderId === f.id
+        ? [...new Set([...f.conversationIds, conversationId])]
+        : f.conversationIds.filter(id => id !== conversationId)
+    })));
+    const folderName = folderId ? folders.find(f => f.id === folderId)?.name : 'root';
+    toast.success(`Moved to ${folderName}`);
+  };
+
+  const toggleFolderExpanded = (folderId: string) => {
+    setExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(folderId)) next.delete(folderId);
+      else next.add(folderId);
+      return next;
+    });
+  };
+
+  const getConversationFolder = (conversationId: string): string | null => {
+    for (const folder of folders) {
+      if (folder.conversationIds.includes(conversationId)) {
+        return folder.id;
+      }
+    }
+    return null;
+  };
 
   // Map ProjectDto to simplified Project interface for the modal
   const projects: Project[] = useMemo(() =>
@@ -187,9 +271,13 @@ export function ConversationSidebar({
     setProjectModalOpen(true);
   };
 
-  const handleDownload = (conversationId: string) => {
+  const handleExport = (conversationId: string, format: 'pdf' | 'json' | 'md') => {
     const conversation = conversations.find(c => c.id === conversationId);
-    toast.success(`Downloading "${conversation?.title}"...`);
+    if (onExportConversation) {
+      onExportConversation(conversationId, format);
+    } else {
+      toast.info(`Exporting "${conversation?.title}" as ${format.toUpperCase()}...`);
+    }
   };
 
   const handlePin = (conversationId: string) => {
@@ -210,9 +298,9 @@ export function ConversationSidebar({
     toast.success(`Cloned "${conversation?.title}"`);
   };
 
-  const handleMove = (conversationId: string) => {
+  const handleMoveToProject = (conversationId: string) => {
     const conversation = conversations.find(c => c.id === conversationId);
-    toast.info(`Move "${conversation?.title}" to folder...`);
+    toast.info(`Move "${conversation?.title}" to project...`);
   };
 
   const handleArchive = (conversationId: string) => {
@@ -310,13 +398,48 @@ export function ConversationSidebar({
                   <Share className="h-4 w-4" />
                   <span>Share</span>
                 </button>
-                <button
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
-                  onClick={() => handleDownload(conversation.id)}
-                >
-                  <Download className="h-4 w-4" />
-                  <span>Download</span>
-                </button>
+                {/* Export options */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left cursor-pointer"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Export</span>
+                      <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="right"
+                    align="start"
+                    className="w-44 p-1 bg-gray-900 dark:bg-gray-900 text-white border-gray-700"
+                    onInteractOutside={(e) => showcaseMode && e.preventDefault()}
+                  >
+                    <div className="space-y-1">
+                      <button
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
+                        onClick={() => handleExport(conversation.id, 'pdf')}
+                      >
+                        <FileText className="h-4 w-4 text-red-400" />
+                        <span>PDF Document</span>
+                      </button>
+                      <button
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
+                        onClick={() => handleExport(conversation.id, 'md')}
+                      >
+                        <FileText className="h-4 w-4 text-blue-400" />
+                        <span>Markdown</span>
+                      </button>
+                      <button
+                        className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
+                        onClick={() => handleExport(conversation.id, 'json')}
+                      >
+                        <FileText className="h-4 w-4 text-yellow-400" />
+                        <span>JSON</span>
+                      </button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <button
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
                   onClick={() => {
@@ -334,6 +457,69 @@ export function ConversationSidebar({
                   <Pin className="h-4 w-4" />
                   <span>{pinnedConversations.includes(conversation.id) ? 'Unpin' : 'Pin'}</span>
                 </button>
+                {/* Move to Folder */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left cursor-pointer"
+                    >
+                      <Folder className="h-4 w-4" />
+                      <span>Move to Folder</span>
+                      <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    side="right"
+                    align="start"
+                    className="w-56 p-0 bg-gray-900 dark:bg-gray-900 text-white border-gray-700"
+                    onInteractOutside={(e) => showcaseMode && e.preventDefault()}
+                  >
+                    <div className="px-4 py-2.5 border-b border-gray-800">
+                      <div className="text-xs text-gray-400">Folders</div>
+                    </div>
+                    <div className="p-2 space-y-1">
+                      {getConversationFolder(conversation.id) && (
+                        <button
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer text-yellow-400"
+                          onClick={() => moveToFolder(conversation.id, null)}
+                        >
+                          <X className="h-4 w-4" />
+                          <span>Remove from folder</span>
+                        </button>
+                      )}
+                      {folders.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-gray-400">No folders yet</div>
+                      ) : (
+                        folders.map(folder => (
+                          <button
+                            key={folder.id}
+                            className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer ${getConversationFolder(conversation.id) === folder.id ? 'bg-gray-800' : ''}`}
+                            onClick={() => moveToFolder(conversation.id, folder.id)}
+                          >
+                            <Folder className="h-4 w-4" style={{ color: folder.color }} />
+                            <span>{folder.name}</span>
+                            {getConversationFolder(conversation.id) === folder.id && (
+                              <Check className="h-3 w-3 ml-auto text-green-400" />
+                            )}
+                          </button>
+                        ))
+                      )}
+                      <div className="border-t border-gray-700 pt-1 mt-1">
+                        <button
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer text-blue-400"
+                          onClick={() => {
+                            setFoldersExpanded(true);
+                            setCreatingFolder(true);
+                          }}
+                        >
+                          <FolderPlus className="h-4 w-4" />
+                          <span>New folder</span>
+                        </button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                {/* Move to Project */}
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
@@ -400,35 +586,175 @@ export function ConversationSidebar({
     </div>
   );
 
+  // Get all conversation IDs that are in folders
+  const conversationsInFolders = useMemo(() => {
+    const inFolders = new Set<string>();
+    folders.forEach(f => f.conversationIds.forEach(id => inFolders.add(id)));
+    return inFolders;
+  }, [folders]);
+
   const pinnedList = conversations.filter(c => pinnedConversations.includes(c.id));
-  const recentList = conversations.filter(c => !pinnedConversations.includes(c.id));
+  const recentList = conversations.filter(c =>
+    !pinnedConversations.includes(c.id) &&
+    !conversationsInFolders.has(c.id) &&
+    !archivedConversationsLocal.includes(c.id)
+  );
 
   // Combined list for virtualization with section headers
   type ListItem =
     | { type: 'section'; title: string; id: string }
-    | { type: 'conversation'; data: Conversation };
+    | { type: 'folder'; data: { id: string; name: string; color?: string; count: number; expanded: boolean } }
+    | { type: 'conversation'; data: Conversation; inFolder?: boolean };
 
   const virtualizedItems = useMemo<ListItem[]>(() => {
     const items: ListItem[] = [];
 
+    // Pinned section
     if (pinnedList.length > 0) {
       items.push({ type: 'section', title: 'Pinned', id: 'section-pinned' });
       pinnedList.forEach(c => items.push({ type: 'conversation', data: c }));
     }
 
+    // Folders section - only show if we have folders
+    if (folders.length > 0) {
+      folders.forEach(folder => {
+        const folderConversations = conversations.filter(c =>
+          folder.conversationIds.includes(c.id) && !archivedConversationsLocal.includes(c.id)
+        );
+        const isExpanded = expandedFolders.has(folder.id);
+
+        items.push({
+          type: 'folder',
+          data: {
+            id: folder.id,
+            name: folder.name,
+            color: folder.color,
+            count: folderConversations.length,
+            expanded: isExpanded
+          }
+        });
+
+        if (isExpanded) {
+          folderConversations.forEach(c => items.push({ type: 'conversation', data: c, inFolder: true }));
+        }
+      });
+    }
+
+    // Recent section (unfiled conversations)
     if (recentList.length > 0) {
-      if (pinnedList.length > 0) {
+      if (pinnedList.length > 0 || folders.length > 0) {
         items.push({ type: 'section', title: 'Recent', id: 'section-recent' });
       }
       recentList.forEach(c => items.push({ type: 'conversation', data: c }));
     }
 
     return items;
-  }, [pinnedList, recentList]);
+  }, [pinnedList, recentList, folders, expandedFolders, conversations, archivedConversationsLocal]);
 
   const getItemKey = useCallback((item: ListItem) => {
-    return item.type === 'section' ? item.id : item.data.id;
+    if (item.type === 'section') return item.id;
+    if (item.type === 'folder') return item.data.id;
+    return item.data.id;
   }, []);
+
+  const renderFolderItem = useCallback((folderData: { id: string; name: string; color?: string; count: number; expanded: boolean }) => {
+    const isEditing = editingFolderId === folderData.id;
+
+    return (
+      <div className="group relative rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+        {isEditing ? (
+          <div className="p-2 flex items-center gap-2">
+            <Folder className="h-4 w-4 shrink-0" style={{ color: folderData.color }} />
+            <Input
+              value={editingFolderName}
+              onChange={(e) => setEditingFolderName(e.target.value)}
+              className="h-7 text-sm flex-1"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") renameFolder(folderData.id, editingFolderName);
+                else if (e.key === "Escape") setEditingFolderId(null);
+              }}
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 shrink-0"
+              onClick={() => renameFolder(folderData.id, editingFolderName)}
+            >
+              <Check className="h-3 w-3" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 shrink-0"
+              onClick={() => setEditingFolderId(null)}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        ) : (
+          <>
+            <button
+              onClick={() => toggleFolderExpanded(folderData.id)}
+              className="w-full text-left p-2 pr-10 flex items-center gap-2"
+            >
+              {folderData.expanded ? (
+                <FolderOpen className="h-4 w-4 shrink-0" style={{ color: folderData.color }} />
+              ) : (
+                <Folder className="h-4 w-4 shrink-0" style={{ color: folderData.color }} />
+              )}
+              <span className="text-sm flex-1 truncate">{truncateText(folderData.name, 20)}</span>
+              <span className="text-xs text-gray-400">{folderData.count}</span>
+              {folderData.expanded ? (
+                <ChevronDown className="h-3 w-3 text-gray-400" />
+              ) : (
+                <ChevronRight className="h-3 w-3 text-gray-400" />
+              )}
+            </button>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="h-3 w-3" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                side="right"
+                align="start"
+                className="w-36 p-1"
+                onInteractOutside={(e) => showcaseMode && e.preventDefault()}
+              >
+                <div className="space-y-1">
+                  <button
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+                    onClick={() => {
+                      setEditingFolderName(folderData.name);
+                      setEditingFolderId(folderData.id);
+                    }}
+                  >
+                    <Edit className="h-3 w-3" />
+                    <span>Rename</span>
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left text-red-600 dark:text-red-400"
+                    onClick={() => deleteFolder(folderData.id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </>
+        )}
+      </div>
+    );
+  }, [editingFolderId, editingFolderName, showcaseMode, truncateText]);
 
   const renderVirtualItem = useCallback((item: ListItem) => {
     if (item.type === 'section') {
@@ -440,8 +766,16 @@ export function ConversationSidebar({
         </div>
       );
     }
-    return renderConversationItem(item.data);
-  }, [renderConversationItem, activeConversationId, renamingId, renameValue, pinnedConversations, showcaseMode]);
+    if (item.type === 'folder') {
+      return renderFolderItem(item.data);
+    }
+    // Add indent for conversations inside folders
+    const conversationEl = renderConversationItem(item.data);
+    if (item.inFolder) {
+      return <div className="pl-4">{conversationEl}</div>;
+    }
+    return conversationEl;
+  }, [renderConversationItem, renderFolderItem, activeConversationId, renamingId, renameValue, pinnedConversations, showcaseMode]);
 
   return (
     <>
@@ -521,6 +855,136 @@ export function ConversationSidebar({
             <Brain className="h-4 w-4" />
             Knowledge
           </Button>
+          {/* Folders collapsible */}
+          <Collapsible open={foldersExpanded} onOpenChange={setFoldersExpanded}>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3"
+              >
+                <Folder className="h-4 w-4" />
+                Folders
+                <span className="text-xs text-gray-400 ml-1">({folders.length})</span>
+                {foldersExpanded ? (
+                  <ChevronDown className="h-4 w-4 ml-auto" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 ml-auto" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1 mt-1">
+              {creatingFolder ? (
+                <div className="flex items-center gap-2 pl-10 pr-2">
+                  <Input
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    placeholder="Folder name"
+                    className="h-7 text-sm flex-1"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") createFolder();
+                      else if (e.key === "Escape") {
+                        setCreatingFolder(false);
+                        setNewFolderName("");
+                      }
+                    }}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 shrink-0"
+                    onClick={createFolder}
+                  >
+                    <Check className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 shrink-0"
+                    onClick={() => {
+                      setCreatingFolder(false);
+                      setNewFolderName("");
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start gap-3 pl-10 text-sm"
+                  onClick={() => setCreatingFolder(true)}
+                >
+                  <FolderPlus className="h-3 w-3" />
+                  New Folder
+                </Button>
+              )}
+              {folders.length === 0 ? (
+                <div className="text-xs text-gray-500 dark:text-gray-400 pl-10 py-2">
+                  No folders yet
+                </div>
+              ) : (
+                folders.map((folder) => (
+                  <div key={folder.id} className="relative group">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start gap-2 pl-10 text-sm pr-8 overflow-hidden"
+                      onClick={() => toggleFolderExpanded(folder.id)}
+                    >
+                      {expandedFolders.has(folder.id) ? (
+                        <FolderOpen className="h-3 w-3 shrink-0" style={{ color: folder.color }} />
+                      ) : (
+                        <Folder className="h-3 w-3 shrink-0" style={{ color: folder.color }} />
+                      )}
+                      <span className="truncate flex-1">{truncateText(folder.name, 16)}</span>
+                      <span className="text-[10px] text-gray-400 shrink-0">{folder.conversationIds.length}</span>
+                    </Button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-3 w-3" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        side="right"
+                        align="start"
+                        className="w-36 p-1"
+                        onInteractOutside={(e) => showcaseMode && e.preventDefault()}
+                      >
+                        <div className="space-y-1">
+                          <button
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+                            onClick={() => {
+                              setEditingFolderName(folder.name);
+                              setEditingFolderId(folder.id);
+                            }}
+                          >
+                            <Edit className="h-3 w-3" />
+                            <span>Rename</span>
+                          </button>
+                          <button
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left text-red-600 dark:text-red-400"
+                            onClick={() => deleteFolder(folder.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                ))
+              )}
+            </CollapsibleContent>
+          </Collapsible>
+          {/* Projects collapsible */}
           <Collapsible open={projectsExpanded} onOpenChange={setProjectsExpanded}>
             <CollapsibleTrigger asChild>
               <Button

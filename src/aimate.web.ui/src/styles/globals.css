@@ -359,3 +359,38 @@ html[data-color-theme="purple"] {
 .to-blue-500 {
   --tw-gradient-to: var(--gradient-to);
 }
+
+/* Syntax highlighting tokens */
+.syntax-highlight .token-keyword {
+  color: #c792ea; /* Purple for keywords */
+  font-weight: 500;
+}
+
+.syntax-highlight .token-string {
+  color: #c3e88d; /* Green for strings */
+}
+
+.syntax-highlight .token-comment {
+  color: #676e95; /* Gray for comments */
+  font-style: italic;
+}
+
+.syntax-highlight .token-number {
+  color: #f78c6c; /* Orange for numbers */
+}
+
+.syntax-highlight .token-function {
+  color: #82aaff; /* Blue for functions */
+}
+
+.syntax-highlight .token-class {
+  color: #ffcb6b; /* Yellow for classes */
+}
+
+.syntax-highlight .token-operator {
+  color: #89ddff; /* Cyan for operators */
+}
+
+.syntax-highlight .token-property {
+  color: #f07178; /* Red for properties */
+}

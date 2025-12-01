@@ -23,6 +23,86 @@ interface CodeBlockProps {
   onSaveToKnowledge?: (code: string, language: string) => Promise<void>;
 }
 
+/**
+ * Simple syntax highlighting using regex patterns
+ * Covers common tokens: keywords, strings, comments, numbers, functions
+ */
+function highlightCode(code: string, language: string): string {
+  // Escape HTML first
+  let highlighted = code
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Language-specific keywords
+  const keywordSets: Record<string, string[]> = {
+    javascript: ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'extends', 'new', 'this', 'import', 'export', 'from', 'default', 'async', 'await', 'try', 'catch', 'throw', 'typeof', 'instanceof', 'null', 'undefined', 'true', 'false'],
+    typescript: ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'extends', 'new', 'this', 'import', 'export', 'from', 'default', 'async', 'await', 'try', 'catch', 'throw', 'typeof', 'instanceof', 'null', 'undefined', 'true', 'false', 'interface', 'type', 'enum', 'as', 'implements', 'private', 'public', 'protected', 'readonly'],
+    python: ['def', 'class', 'return', 'if', 'elif', 'else', 'for', 'while', 'import', 'from', 'as', 'try', 'except', 'finally', 'raise', 'with', 'lambda', 'yield', 'pass', 'break', 'continue', 'and', 'or', 'not', 'in', 'is', 'None', 'True', 'False', 'self', 'async', 'await'],
+    rust: ['fn', 'let', 'mut', 'const', 'if', 'else', 'match', 'for', 'while', 'loop', 'return', 'struct', 'enum', 'impl', 'trait', 'pub', 'use', 'mod', 'self', 'Self', 'true', 'false', 'where', 'async', 'await', 'move'],
+    go: ['func', 'var', 'const', 'if', 'else', 'for', 'range', 'return', 'struct', 'interface', 'type', 'package', 'import', 'defer', 'go', 'chan', 'select', 'case', 'default', 'nil', 'true', 'false', 'map', 'make', 'new'],
+    java: ['class', 'public', 'private', 'protected', 'static', 'final', 'void', 'int', 'String', 'boolean', 'return', 'if', 'else', 'for', 'while', 'new', 'this', 'super', 'extends', 'implements', 'interface', 'try', 'catch', 'throw', 'throws', 'null', 'true', 'false', 'import', 'package'],
+    sql: ['SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'TABLE', 'INDEX', 'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'ON', 'AS', 'ORDER', 'BY', 'GROUP', 'HAVING', 'LIMIT', 'OFFSET', 'NULL', 'NOT', 'IN', 'LIKE', 'BETWEEN', 'EXISTS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'DISTINCT', 'COUNT', 'SUM', 'AVG', 'MAX', 'MIN'],
+  };
+
+  // Map aliases
+  const langMap: Record<string, string> = {
+    js: 'javascript', ts: 'typescript', tsx: 'typescript', jsx: 'javascript',
+    py: 'python', rb: 'ruby', rs: 'rust',
+  };
+  const normalizedLang = langMap[language] || language;
+  const keywords = keywordSets[normalizedLang] || keywordSets.javascript || [];
+
+  // Apply highlighting patterns in order
+
+  // 1. Comments (single line)
+  highlighted = highlighted.replace(
+    /(\/\/.*$|#(?!include|define|ifdef|ifndef|endif|pragma).*$)/gm,
+    '<span class="token-comment">$1</span>'
+  );
+
+  // 2. Multi-line comments
+  highlighted = highlighted.replace(
+    /(\/\*[\s\S]*?\*\/)/g,
+    '<span class="token-comment">$1</span>'
+  );
+
+  // 3. Strings (double and single quotes, backticks)
+  highlighted = highlighted.replace(
+    /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g,
+    '<span class="token-string">$1</span>'
+  );
+
+  // 4. Numbers
+  highlighted = highlighted.replace(
+    /\b(\d+\.?\d*)\b/g,
+    '<span class="token-number">$1</span>'
+  );
+
+  // 5. Keywords (word boundaries)
+  if (keywords.length > 0) {
+    const keywordPattern = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+    highlighted = highlighted.replace(
+      keywordPattern,
+      '<span class="token-keyword">$1</span>'
+    );
+  }
+
+  // 6. Function calls
+  highlighted = highlighted.replace(
+    /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g,
+    '<span class="token-function">$1</span>('
+  );
+
+  // 7. Class names (capitalized words)
+  highlighted = highlighted.replace(
+    /\b([A-Z][a-zA-Z0-9_]*)\b(?!<\/span>)/g,
+    '<span class="token-class">$1</span>'
+  );
+
+  return highlighted;
+}
+
 // Map common language aliases to display names
 const LANGUAGE_DISPLAY: Record<string, string> = {
   'js': 'JavaScript',
@@ -182,9 +262,12 @@ export function CodeBlock({ language, children, className = '' }: CodeBlockProps
         </div>
       </div>
 
-      {/* Code content */}
-      <pre className="p-4 overflow-x-auto text-sm leading-relaxed">
-        <code className="text-gray-100 font-mono">{code}</code>
+      {/* Code content with syntax highlighting */}
+      <pre className="p-4 overflow-x-auto text-sm leading-relaxed syntax-highlight">
+        <code
+          className="text-gray-100 font-mono block whitespace-pre"
+          dangerouslySetInnerHTML={{ __html: highlightCode(code, lang) }}
+        />
       </pre>
 
       {/* Floating copy button (shows on hover for quick access) */}

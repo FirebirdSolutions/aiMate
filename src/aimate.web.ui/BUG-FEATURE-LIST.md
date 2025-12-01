@@ -34,6 +34,8 @@
 - [ ] Vibe Coding (see `code_generation_spec.md`)
 - [ ] Structured Content (see `structure_content_spec.md`)
 - [ ] Full review of `/src/aimate.Api|Shared|Core` for backend/DB alignment
+- [ ] Agentic Tools - Create and manage custom AI agents with tool access
+- [ ] Advanced RAG - Enhanced retrieval with hybrid search and reranking
 
 ---
 

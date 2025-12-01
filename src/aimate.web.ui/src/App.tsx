@@ -22,6 +22,7 @@ import { Sheet, SheetContent, SheetTitle } from "./components/ui/sheet";
 import { Sparkles } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
+import { exportToPdf, exportToJson, exportToMarkdown } from "./utils/exportPdf";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -314,6 +315,59 @@ function ChatApp() {
     });
   };
 
+  const handleExportConversation = async (conversationId: string, format: 'pdf' | 'json' | 'md') => {
+    const conv = conversations.conversations.find(c => c.id === conversationId);
+    if (!conv) {
+      toast.error('Conversation not found');
+      return;
+    }
+
+    // If exporting the active conversation, use current messages
+    // Otherwise, we'd need to load them - for now, show a message
+    if (conversationId !== activeConversationId || chat.messages.length === 0) {
+      toast.info('Please open the conversation first to export it');
+      return;
+    }
+
+    const exportOptions = {
+      title: conv.title,
+      messages: chat.messages.map(m => ({
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp,
+      })),
+      includeTimestamps: true,
+    };
+
+    try {
+      switch (format) {
+        case 'pdf':
+          exportToPdf(exportOptions);
+          toast.success('PDF export ready for printing');
+          break;
+        case 'json':
+          exportToJson(exportOptions);
+          toast.success('JSON exported');
+          break;
+        case 'md':
+          exportToMarkdown(exportOptions);
+          toast.success('Markdown exported');
+          break;
+      }
+
+      addLog({
+        action: 'Export conversation',
+        api: 'local',
+        payload: { conversationId, format },
+        type: 'success',
+        category: 'chat:export'
+      });
+    } catch (err) {
+      console.error('Export failed:', err);
+      toast.error('Failed to export conversation');
+    }
+  };
+
   const handleDeleteConversation = async (id: string) => {
     try {
       await conversations.deleteConversation(id);
@@ -444,6 +498,7 @@ function ChatApp() {
               onDeleteConversation={handleDeleteConversation}
               onRenameConversation={handleRenameConversation}
               onCloneConversation={handleCloneConversation}
+              onExportConversation={handleExportConversation}
               enabledModels={enabledModels}
               onToggleModel={handleToggleModel}
               hasMore={conversations.hasMore}
@@ -470,6 +525,7 @@ function ChatApp() {
               onDeleteConversation={handleDeleteConversation}
               onRenameConversation={handleRenameConversation}
               onCloneConversation={handleCloneConversation}
+              onExportConversation={handleExportConversation}
               onClose={() => setMobileSidebarOpen(false)}
               enabledModels={enabledModels}
               onToggleModel={handleToggleModel}

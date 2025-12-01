@@ -305,10 +305,8 @@ export function ChatMessage({
                   : "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
                   }`}
               >
-                {isUser ? (
-                  <p className="whitespace-pre-wrap break-words">{content}</p>
-                ) : markdownSupport ? (
-                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2">
+                {markdownSupport ? (
+                  <div className={`prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2 ${isUser ? 'prose-invert' : ''}`}>
                     <ReactMarkdown
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
@@ -316,11 +314,11 @@ export function ChatMessage({
                         code: ({ node, inline, className, children, ...props }: any) => {
                           const codeString = String(children).replace(/\n$/, '');
 
-                          // Hide structured content code blocks
-                          if (!inline && codeString.includes('```structured')) {
+                          // Hide structured content code blocks (assistant only)
+                          if (!isUser && !inline && codeString.includes('```structured')) {
                             return null;
                           }
-                          if (!inline && className === 'language-structured') {
+                          if (!isUser && !inline && className === 'language-structured') {
                             return null;
                           }
 
@@ -342,9 +340,20 @@ export function ChatMessage({
                         },
                         // Override pre to avoid double wrapping
                         pre: ({ children }) => <>{children}</>,
+                        // Style links appropriately for user messages
+                        a: ({ children, href }) => (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={isUser ? 'text-blue-300 hover:text-blue-200 underline' : 'text-blue-500 hover:text-blue-600 underline'}
+                          >
+                            {children}
+                          </a>
+                        ),
                       }}
                     >
-                      {structuredContent ? content.replace(/```structured[\s\S]*?```/g, '').trim() : content}
+                      {!isUser && structuredContent ? content.replace(/```structured[\s\S]*?```/g, '').trim() : content}
                     </ReactMarkdown>
                   </div>
                 ) : (
