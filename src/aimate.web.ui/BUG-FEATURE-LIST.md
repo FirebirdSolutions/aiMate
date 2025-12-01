@@ -53,8 +53,8 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Resize for mobile/desktop | ❌ | TODO |
-| Consistent vertical scrolling | ❌ | TODO |
+| Resize for mobile/desktop | ✅ | Done - Full-screen on mobile, responsive on tablet/desktop |
+| Consistent vertical scrolling | ✅ | Done - ScrollArea with custom-scrollbar |
 | Tab content complete | ✅ | Done |
 
 ### Interface
@@ -100,7 +100,7 @@
 | General functionality | ✅ | Working - list/enable/disable/add/edit/delete |
 | Tool list retrieval | ✅ | Working - useTools hook discovers from enabled servers |
 | Tool authorisation | ❌ | TODO |
-| Import/Export | ❌ | Buttons present but not implemented (MCPEditDialog:86-92) |
+| Import/Export | ✅ | Done - Import parses JSON, Export downloads JSON (auth tokens excluded) |
 
 ---
 
@@ -110,8 +110,8 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Resize for mobile/desktop | ❌ | TODO |
-| Consistent vertical scrolling | ❌ | TODO |
+| Resize for mobile/desktop | ✅ | Done - Full-screen on mobile, responsive on tablet/desktop |
+| Consistent vertical scrolling | ✅ | Done - ScrollArea with custom-scrollbar |
 
 ### Notifications
 
@@ -164,11 +164,11 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Update Profile | ❌ | Implement mock workflow |
-| Change Password | ❌ | Implement mock workflow |
-| Download My Data | ❌ | Implement mock workflow |
-| Subscription | ❌ | Implement mock workflow |
-| Danger Zone | ❌ | Implement mock workflow |
+| Update Profile | ✅ | Done - validates and shows success toast |
+| Change Password | ✅ | Done - validates length, match, clears fields |
+| Download My Data | ✅ | Done - exports settings as JSON file |
+| Subscription | ✅ | Done - shows "free for Kiwis" message |
+| Danger Zone | ✅ | Done - Clear Conversations, Reset Settings, Delete Account with confirmations |
 
 ### Memories
 
@@ -264,7 +264,7 @@
 |------|--------|-------|
 | Virtualization | ✅ | Done - @tanstack/react-virtual |
 | Kebab menu functionality | ✅ | Done - Move to Project properly wired |
-| Vertical scroll styling | ❌ | TODO |
+| Vertical scroll styling | ✅ | Done - custom-scrollbar with auto-hide on hover |
 
 ---
 

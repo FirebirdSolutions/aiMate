@@ -834,7 +834,7 @@ function UsersGroupsTab() {
     <>
       {/* User/Group Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] p-0 gap-0 flex flex-col">
+        <DialogContent className="w-[100vw] h-auto max-h-[90vh] max-w-none rounded-none sm:w-[95vw] sm:max-w-xl sm:rounded-lg md:max-w-2xl p-0 gap-0 flex flex-col">
           <DialogHeader className="flex-shrink-0 px-6 py-4 border-b border-gray-200 dark:border-gray-800">
             <DialogTitle>
               {selectedItem ? `Edit ${editType === "user" ? "User" : "Group"}` : `Add ${editType === "user" ? "User" : "Group"}`}

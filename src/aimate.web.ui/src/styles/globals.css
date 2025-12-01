@@ -245,7 +245,7 @@ html[data-font-size="large"] {
 /* Custom scrollbar for chat list and conversation sidebar */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  scrollbar-color: rgba(156, 163, 175, 0.15) transparent;
   scroll-behavior: smooth;
 }
 
@@ -256,24 +256,42 @@ html[data-font-size="large"] {
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
   border-radius: 3px;
+  margin: 4px 0;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.3);
+  background: rgba(156, 163, 175, 0.15);
   border-radius: 3px;
   transition: background 0.2s ease;
 }
 
+/* Show scrollbar on hover over container */
+.custom-scrollbar:hover {
+  scrollbar-color: rgba(156, 163, 175, 0.4) transparent;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+}
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.5);
+  background: rgba(156, 163, 175, 0.6);
 }
 
 /* Dark mode scrollbar */
 .dark .custom-scrollbar {
-  scrollbar-color: rgba(107, 114, 128, 0.4) transparent;
+  scrollbar-color: rgba(107, 114, 128, 0.15) transparent;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.15);
+}
+
+.dark .custom-scrollbar:hover {
+  scrollbar-color: rgba(107, 114, 128, 0.4) transparent;
+}
+
+.dark .custom-scrollbar:hover::-webkit-scrollbar-thumb {
   background: rgba(107, 114, 128, 0.4);
 }
 

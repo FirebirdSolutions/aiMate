@@ -1178,8 +1178,8 @@ export function ConversationSidebar({
               height="100%"
               renderItem={renderVirtualItem}
               getItemKey={getItemKey}
-              className="flex-1 custom-scrollbar"
-              innerClassName="p-2"
+              className="flex-1"
+              innerClassName="p-2 custom-scrollbar"
               overscan={5}
               onEndReached={hasMore ? onLoadMore : undefined}
               endReachedThreshold={3}
