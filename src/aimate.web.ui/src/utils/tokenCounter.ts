@@ -1,8 +1,10 @@
 /**
  * Token counting utilities for context management
  */
+console.log('[tokenCounter.ts] Loading...');
 
 import { encode } from 'gpt-tokenizer';
+console.log('[tokenCounter.ts] gpt-tokenizer loaded');
 import type { ChatMessage } from '../hooks/useChat';
 
 /**
