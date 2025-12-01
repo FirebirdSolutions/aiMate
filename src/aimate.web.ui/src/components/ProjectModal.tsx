@@ -10,7 +10,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
-import { FolderKanban, Upload, Download, Eye, Trash2, File, MessageSquare, MoreVertical, Pin, Share, Edit, Archive, Copy, ListRestart, Search, X, GripVertical, Check, Loader2 } from "lucide-react";
+import { FolderKanban, Upload, Download, Eye, Trash2, File, MessageSquare, MoreVertical, Pin, Share, Edit, Archive, Copy, ListRestart, Search, X, GripVertical, Check, Loader2, Brain } from "lucide-react";
 import { toast } from "sonner";
 import { ScrollArea } from "./ui/scroll-area";
 import {
@@ -70,7 +70,7 @@ interface ProjectModalProps {
 }
 
 export function ProjectModal({ open, onOpenChange, project, mode, onCreateProject }: ProjectModalProps) {
-  const { projects: projectsHook, conversations: conversationsHook } = useAppData();
+  const { projects: projectsHook, conversations: conversationsHook, knowledge: knowledgeHook } = useAppData();
   const { addLog } = useDebug();
 
   // Get the full project data from the hook to access conversationIds
@@ -317,6 +317,47 @@ export function ProjectModal({ open, onOpenChange, project, mode, onCreateProjec
     const chat = projectChats.find(c => c.id === chatId);
     if (chat) {
       toast.info(`Archive not available from project view`);
+    }
+  };
+
+  const handleSaveToKnowledge = async (chatId: string) => {
+    const chat = projectChats.find(c => c.id === chatId);
+    if (!chat || !project) return;
+
+    try {
+      // Create knowledge document from chat
+      const content = `# ${chat.title}\n\n*Saved from project: ${project.name}*\n*Chat ID: ${chatId}*\n\n---\n\nThis chat conversation was saved to the knowledge base for future reference.`;
+
+      await knowledgeHook.saveTextAsKnowledge(
+        content,
+        chat.title,
+        ['chat', project.name.toLowerCase().replace(/\s+/g, '-')],
+        {
+          projectId: project.id,
+          projectName: project.name,
+          sourceType: 'chat',
+          sourceId: chatId,
+        }
+      );
+
+      addLog({
+        category: 'projects:modal',
+        action: 'Saved Chat to Knowledge',
+        api: '/api/v1/knowledge',
+        payload: { chatId, projectId: project.id, title: chat.title },
+        type: 'success'
+      });
+
+      toast.success(`"${chat.title}" saved to Knowledge`);
+    } catch (err) {
+      toast.error('Failed to save to Knowledge');
+      addLog({
+        category: 'projects:modal',
+        action: 'Save to Knowledge Failed',
+        api: '/api/v1/knowledge',
+        payload: { chatId, error: err },
+        type: 'error'
+      });
     }
   };
 
@@ -648,14 +689,21 @@ export function ProjectModal({ open, onOpenChange, project, mode, onCreateProjec
                               className="w-48 p-1 bg-gray-900 dark:bg-gray-900 text-white border-gray-700"
                             >
                               <div className="space-y-1">
-                                <button 
+                                <button
+                                  className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
+                                  onClick={() => handleSaveToKnowledge(chat.id)}
+                                >
+                                  <Brain className="h-4 w-4" />
+                                  <span>Save to Knowledge</span>
+                                </button>
+                                <button
                                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
                                   onClick={() => handlePinChat(chat.id)}
                                 >
                                   <Pin className="h-4 w-4" />
                                   <span>{pinnedChats.includes(chat.id) ? 'Unpin' : 'Pin'}</span>
                                 </button>
-                                <button 
+                                <button
                                   className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-800 transition-colors text-left cursor-pointer"
                                   onClick={() => toast.info("Share chat")}
                                 >

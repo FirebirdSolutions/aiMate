@@ -399,6 +399,12 @@ export interface KnowledgeDocumentDto {
   tags?: string[];
   createdAt: string;
   updatedAt: string;
+  // Project context - for items linked from projects
+  projectId?: string;
+  projectName?: string;
+  // Source type for cross-linking
+  sourceType?: 'upload' | 'chat' | 'message' | 'note';
+  sourceId?: string;
 }
 
 export interface UploadDocumentDto {

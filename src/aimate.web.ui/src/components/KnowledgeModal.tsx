@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { FileText, Globe, FileType, Video, Headphones, Code, Image as ImageIcon, Search, Filter, Plus, Download, ExternalLink, Trash2, Eye, EyeOff, X, ChevronDown, Grid3x3, List, FolderOpen, Tag, Clock, User, Hash, Sparkles, Calendar, TrendingUp, Layers, ArrowUpDown, Check, BarChart3, Brain, File, GitBranch, Link2, Upload, Settings, Share2, History, Loader2, Star, Zap, RefreshCw } from "lucide-react";
+import { FileText, Globe, FileType, Video, Headphones, Code, Image as ImageIcon, Search, Filter, Plus, Download, ExternalLink, Trash2, Eye, EyeOff, X, ChevronDown, Grid3x3, List, FolderOpen, FolderKanban, Tag, Clock, User, Hash, Sparkles, Calendar, TrendingUp, Layers, ArrowUpDown, Check, BarChart3, Brain, File, GitBranch, Link2, Upload, Settings, Share2, History, Loader2, Star, Zap, RefreshCw, MessageSquare } from "lucide-react";
 import { KnowledgeListSkeleton } from "./LoadingSkeletons";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -39,6 +39,11 @@ interface KnowledgeItem {
   source?: string;
   version?: number;
   updatedBy?: string;
+  // Project cross-linking
+  projectId?: string;
+  projectName?: string;
+  sourceType?: 'upload' | 'chat' | 'message' | 'note';
+  sourceId?: string;
 }
 
 interface Collection {
@@ -118,6 +123,11 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
       lastUsed: formatDate(doc.updatedAt),
       source: doc.fileName,
       version: 1,
+      // Project cross-linking
+      projectId: doc.projectId,
+      projectName: doc.projectName,
+      sourceType: doc.sourceType,
+      sourceId: doc.sourceId,
     }));
   }, [knowledge.documents]);
 
@@ -565,9 +575,26 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
                                   </p>
                                 )}
                                 
-                                {/* Tags and Entities */}
+                                {/* Tags, Entities, and Project Source */}
                                 <div className="flex flex-wrap gap-1 mb-1.5 sm:mb-2">
-                                  {item.tags.slice(0, 2).map(tag => (
+                                  {/* Project source badge */}
+                                  {item.projectName && (
+                                    <Badge variant="outline" className="text-xs h-5 bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300">
+                                      <FolderKanban className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                                      {item.projectName}
+                                    </Badge>
+                                  )}
+                                  {/* Source type badge */}
+                                  {item.sourceType && item.sourceType !== 'upload' && (
+                                    <Badge variant="outline" className="text-xs h-5 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
+                                      {item.sourceType === 'chat' && <MessageSquare className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />}
+                                      {item.sourceType === 'message' && <MessageSquare className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />}
+                                      {item.sourceType === 'note' && <FileText className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />}
+                                      {item.sourceType}
+                                    </Badge>
+                                  )}
+                                  {/* Regular tags - filter out project: prefixed tags */}
+                                  {item.tags.filter(tag => !tag.startsWith('project:')).slice(0, 2).map(tag => (
                                     <Badge key={tag} variant="secondary" className="text-xs h-5">
                                       <Tag className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
                                       {tag}
@@ -578,9 +605,9 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
                                       {entity}
                                     </Badge>
                                   ))}
-                                  {item.tags.length > 2 && (
+                                  {item.tags.filter(tag => !tag.startsWith('project:')).length > 2 && (
                                     <Badge variant="secondary" className="text-xs h-5">
-                                      +{item.tags.length - 2}
+                                      +{item.tags.filter(tag => !tag.startsWith('project:')).length - 2}
                                     </Badge>
                                   )}
                                 </div>
@@ -1007,6 +1034,15 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
               <Separator />
               <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                 <p>Source: {viewingItem?.source || 'Unknown'}</p>
+                {viewingItem?.projectName && (
+                  <p className="flex items-center gap-1">
+                    <FolderKanban className="h-3 w-3 text-purple-500" />
+                    Project: <span className="text-purple-600 dark:text-purple-400">{viewingItem.projectName}</span>
+                  </p>
+                )}
+                {viewingItem?.sourceType && viewingItem.sourceType !== 'upload' && (
+                  <p>Source type: {viewingItem.sourceType}</p>
+                )}
                 {viewingItem?.collection && <p>Collection: {viewingItem.collection}</p>}
                 <p>Used {viewingItem?.usageCount || 0} times</p>
                 {viewingItem?.lastUsed && <p>Last used: {viewingItem.lastUsed}</p>}

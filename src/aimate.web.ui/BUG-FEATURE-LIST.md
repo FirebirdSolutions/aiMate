@@ -242,6 +242,8 @@
 |------|--------|-------|
 | Full audit | ❌ | TODO |
 | Consolidated from Notes/Files | ✅ | Notes and Files buttons removed, Knowledge is unified |
+| Project cross-linking | ✅ | Done - Project chats can be saved to Knowledge with context |
+| Project source display | ✅ | Done - Knowledge items show project badge and source type |
 
 ### Projects
 
@@ -254,6 +256,7 @@
 | Project view mode | ✅ | Done - Click project to filter to its chats only |
 | Project-scoped chat creation | ✅ | Done - New chats auto-added to active project |
 | Project indicator in chat | ✅ | Done - Banner in ChatInput shows active project |
+| Save chats to Knowledge | ✅ | Done - Brain icon in chat menu saves with project context |
 
 ### Chat List
 

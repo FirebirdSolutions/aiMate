@@ -282,19 +282,67 @@ export function useKnowledge(workspaceId?: string) {
   const saveTextAsKnowledge = useCallback(async (
     content: string,
     title?: string,
-    tags?: string[]
+    tags?: string[],
+    options?: {
+      projectId?: string;
+      projectName?: string;
+      sourceType?: 'chat' | 'message' | 'note';
+      sourceId?: string;
+    }
   ) => {
     // Generate a title if not provided
     const docTitle = title || `Note - ${new Date().toLocaleString()}`;
     const fileName = `${docTitle.replace(/[^a-z0-9]/gi, '_')}.md`;
 
+    // Add project tag if from a project
+    const allTags = [...(tags || [])];
+    if (options?.projectName && !allTags.includes(`project:${options.projectName}`)) {
+      allTags.push(`project:${options.projectName}`);
+    }
+    if (options?.sourceType && !allTags.includes(options.sourceType)) {
+      allTags.push(options.sourceType);
+    }
+
     // Create a text blob and convert to file
     const blob = new Blob([content], { type: 'text/markdown' });
     const file = new File([blob], fileName, { type: 'text/markdown' });
 
-    // Use the existing upload function
-    return uploadDocument(file, { tags });
-  }, [uploadDocument]);
+    // In offline mode, create with extended metadata
+    if (AppConfig.isOfflineMode()) {
+      const mockDoc: KnowledgeDocumentDto = {
+        id: `doc-${Date.now()}`,
+        title: docTitle,
+        fileName: fileName,
+        fileType: 'text/markdown',
+        fileSize: blob.size,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: 'processing',
+        chunkCount: 0,
+        workspaceId: workspaceId || 'default',
+        tags: allTags,
+        projectId: options?.projectId,
+        projectName: options?.projectName,
+        sourceType: options?.sourceType,
+        sourceId: options?.sourceId,
+      };
+      setDocuments(prev => [mockDoc, ...prev]);
+
+      // Simulate processing
+      setTimeout(() => {
+        setDocuments(prev => prev.map(doc =>
+          doc.id === mockDoc.id
+            ? { ...doc, status: 'ready', chunkCount: Math.floor(content.length / 500) + 1 }
+            : doc
+        ));
+      }, 2000);
+
+      return mockDoc;
+    }
+
+    // Use the existing upload function for online mode
+    return uploadDocument(file, { tags: allTags });
+  }, [uploadDocument, workspaceId]);
 
   // ============================================================================
   // INITIALIZATION
