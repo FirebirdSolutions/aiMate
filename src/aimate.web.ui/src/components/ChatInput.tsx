@@ -20,6 +20,7 @@ import { useAdminSettings } from "../context/AdminSettingsContext";
 import { toast } from "sonner";
 import { KnowledgeSuggestions } from "./KnowledgeSuggestions";
 import { AttachedContext } from "./AttachedContext";
+import { expandVariablesAsync, hasVariables, type PromptVariableContext } from "../utils/promptVariables";
 
 export interface AttachmentData {
   knowledgeIds: string[];
@@ -104,21 +105,39 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     useEmojis: true,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !disabled) {
       const hasAttachments = attachedKnowledge.length > 0 || attachedNotes.length > 0 ||
                              attachedFiles.length > 0 || attachedChats.length > 0 ||
                              attachedWebpages.length > 0;
 
+      // Expand prompt variables ({{DATE}}, {{USER_NAME}}, etc.)
+      let finalMessage = message.trim();
+      if (hasVariables(finalMessage)) {
+        const context: PromptVariableContext = {
+          userName: settings.general?.userName || undefined,
+          userLanguage: navigator.language,
+          userLocation: null, // Could be set from geolocation API if enabled
+        };
+        finalMessage = await expandVariablesAsync(finalMessage, context);
+        addLog({
+          category: 'chat:input',
+          action: 'Variables Expanded',
+          api: 'promptVariables',
+          payload: { original: message.trim(), expanded: finalMessage },
+          type: 'info'
+        });
+      }
+
       // Log the UI event
-      logUIEvent('Message sent', 'ui:chat:send', { messageLength: message.trim().length, hasAttachments });
+      logUIEvent('Message sent', 'ui:chat:send', { messageLength: finalMessage.length, hasAttachments });
       // Log the send event
       addLog({
         category: 'chat:input',
         action: 'Message Sent',
         api: '/api/v1/SendMessage',
-        payload: { message: message.trim(), timestamp: new Date().toISOString(), hasAttachments },
+        payload: { message: finalMessage, timestamp: new Date().toISOString(), hasAttachments },
         type: 'success'
       });
 
@@ -131,7 +150,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         webpageUrls: webpages.filter(w => attachedWebpages.includes(w.id)).map(w => w.url || w.title),
       } : undefined;
 
-      onSend(message.trim(), attachments);
+      onSend(finalMessage, attachments);
       setMessage("");
 
       // Clear attachments after sending

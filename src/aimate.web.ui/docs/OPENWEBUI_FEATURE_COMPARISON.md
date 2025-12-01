@@ -58,12 +58,12 @@ This document catalogs OpenWebUI features for reference, organized by category a
 | Markdown rendering | LOW | **DONE** | react-markdown |
 | LaTeX/KaTeX support | LOW | **DONE** | Just implemented |
 | Syntax highlighting | MEDIUM | **PARTIAL** | Basic, needs Prism/Shiki |
-| Mermaid diagrams | MEDIUM | PLANNED | Add remark-mermaid |
+| Mermaid diagrams | MEDIUM | **DONE** | Pan/zoom, copy, download |
 | Interactive artifacts (HTML/SVG) | HIGH | PLANNED | Sandboxed iframe |
 | Live code editing | HIGH | FUTURE | Monaco editor in responses |
-| SVG pan/zoom | MEDIUM | PLANNED | panzoom library |
-| Floating copy button in code | LOW | **PARTIAL** | Needs enhancement |
-| Click-to-copy code spans | LOW | PLANNED | Inline code copy |
+| SVG pan/zoom | MEDIUM | **DONE** | MermaidDiagram component |
+| Floating copy button in code | LOW | **DONE** | CodeBlock component |
+| Click-to-copy code spans | LOW | **DONE** | InlineCode component |
 
 ### 2.3 Text Interaction
 
@@ -87,7 +87,7 @@ This document catalogs OpenWebUI features for reference, organized by category a
 | Continue message | LOW | **DONE** | Continue button |
 | Stop generation | LOW | **DONE** | Abort controller |
 | True async chat | MEDIUM | PLANNED | Background processing |
-| Chat completion notifications | LOW | PLANNED | document.hidden + notification |
+| Chat completion notifications | LOW | **DONE** | Browser Notification API |
 | Webhook notifications | MEDIUM | FUTURE | External integrations |
 | Temporary chat (no history) | LOW | PLANNED | Incognito mode |
 | Chat controls/parameters | MEDIUM | **PARTIAL** | Need per-chat settings |
@@ -110,7 +110,7 @@ This document catalogs OpenWebUI features for reference, organized by category a
 | Chat folders | MEDIUM | PLANNED | Drag-drop folders |
 | Conversation tagging | LOW | **DONE** | Tag system exists |
 | Auto-tagging | MEDIUM | PLANNED | LLM-generated tags |
-| Chat cloning | LOW | PLANNED | Clone conversation |
+| Chat cloning | LOW | **DONE** | cloneConversation() |
 | Favorite responses | LOW | PLANNED | Star individual messages |
 | Archive chats | LOW | **DONE** | Archive functionality |
 | Visualized conversation flows | HIGH | FUTURE | Message diagram view |
@@ -121,7 +121,7 @@ This document catalogs OpenWebUI features for reference, organized by category a
 |---------|------------|--------|-------|
 | Export as JSON | LOW | **DONE** | Export functionality |
 | Export as PDF | MEDIUM | PLANNED | jsPDF or similar |
-| Export as TXT/Markdown | LOW | PLANNED | Simple conversion |
+| Export as TXT/Markdown | LOW | **DONE** | Export plugin enhanced |
 | Import chat JSON | LOW | **DONE** | Import functionality |
 | Drag-drop import | LOW | PLANNED | File drop on sidebar |
 | Export all archived | LOW | PLANNED | Bulk export |
@@ -222,7 +222,7 @@ This document catalogs OpenWebUI features for reference, organized by category a
 | User memories | LOW | **DONE** | useMemories hook |
 | Memory extraction | LOW | **DONE** | Plugin exists |
 | Prompt presets (/) | LOW | **DONE** | Slash commands |
-| Prompt variables | MEDIUM | PLANNED | {{DATE}}, {{USER}}, etc. |
+| Prompt variables | MEDIUM | **DONE** | {{DATE}}, {{USER_NAME}}, etc. |
 | System prompt config | LOW | **DONE** | Settings > General |
 | Model-specific knowledge | MEDIUM | **PARTIAL** | Per-model settings |
 
@@ -270,7 +270,7 @@ This document catalogs OpenWebUI features for reference, organized by category a
 |---------|------------|--------|-------|
 | Python in browser (Pyodide) | HIGH | PLANNED | Sandboxed execution |
 | Iframe HTML rendering | MEDIUM | **PARTIAL** | Structured content |
-| Mermaid rendering | MEDIUM | PLANNED | Diagram support |
+| Mermaid rendering | MEDIUM | **DONE** | MermaidDiagram component |
 
 ---
 
@@ -353,25 +353,25 @@ These features can be implemented quickly and provide significant value:
 
 ### Immediate (< 1 day each)
 
-1. **Mermaid diagram rendering** - Add `remark-mermaid` plugin
-2. **Chat completion notifications** - `document.hidden` + Notification API
+1. ~~**Mermaid diagram rendering**~~ - ✅ DONE (MermaidDiagram.tsx)
+2. ~~**Chat completion notifications**~~ - ✅ DONE (useChat.ts)
 3. **Markdown in user messages** - Toggle in settings
-4. **Chat cloning** - Duplicate conversation
-5. **Export as Markdown/TXT** - Simple format conversion
+4. ~~**Chat cloning**~~ - ✅ DONE (useConversations.ts)
+5. ~~**Export as Markdown/TXT**~~ - ✅ DONE (usePlugins.ts)
 6. **Drag-drop chat import** - File drop handler
 7. **Custom background images** - CSS variable + setting
 8. **Bi-directional text (RTL)** - CSS direction property
-9. **Floating copy button enhancement** - Better positioning
+9. ~~**Floating copy button enhancement**~~ - ✅ DONE (CodeBlock.tsx)
 10. **Arrow key model selection** - Keyboard navigation
 
 ### Short-term (1-3 days each)
 
 1. **Text select quick actions** - Floating toolbar on selection
-2. **Prompt variables** - `{{DATE}}`, `{{USER_NAME}}`, etc.
+2. ~~**Prompt variables**~~ - ✅ DONE (promptVariables.ts)
 3. **Chat folders** - Drag-drop organization
 4. **PDF export** - jsPDF integration
 5. **Settings search** - Filter settings fields
-6. **SVG pan/zoom** - Interactive diagrams
+6. ~~**SVG pan/zoom**~~ - ✅ DONE (MermaidDiagram.tsx)
 7. **Guided first-run wizard** - Onboarding flow
 8. **Search provider options** - DuckDuckGo/Google/Bing/Brave
 9. **Client-side image compression** - Before upload
@@ -392,17 +392,17 @@ These features can be implemented quickly and provide significant value:
 ## Implementation Priority Recommendation
 
 ### Phase 1: UX Polish (Next Sprint)
-- Mermaid diagrams
-- Chat notifications
+- ~~Mermaid diagrams~~ ✅
+- ~~Chat notifications~~ ✅
 - Markdown user messages
-- Floating copy enhancement
-- Chat cloning
-- Export formats (MD/TXT/PDF)
+- ~~Floating copy enhancement~~ ✅
+- ~~Chat cloning~~ ✅
+- ~~Export formats (MD/TXT)~~ ✅ (PDF pending)
 
 ### Phase 2: Content & Rendering
 - Text select quick actions
 - Interactive artifacts
-- SVG pan/zoom
+- ~~SVG pan/zoom~~ ✅
 - Full syntax highlighting
 - Python code execution (Pyodide)
 
@@ -411,7 +411,7 @@ These features can be implemented quickly and provide significant value:
 - Search result injection (RAG)
 - Better document extraction
 - Citations in responses
-- Prompt variables
+- ~~Prompt variables~~ ✅
 
 ### Phase 4: Multi-Model & Advanced
 - @ model switching
@@ -428,5 +428,5 @@ These features can be implemented quickly and provide significant value:
 
 ---
 
-*Last updated: December 2025*
+*Last updated: 1 December 2025*
 *Reference: OpenWebUI documentation and feature list*
