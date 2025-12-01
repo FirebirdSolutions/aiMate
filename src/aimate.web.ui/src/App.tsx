@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConversationSidebar, Conversation } from "./components/ConversationSidebar";
 import { ChatHeader } from "./components/ChatHeader";
@@ -9,6 +9,7 @@ import { DebugPanel } from "./components/DebugPanel";
 import { useMemories } from "./hooks/useMemories";
 import { useTools, ToolCall } from "./hooks/useTools";
 import { useCustomModels } from "./hooks/useCustomModels";
+import { useContextMeter } from "./components/ContextMeter";
 import { ShowcaseModeIndicator } from "./components/ShowcaseModeIndicator";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { DebugProvider, useDebug } from "./components/DebugContext";
@@ -51,6 +52,26 @@ function ChatApp() {
   const memories = useMemories();
   const tools = useTools();
   const { selectedModel: activeCustomModel } = useCustomModels();
+
+  // Build system prompt for context meter
+  const currentSystemPrompt = useMemo(() => {
+    const customModelSystemPrompt = activeCustomModel?.systemPrompt || '';
+    const userSystemPrompt = userSettings.general?.systemPrompt || '';
+    return [customModelSystemPrompt, userSystemPrompt].filter(Boolean).join('\n\n');
+  }, [activeCustomModel?.systemPrompt, userSettings.general?.systemPrompt]);
+
+  // Build memory context for context meter
+  const currentMemoryContext = useMemo(() => {
+    return memories.getMemoryContext();
+  }, [memories]);
+
+  // Context meter - tracks token usage
+  const contextMeter = useContextMeter({
+    messages: chat.messages,
+    modelId: selectedModel,
+    systemPrompt: currentSystemPrompt,
+    memoryContext: currentMemoryContext,
+  });
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -606,6 +627,9 @@ function ChatApp() {
             capabilities: m.capabilities,
             color: '#888888', // Default color
           }))}
+          contextUsedTokens={contextMeter.usedTokens}
+          contextMaxTokens={contextMeter.maxTokens}
+          contextBreakdown={contextMeter.breakdown}
         />
 
         <div className="flex-1 overflow-hidden">

@@ -26,6 +26,7 @@ import { KeyboardShortcutsModal } from "./KeyboardShortcutsModal";
 import { OfflineModeIndicator } from "./OfflineModeIndicator";
 import { ErrorBoundary, ModalErrorFallback } from "./ErrorBoundary";
 import { ConnectionHealthIndicator } from "./ConnectionHealthIndicator";
+import { ContextMeter, type TokenBreakdown, type CompressionInfo } from "./ContextMeter";
 import { useDebug, useUIEventLogger } from "./DebugContext";
 import { useKeyboardShortcuts, createDefaultShortcuts, formatShortcut, type KeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 
@@ -46,6 +47,11 @@ interface ChatHeaderProps {
   // Arena mode props
   isArenaMode?: boolean;
   onToggleArenaMode?: () => void;
+  // Context meter props
+  contextUsedTokens?: number;
+  contextMaxTokens?: number;
+  contextBreakdown?: TokenBreakdown;
+  contextCompression?: CompressionInfo;
 }
 
 export function ChatHeader({
@@ -60,6 +66,10 @@ export function ChatHeader({
   availableModels,
   isArenaMode = false,
   onToggleArenaMode,
+  contextUsedTokens,
+  contextMaxTokens,
+  contextBreakdown,
+  contextCompression,
 }: ChatHeaderProps) {
   const { showcaseMode } = useDebug();
   const { logUIEvent } = useUIEventLogger();
@@ -279,6 +289,17 @@ export function ChatHeader({
                   {isArenaMode ? "Exit Arena Mode" : "Enter Arena Mode - Compare models side-by-side"}
                 </TooltipContent>
               </Tooltip>
+            )}
+
+            {/* Context Meter - show when data available */}
+            {contextUsedTokens !== undefined && contextMaxTokens !== undefined && contextMaxTokens > 0 && (
+              <ContextMeter
+                usedTokens={contextUsedTokens}
+                maxTokens={contextMaxTokens}
+                breakdown={contextBreakdown}
+                compression={contextCompression}
+                compact={false}
+              />
             )}
 
             <ConnectionHealthIndicator />
