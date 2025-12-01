@@ -201,15 +201,15 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Sharing | ❌ | TODO: Implement |
-| Processing indicator | ❌ | Fix - shows chat bubble before response |
+| Sharing | ✅ | Simplified to Copy Link only for MVP |
+| Processing indicator | ✅ | Fixed - bouncing dots only show before first chunk |
 
 ### Both Message Types
 
 | Item | Status | Notes |
 |------|--------|-------|
 | Add to knowledge | ❌ | TODO: Implement |
-| "Not implemented" items | ⚠️ | Audit toasts - remove or implement |
+| "Not implemented" items | ✅ | Audited - removed non-working buttons, implemented TTS |
 
 ---
 
@@ -231,25 +231,12 @@
 |------|--------|-------|
 | Search functionality | ❌ | TODO: Implement |
 
-### Notes
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Basic functionality | ✅ | Complete |
-| Migrate to Knowledge? | ⚠️ | **Yes** - Merge Notes/Files into Knowledge section |
-
 ### Knowledge
 
 | Item | Status | Notes |
 |------|--------|-------|
 | Full audit | ❌ | TODO |
-| Integrate Files/Notes? | ⚠️ | **Yes** - One unified "Knowledge" section |
-
-### Files
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Remove as top-level | ⚠️ | **Yes** - Merge into Knowledge |
+| Consolidated from Notes/Files | ✅ | Notes and Files buttons removed, Knowledge is unified |
 
 ### Projects
 
@@ -298,6 +285,10 @@
 - [x] Creativity level → temperature mapping
 - [x] Response style → max_tokens mapping
 - [x] Remember context toggle (history inclusion)
+- [x] Processing indicator fix (bouncing dots only before first chunk)
+- [x] Toast audit (removed non-working share buttons, implemented TTS)
+- [x] MCP design spec documentation
+- [x] Knowledge consolidation (removed Notes/Files buttons, unified under Knowledge)
 
 ---
 

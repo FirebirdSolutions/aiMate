@@ -151,7 +151,27 @@ export function ChatMessage({
   };
 
   const handleReadAloud = () => {
-    toast.info("Text-to-speech not implemented");
+    if (!('speechSynthesis' in window)) {
+      toast.error("Text-to-speech not supported in this browser");
+      return;
+    }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(content);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    utterance.onstart = () => {
+      toast.info("Reading aloud...", { duration: 2000 });
+    };
+
+    utterance.onerror = () => {
+      toast.error("Failed to read aloud");
+    };
+
+    window.speechSynthesis.speak(utterance);
   };
 
   const handleLike = () => {
