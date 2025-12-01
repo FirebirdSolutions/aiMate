@@ -18,6 +18,46 @@ const RETRY_CONFIG = {
   maxDelayMs: 10000,
 };
 
+// ============================================================================
+// CHAT COMPLETION NOTIFICATIONS
+// ============================================================================
+
+/**
+ * Send a browser notification when chat completes while tab is inactive.
+ * Requires user permission (will request if not granted).
+ */
+const sendCompletionNotification = async (preview: string) => {
+  // Only notify if document is hidden (user switched tabs)
+  if (!document.hidden) return;
+
+  // Check/request notification permission
+  if (!('Notification' in window)) return;
+
+  let permission = Notification.permission;
+  if (permission === 'default') {
+    permission = await Notification.requestPermission();
+  }
+
+  if (permission !== 'granted') return;
+
+  // Create notification
+  const notification = new Notification('aiMate - Response Ready', {
+    body: preview.slice(0, 100) + (preview.length > 100 ? '...' : ''),
+    icon: '/icons/icon-192x192.png',
+    tag: 'chat-completion', // Prevents duplicate notifications
+    requireInteraction: false,
+  });
+
+  // Focus window when notification is clicked
+  notification.onclick = () => {
+    window.focus();
+    notification.close();
+  };
+
+  // Auto-close after 5 seconds
+  setTimeout(() => notification.close(), 5000);
+};
+
 // Helper to wait with exponential backoff
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -406,6 +446,8 @@ export function useChat(conversationId?: string) {
 
         if (!streamInterrupted) {
           console.log('[useChat] LM server streaming complete');
+          // Send notification if user switched tabs during generation
+          sendCompletionNotification(fullContent);
         }
         return { ...assistantMsg, content: fullContent };
       } catch (err) {
@@ -578,6 +620,8 @@ export function useChat(conversationId?: string) {
           }
         }
 
+        // Send notification if user switched tabs during generation
+        sendCompletionNotification(mockResponse);
         return { ...assistantMsg, content: mockResponse, structuredContent: structuredData };
       } finally {
         setStreaming(false);

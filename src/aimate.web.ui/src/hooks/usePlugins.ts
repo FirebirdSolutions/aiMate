@@ -226,8 +226,70 @@ const exportPlugin: PluginDefinition = {
       icon: 'FileText',
       onClick: async (ctx) => {
         if (ctx.messageContent) {
-          const markdown = `**${ctx.messageRole === 'user' ? 'You' : 'Assistant'}:**\n\n${ctx.messageContent}`;
+          const timestamp = new Date().toLocaleString();
+          const role = ctx.messageRole === 'user' ? 'You' : 'Assistant';
+          const markdown = `## ${role}\n*${timestamp}*\n\n${ctx.messageContent}`;
           await navigator.clipboard.writeText(markdown);
+          console.log('[Export Plugin] Copied as Markdown');
+        }
+      },
+    },
+    {
+      id: 'export-txt',
+      label: 'Copy as Plain Text',
+      icon: 'FileType',
+      onClick: async (ctx) => {
+        if (ctx.messageContent) {
+          const role = ctx.messageRole === 'user' ? 'You' : 'Assistant';
+          const text = `[${role}]\n${ctx.messageContent}`;
+          await navigator.clipboard.writeText(text);
+          console.log('[Export Plugin] Copied as plain text');
+        }
+      },
+    },
+    {
+      id: 'download-txt',
+      label: 'Download as .txt',
+      icon: 'Download',
+      onClick: (ctx) => {
+        if (ctx.messageContent) {
+          const role = ctx.messageRole === 'user' ? 'You' : 'Assistant';
+          const timestamp = new Date().toISOString().split('T')[0];
+          const text = `[${role}] - ${new Date().toLocaleString()}\n\n${ctx.messageContent}`;
+
+          const blob = new Blob([text], { type: 'text/plain' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `aimate-message-${timestamp}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          console.log('[Export Plugin] Downloaded as .txt');
+        }
+      },
+    },
+    {
+      id: 'download-md',
+      label: 'Download as .md',
+      icon: 'FileDown',
+      onClick: (ctx) => {
+        if (ctx.messageContent) {
+          const role = ctx.messageRole === 'user' ? 'You' : 'Assistant';
+          const timestamp = new Date().toISOString().split('T')[0];
+          const markdown = `# aiMate Message Export\n\n**Role:** ${role}  \n**Date:** ${new Date().toLocaleString()}\n\n---\n\n${ctx.messageContent}`;
+
+          const blob = new Blob([markdown], { type: 'text/markdown' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `aimate-message-${timestamp}.md`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          console.log('[Export Plugin] Downloaded as .md');
         }
       },
     },
@@ -247,7 +309,7 @@ const exportPlugin: PluginDefinition = {
             console.log('[Export Plugin] Share cancelled or failed');
           }
         } else if (ctx.messageContent) {
-          // Fallback: copy link
+          // Fallback: copy content
           await navigator.clipboard.writeText(ctx.messageContent);
         }
       },

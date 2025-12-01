@@ -374,6 +374,55 @@ export function useConversations(workspaceId?: string) {
   }, []);
 
   // ============================================================================
+  // CLONE CONVERSATION
+  // ============================================================================
+
+  const cloneConversation = useCallback(async (conversationId: string): Promise<ConversationDto | null> => {
+    const original = conversations.find(c => c.id === conversationId);
+    if (!original) {
+      console.error('[useConversations] Cannot clone - conversation not found:', conversationId);
+      return null;
+    }
+
+    // Create cloned conversation with new ID and title
+    const clonedConv: ConversationDto = {
+      ...original,
+      id: `conv-${Date.now()}`,
+      title: `${original.title} (Copy)`,
+      isPinned: false, // Don't pin clones by default
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      lastMessageAt: new Date().toISOString(),
+    };
+
+    // Add to state immediately (optimistic)
+    setConversations(prev => [clonedConv, ...prev]);
+
+    console.log('[useConversations] Cloned conversation:', original.title, '→', clonedConv.title);
+
+    // If not offline, try to sync with backend
+    if (!AppConfig.isOfflineMode()) {
+      try {
+        const backendConv = await conversationsService.createConversation({
+          title: clonedConv.title,
+          workspaceId: clonedConv.workspaceId,
+          modelId: clonedConv.modelId,
+          tags: clonedConv.tags,
+        });
+        // Update with backend ID if successful
+        setConversations(prev => prev.map(c =>
+          c.id === clonedConv.id ? { ...c, id: backendConv.id } : c
+        ));
+        return backendConv;
+      } catch (err) {
+        console.warn('[useConversations] Failed to sync cloned conversation to backend:', err);
+      }
+    }
+
+    return clonedConv;
+  }, [conversations]);
+
+  // ============================================================================
   // INITIALIZATION & CACHE SYNC
   // ============================================================================
 
@@ -435,5 +484,6 @@ export function useConversations(workspaceId?: string) {
     togglePin,
     searchConversations,
     exportConversation,
+    cloneConversation,
   };
 }
