@@ -8,6 +8,7 @@ import { ChatInput, AttachmentData } from "./components/ChatInput";
 import { DebugPanel } from "./components/DebugPanel";
 import { useMemories } from "./hooks/useMemories";
 import { useTools, ToolCall } from "./hooks/useTools";
+import { useAgents } from "./hooks/useAgents";
 import { ShowcaseModeIndicator } from "./components/ShowcaseModeIndicator";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { DebugProvider, useDebug } from "./components/DebugContext";
@@ -48,6 +49,7 @@ function ChatApp() {
   const { settings: userSettings } = useUserSettings();
   const memories = useMemories();
   const tools = useTools();
+  const { activePreset } = useAgents();
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -153,28 +155,47 @@ function ChatApp() {
       // Extract any new memories from the user's message
       memories.extractMemoriesFromText(content, targetConversationId);
 
-      // Map creativity level to temperature
+      // Map creativity level to temperature (fallback if agent doesn't specify)
       const creativityToTemp: Record<string, number> = {
         precise: 0.3,
         balanced: 0.7,
         creative: 1.0,
       };
-      const temperature = creativityToTemp[userSettings.personalisation?.creativityLevel || 'balanced'];
+      const defaultTemperature = creativityToTemp[userSettings.personalisation?.creativityLevel || 'balanced'];
 
-      // Map response style to max_tokens
+      // Map response style to max_tokens (fallback if agent doesn't specify)
       const styleToTokens: Record<string, number> = {
         concise: 512,
         balanced: 2048,
         detailed: 4096,
       };
-      const maxTokens = styleToTokens[userSettings.personalisation?.responseStyle || 'balanced'];
+      const defaultMaxTokens = styleToTokens[userSettings.personalisation?.responseStyle || 'balanced'];
+
+      // Agent configuration takes priority over user settings
+      const agentSystemPrompt = activePreset?.systemPrompt;
+      const userSystemPrompt = userSettings.general?.systemPrompt;
+
+      // Combine prompts: agent prompt first, then user's custom prompt
+      const combinedSystemPrompt = [agentSystemPrompt, userSystemPrompt]
+        .filter(Boolean)
+        .join('\n\n');
+
+      // Use agent's temperature/maxTokens if specified, otherwise use user settings
+      const temperature = activePreset?.temperature ?? defaultTemperature;
+      const maxTokens = activePreset?.maxTokens ?? defaultMaxTokens;
+
+      // Merge knowledge IDs from attachments and agent preset
+      const knowledgeIds = [
+        ...(attachments?.knowledgeIds || []),
+        ...(activePreset?.knowledgeIds || []),
+      ];
 
       await chat.sendMessage(content, {
         conversationId: targetConversationId,
         workspaceId: workspaces.currentWorkspace?.id,
         model: selectedModel,
-        systemPrompt: userSettings.general?.systemPrompt,
-        knowledgeIds: attachments?.knowledgeIds,
+        systemPrompt: combinedSystemPrompt,
+        knowledgeIds: knowledgeIds.length > 0 ? knowledgeIds : undefined,
         memoryContext: memories.getContextString(),
         temperature,
         maxTokens,
