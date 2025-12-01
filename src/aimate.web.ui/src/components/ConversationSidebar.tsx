@@ -1,9 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { Button } from "./ui/button";
-import { ScrollArea } from "./ui/scroll-area";
 import { VirtualizedList, SimpleVirtualList } from "./ui/virtualized-list";
-import { MessageSquare, Plus, Trash2, X, Search, FolderKanban, Sparkles, Settings, Archive, ShieldCheck, LogOut, ChevronUp, Moon, Sun, Info, ChevronDown, ChevronRight, Brain, MoreVertical, Share, Download, Edit, Pin, Copy, FolderInput, Check, Layers, Users, Database } from "lucide-react";
-import { useTheme } from "./ThemeProvider";
+import { MessageSquare, Plus, Trash2, X, Search, FolderKanban, Sparkles, Settings, Archive, ShieldCheck, LogOut, ChevronUp, Info, ChevronDown, ChevronRight, Brain, MoreVertical, Share, Download, Edit, Pin, FolderInput, Check } from "lucide-react";
 import { useDebug } from "./DebugContext";
 import { ErrorBoundary, ModalErrorFallback } from "./ErrorBoundary";
 import { ConversationListSkeleton } from "./LoadingSkeletons";
@@ -15,7 +13,6 @@ import { SearchModal } from "./SearchModal";
 import { KnowledgeModal } from "./KnowledgeModal";
 import { ShareModal } from "./ShareModal";
 import { ArchivedModal } from "./ArchivedModal";
-import { LazyLoadTrigger } from "./LazyLoadTrigger";
 import { Input } from "./ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import {
@@ -81,7 +78,6 @@ export function ConversationSidebar({
   onLoadMore,
   loading = false,
 }: ConversationSidebarProps) {
-  const { theme, setTheme } = useTheme();
   const { showcaseMode } = useDebug();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
@@ -419,7 +415,11 @@ export function ConversationSidebar({
         <AboutModal open={aboutOpen} onOpenChange={setAboutOpen} />
       </ErrorBoundary>
       <ErrorBoundary context="search-modal" fallback={<ModalErrorFallback onClose={() => setSearchOpen(false)} />}>
-        <SearchModal open={searchOpen} onOpenChange={setSearchOpen} />
+        <SearchModal
+          open={searchOpen}
+          onOpenChange={setSearchOpen}
+          onSelectConversation={onSelectConversation}
+        />
       </ErrorBoundary>
       <ErrorBoundary context="knowledge-modal" fallback={<ModalErrorFallback onClose={() => setKnowledgeOpen(false)} />}>
         <KnowledgeModal open={knowledgeOpen} onOpenChange={setKnowledgeOpen} />

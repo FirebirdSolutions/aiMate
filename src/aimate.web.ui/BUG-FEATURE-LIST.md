@@ -95,9 +95,10 @@
 | Item | Status | Notes |
 |------|--------|-------|
 | Test connection button | ❌ | TODO: Implement |
-| General functionality | 🔄 | Check/Review/Implement |
-| Tool list retrieval | ❌ | TODO |
+| General functionality | ✅ | Working - list/enable/disable/add/edit/delete |
+| Tool list retrieval | ✅ | Working - useTools hook discovers from enabled servers |
 | Tool authorisation | ❌ | TODO |
+| Import/Export | ❌ | Buttons present but not implemented (MCPEditDialog:86-92) |
 
 ---
 
@@ -229,7 +230,9 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Search functionality | ❌ | TODO: Implement |
+| Search functionality | ✅ | Searches conversations and knowledge with debounced queries |
+| Filter toggles | ✅ | Chats and Knowledge filters |
+| Click to navigate | ✅ | Clicking conversation opens it |
 
 ### Knowledge
 
@@ -259,10 +262,12 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Remove unused LazyLoadTrigger | ❌ | Replaced by virtualization |
+| Remove unused LazyLoadTrigger | ✅ | Deleted - was replaced by virtualization |
 | TypeScript strict mode | ❌ | Enable and fix errors |
-| Replace `any` types | ❌ | In various hooks |
+| Replace `any` types | ❌ | In various hooks (e.g., ChatInput:75) |
 | Bundle size optimization | ❌ | Code splitting needed (currently 1.4MB) |
+| Console.log cleanup | ❌ | 76+ statements across hooks - consider proper logging |
+| ChatInput stub data | ⚠️ | Line 74 - attachment data from stubs, verify if intentional |
 
 ---
 
@@ -289,7 +294,12 @@
 - [x] Toast audit (removed non-working share buttons, implemented TTS)
 - [x] MCP design spec documentation
 - [x] Knowledge consolidation (removed Notes/Files buttons, unified under Knowledge)
+- [x] SearchModal implementation (real search across conversations & knowledge)
+- [x] Code cleanup (removed dead NotesModal/FilesModal, unused imports)
+- [x] Modal audit completed (all modals consistent, no "not implemented" toasts)
+- [x] Full codebase audit (see audit report for testing checklist)
+- [x] LazyLoadTrigger.tsx removed (dead code)
 
 ---
 
-*Last updated: 2025-11-30*
+*Last updated: 2025-12-01*
