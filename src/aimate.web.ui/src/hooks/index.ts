@@ -17,3 +17,4 @@ export { useTools } from './useTools';
 export { useKeyboardShortcuts, createDefaultShortcuts, formatShortcut } from './useKeyboardShortcuts';
 export type { KeyboardShortcut } from './useKeyboardShortcuts';
 export { useEvaluation } from './useEvaluation';
+export { useCustomModels } from './useCustomModels';

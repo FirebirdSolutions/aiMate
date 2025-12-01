@@ -17,8 +17,18 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { ShieldCheck, Users, Database, FileText, BarChart3, Pencil, Sparkles, Search, Code, Wrench, CloudSun, Plus, Settings, Layers, Download, X, Upload, Eye, Trash2, Edit2, Puzzle, Bot, Copy, Trophy } from "lucide-react";
+import { ShieldCheck, Users, Database, FileText, BarChart3, Pencil, Sparkles, Search, Code, Wrench, CloudSun, Plus, Settings, Layers, Download, X, Upload, Eye, Trash2, Edit2, Puzzle, Bot, Copy, Trophy, Boxes, MoreVertical } from "lucide-react";
 import { ModelLeaderboard } from "./ModelLeaderboard";
+import { CustomModelEditDialog } from "./CustomModelEditDialog";
+import { useCustomModels } from "../hooks/useCustomModels";
+import { PromptSuggestionsCompact } from "./PromptSuggestions";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { ScrollArea } from "./ui/scroll-area";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
@@ -59,7 +69,7 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
   }, [open, logUIEvent, addLog]);
 
   // MVP visible tabs - others hidden until needed
-  const visibleTabs = ['general', 'interface', 'connections', 'models', 'evaluation', 'agents', 'plugins', 'mcp', 'websearch'];
+  const visibleTabs = ['general', 'interface', 'connections', 'models', 'customModels', 'evaluation', 'agents', 'plugins', 'mcp', 'websearch'];
 
   const tabs = useMemo(() => [
     {
@@ -91,6 +101,12 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
       label: "Models",
       icon: BarChart3,
       content: <ModelsTab enabledModels={enabledModels} onToggleModel={onToggleModel} />,
+    },
+    {
+      id: "customModels",
+      label: "Custom Models",
+      icon: Boxes,
+      content: <CustomModelsTab />,
     },
     {
       id: "evaluation",
@@ -2815,6 +2831,215 @@ function EvaluationTab() {
         </p>
       </div>
       <ModelLeaderboard showExport={true} />
+    </div>
+  );
+}
+
+function CustomModelsTab() {
+  const {
+    customModels,
+    enabledModels,
+    isLoading,
+    createModel,
+    updateModel,
+    deleteModel,
+    cloneModel,
+    toggleModel,
+    exportModels,
+    importModels,
+  } = useCustomModels();
+
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<typeof customModels[0] | null>(null);
+  const fileInputRef = useState<HTMLInputElement | null>(null);
+
+  const handleNewModel = () => {
+    setSelectedModel(null);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditModel = (model: typeof customModels[0]) => {
+    setSelectedModel(model);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveModel = async (data: any) => {
+    if (selectedModel) {
+      await updateModel(selectedModel.id, data);
+    } else {
+      await createModel(data);
+    }
+  };
+
+  const handleDeleteModel = async () => {
+    if (selectedModel) {
+      await deleteModel(selectedModel.id);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const json = await exportModels();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'custom-models.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      await importModels(text);
+    } catch (error) {
+      console.error('Import failed:', error);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold">Custom Models</h3>
+          <p className="text-sm text-muted-foreground">
+            Create wrapped models with custom system prompts, knowledge, and tools
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleImport}
+            id="import-models-input"
+          />
+          <Button variant="outline" size="sm" onClick={() => document.getElementById('import-models-input')?.click()}>
+            <Upload className="h-4 w-4 mr-1" />
+            Import
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
+          <Button size="sm" onClick={handleNewModel}>
+            <Plus className="h-4 w-4 mr-1" />
+            New Model
+          </Button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : customModels.length === 0 ? (
+        <Card className="py-8">
+          <CardContent className="text-center">
+            <Boxes className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h4 className="font-medium mb-2">No Custom Models</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create a custom model to wrap a base model with your own system prompt, knowledge, and tools.
+            </p>
+            <Button onClick={handleNewModel}>
+              <Plus className="h-4 w-4 mr-1" />
+              Create Your First Model
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {customModels.map((model) => (
+            <Card key={model.id} className={`${!model.isEnabled ? 'opacity-60' : ''} ${model.isHidden ? 'border-dashed' : ''}`}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
+                    style={{ backgroundColor: (model.color || '#8b5cf6') + '20' }}
+                  >
+                    {model.avatar || '🤖'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium truncate">{model.name}</h4>
+                      {model.isBuiltIn && (
+                        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Built-in</span>
+                      )}
+                      {model.isHidden && (
+                        <span className="text-xs text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded">Hidden</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">{model.description}</p>
+                    {model.tags && model.tags.length > 0 && (
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {model.tags.slice(0, 3).map(tag => (
+                          <span key={tag} className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {model.promptSuggestions.length > 0 && (
+                      <div className="mt-2">
+                        <PromptSuggestionsCompact suggestions={model.promptSuggestions} maxVisible={2} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={model.isEnabled}
+                      onCheckedChange={() => toggleModel(model.id)}
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditModel(model)}>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => cloneModel(model.id)}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Clone
+                        </DropdownMenuItem>
+                        {!model.isBuiltIn && (
+                          <DropdownMenuItem
+                            className="text-red-500"
+                            onClick={() => deleteModel(model.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <CustomModelEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        model={selectedModel}
+        onSave={handleSaveModel}
+        onDelete={selectedModel && !selectedModel.isBuiltIn ? handleDeleteModel : undefined}
+      />
     </div>
   );
 }

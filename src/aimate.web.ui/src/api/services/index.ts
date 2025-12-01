@@ -17,6 +17,7 @@ export { settingsService } from './settings.service';
 export { feedbackService } from './feedback.service';
 export { knowledgeService } from './knowledge.service';
 export { evaluationService } from './evaluation.service';
+export { customModelsService } from './customModels.service';
 
 // Admin services
 export { adminService } from './admin.service';

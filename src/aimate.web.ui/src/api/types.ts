@@ -1144,3 +1144,182 @@ export interface EvaluationStatsByTopicDto {
   tagBreakdown: Record<string, number>;
 }
 
+// ============================================================================
+// CUSTOM MODELS (Model Presets/Wrappers)
+// ============================================================================
+
+/**
+ * Dynamic variables that can be injected into system prompts
+ */
+export type DynamicVariable =
+  | '{{ CURRENT_DATE }}'    // YYYY-MM-DD format
+  | '{{ CURRENT_TIME }}'    // HH:MM:SS format
+  | '{{ CURRENT_DATETIME }}' // Full datetime
+  | '{{ USER_NAME }}'       // Current user's display name
+  | '{{ USER_EMAIL }}'      // Current user's email
+  | '{{ WORKSPACE_NAME }}'  // Active workspace name
+  | '{{ MODEL_NAME }}';     // Base model name
+
+/**
+ * Capability flags for custom models
+ */
+export interface CustomModelCapabilities {
+  vision: boolean;           // Image analysis (requires vision-capable base model)
+  webSearch: boolean;        // Real-time web search
+  fileUpload: boolean;       // Allow file uploads
+  codeInterpreter: boolean;  // Python code execution
+  imageGeneration: boolean;  // Image generation
+  citations: boolean;        // Show source citations
+  statusUpdates: boolean;    // Show progress steps during generation
+}
+
+/**
+ * Prompt suggestion / starter chip
+ */
+export interface PromptSuggestionDto {
+  id: string;
+  text: string;
+  icon?: string;
+  category?: string;
+}
+
+/**
+ * Advanced inference parameters
+ */
+export interface InferenceParametersDto {
+  temperature?: number;         // 0-2, creativity
+  topP?: number;                // 0-1, nucleus sampling
+  topK?: number;                // Token selection limit
+  frequencyPenalty?: number;    // -2 to 2
+  presencePenalty?: number;     // -2 to 2
+  maxTokens?: number;           // Max output tokens
+  stopSequences?: string[];     // Force stop at these strings
+  seed?: number;                // For reproducibility
+}
+
+/**
+ * Visibility/access control for custom models
+ */
+export interface CustomModelVisibility {
+  isPublic: boolean;            // Available to all users
+  isPrivate: boolean;           // Only creator can use
+  allowedUserIds?: string[];    // Specific users who can access
+  allowedGroupIds?: string[];   // Groups who can access
+}
+
+/**
+ * Custom Model - A wrapped/configured model preset
+ */
+export interface CustomModelDto {
+  id: string;
+
+  // Identity
+  name: string;
+  description?: string;
+  avatar?: string;              // URL or emoji
+  color?: string;
+  tags?: string[];              // For organization/filtering
+
+  // Base Model Configuration
+  baseModelId: string;          // The underlying model (e.g., "gpt-4", "claude-3-opus")
+  baseModelProvider: string;    // Provider of the base model
+
+  // System Prompt with Dynamic Variables
+  systemPrompt: string;         // Supports {{ VARIABLE }} syntax
+
+  // Bindings
+  knowledgeCollectionIds: string[];  // Bound knowledge for RAG
+  knowledgeFileIds: string[];        // Individual files for RAG
+  enabledToolIds: string[];          // Tools always enabled
+  enabledMcpServerIds: string[];     // MCP servers always active
+  filterIds: string[];               // Pipeline/filters to apply
+
+  // Capabilities
+  capabilities: CustomModelCapabilities;
+
+  // Inference Parameters
+  parameters: InferenceParametersDto;
+
+  // UI Helpers
+  promptSuggestions: PromptSuggestionDto[];  // Starter chips
+
+  // Access Control
+  visibility: CustomModelVisibility;
+  createdBy: string;
+
+  // Defaults
+  defaultWebSearchEnabled: boolean;
+  defaultKnowledgeEnabled: boolean;
+
+  // Metadata
+  isBuiltIn: boolean;
+  isEnabled: boolean;
+  isHidden: boolean;            // Hidden from selector but not deleted
+  usageCount: number;
+  lastUsed?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Create custom model request
+ */
+export interface CreateCustomModelDto {
+  name: string;
+  description?: string;
+  avatar?: string;
+  color?: string;
+  tags?: string[];
+  baseModelId: string;
+  baseModelProvider: string;
+  systemPrompt: string;
+  knowledgeCollectionIds?: string[];
+  knowledgeFileIds?: string[];
+  enabledToolIds?: string[];
+  enabledMcpServerIds?: string[];
+  filterIds?: string[];
+  capabilities?: Partial<CustomModelCapabilities>;
+  parameters?: Partial<InferenceParametersDto>;
+  promptSuggestions?: PromptSuggestionDto[];
+  visibility?: Partial<CustomModelVisibility>;
+  defaultWebSearchEnabled?: boolean;
+  defaultKnowledgeEnabled?: boolean;
+}
+
+/**
+ * Update custom model request
+ */
+export interface UpdateCustomModelDto extends Partial<CreateCustomModelDto> {
+  isEnabled?: boolean;
+  isHidden?: boolean;
+}
+
+/**
+ * Custom model import/export format
+ */
+export interface CustomModelExportDto {
+  version: string;              // Export format version
+  exportedAt: string;
+  models: CustomModelDto[];
+}
+
+/**
+ * Community shared model metadata
+ */
+export interface SharedCustomModelDto {
+  id: string;
+  name: string;
+  description?: string;
+  avatar?: string;
+  author: string;
+  authorId: string;
+  downloads: number;
+  rating: number;
+  ratingCount: number;
+  tags: string[];
+  baseModelProvider: string;    // So users know what base model is needed
+  createdAt: string;
+  updatedAt: string;
+}
+
+
