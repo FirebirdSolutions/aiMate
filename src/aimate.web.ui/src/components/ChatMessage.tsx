@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useUIEventLogger } from "./DebugContext";
 import { useUserSettings } from "../context/UserSettingsContext";
 import { useAppData } from "../context/AppDataContext";
@@ -26,6 +26,7 @@ import { ShareModal } from "./ShareModal";
 import { StructuredPanel } from "./StructuredPanel";
 import { ToolCallCard } from "./ToolCallCard";
 import { ToolCall } from "../hooks/useTools";
+import { TextSelectionToolbar } from "./TextSelectionToolbar";
 
 interface ChatMessageProps {
   role: "user" | "assistant" | "system";
@@ -37,6 +38,8 @@ interface ChatMessageProps {
   onRegenerate?: () => void;
   onContinue?: () => void;
   onRetryToolCall?: (toolCall: ToolCall) => void;
+  onExplainSelection?: (text: string) => void;
+  onAskAboutSelection?: (text: string) => void;
 }
 
 export function ChatMessage({
@@ -49,6 +52,8 @@ export function ChatMessage({
   onRegenerate,
   onContinue,
   onRetryToolCall,
+  onExplainSelection,
+  onAskAboutSelection,
 }: ChatMessageProps) {
   const { logUIEvent } = useUIEventLogger();
   const { settings } = useUserSettings();
@@ -66,6 +71,13 @@ export function ChatMessage({
   const [ratingType, setRatingType] = useState<"up" | "down">("up");
   const [shareOpen, setShareOpen] = useState(false);
   const [savingToKnowledge, setSavingToKnowledge] = useState(false);
+  const messageContentRef = useRef<HTMLDivElement>(null);
+
+  // Handler for saving selected text to knowledge
+  const handleSaveSelectionToKnowledge = async (text: string) => {
+    const title = `Selection: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`;
+    await knowledge.saveTextAsKnowledge(text, title, ['selection', 'chat-selection']);
+  };
 
   // Mock performance metrics
   const performanceMetrics = {
@@ -287,6 +299,7 @@ export function ChatMessage({
           ) : (
             <>
               <div
+                ref={messageContentRef}
                 className={`rounded-2xl px-3 py-2 ${isUser
                   ? "bg-gray-700 dark:bg-gray-700 text-white"
                   : "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100"
@@ -338,6 +351,16 @@ export function ChatMessage({
                   <p className="whitespace-pre-wrap break-words">{content}</p>
                 )}
               </div>
+
+              {/* Text Selection Toolbar - only for assistant messages */}
+              {!isUser && (
+                <TextSelectionToolbar
+                  containerRef={messageContentRef}
+                  onExplain={onExplainSelection}
+                  onAsk={onAskAboutSelection}
+                  onSaveToKnowledge={handleSaveSelectionToKnowledge}
+                />
+              )}
 
               {/* Structured Content */}
               {structuredContent && (

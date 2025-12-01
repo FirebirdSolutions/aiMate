@@ -290,6 +290,30 @@ function ChatApp() {
     );
   };
 
+  const handleExplainSelection = (text: string) => {
+    const prompt = `Explain this:\n\n"${text}"`;
+    handleSendMessage(prompt);
+    addLog({
+      action: 'Explain selection',
+      api: 'api/v1/chat/send',
+      payload: { selectionLength: text.length },
+      type: 'info',
+      category: 'chat:selection'
+    });
+  };
+
+  const handleAskAboutSelection = (text: string) => {
+    const prompt = `Tell me more about this:\n\n"${text}"`;
+    handleSendMessage(prompt);
+    addLog({
+      action: 'Ask about selection',
+      api: 'api/v1/chat/send',
+      payload: { selectionLength: text.length },
+      type: 'info',
+      category: 'chat:selection'
+    });
+  };
+
   const handleDeleteConversation = async (id: string) => {
     try {
       await conversations.deleteConversation(id);
@@ -511,6 +535,8 @@ function ChatApp() {
                           : undefined
                       }
                       onRetryToolCall={handleRetryToolCall}
+                      onExplainSelection={message.role === "assistant" ? handleExplainSelection : undefined}
+                      onAskAboutSelection={message.role === "assistant" ? handleAskAboutSelection : undefined}
                     />
                   ))}
 
