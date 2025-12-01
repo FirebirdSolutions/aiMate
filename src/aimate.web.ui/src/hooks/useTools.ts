@@ -14,11 +14,12 @@ export interface ToolCall {
   serverId: string;
   toolName: string;
   parameters: Record<string, any>;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: 'pending' | 'awaiting_approval' | 'running' | 'completed' | 'failed' | 'declined';
   result?: ToolExecutionResponse;
   error?: string;
   startedAt: string;
   completedAt?: string;
+  permission?: 'never' | 'ask' | 'always';
 }
 
 export function useTools() {
@@ -257,12 +258,98 @@ export function useTools() {
     return toolCalls.filter(tc => tc.status === 'pending' || tc.status === 'running');
   }, [toolCalls]);
 
+  // ============================================================================
+  // GET AWAITING APPROVAL TOOL CALLS
+  // ============================================================================
+
+  const awaitingApprovalCalls = useMemo(() => {
+    return toolCalls.filter(tc => tc.status === 'awaiting_approval');
+  }, [toolCalls]);
+
+  // ============================================================================
+  // REQUEST TOOL EXECUTION (WITH PERMISSION CHECK)
+  // ============================================================================
+
+  /**
+   * Request a tool execution, checking permission settings.
+   * Returns the tool call with appropriate status based on permission.
+   */
+  const requestToolExecution = useCallback((
+    serverId: string,
+    toolName: string,
+    parameters: Record<string, any>
+  ): ToolCall => {
+    // Find the connector and tool to check permission
+    const connector = settings.mcpConnectors?.find(c => c.id === serverId);
+    const toolConfig = connector?.tools?.find(t => t.name === toolName);
+    const permission = toolConfig?.permission || 'ask';
+
+    // Create tool call record
+    const toolCall: ToolCall = {
+      id: `tc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      serverId,
+      toolName,
+      parameters,
+      status: permission === 'always' ? 'pending' : permission === 'never' ? 'declined' : 'awaiting_approval',
+      startedAt: new Date().toISOString(),
+      permission,
+    };
+
+    // Add to state
+    setToolCalls(prev => [...prev, toolCall]);
+
+    // If permission is 'always', automatically start execution
+    if (permission === 'always') {
+      // Execute in the next tick to allow state update
+      setTimeout(() => {
+        executeTool(serverId, toolName, parameters);
+      }, 0);
+    } else if (permission === 'never') {
+      toast.error(`Tool "${toolName}" is blocked by permission settings`);
+    }
+
+    return toolCall;
+  }, [settings.mcpConnectors, executeTool]);
+
+  // ============================================================================
+  // APPROVE TOOL CALL
+  // ============================================================================
+
+  const approveToolCall = useCallback(async (toolCallId: string): Promise<ToolCall | null> => {
+    const toolCall = toolCalls.find(tc => tc.id === toolCallId);
+    if (!toolCall || toolCall.status !== 'awaiting_approval') {
+      return null;
+    }
+
+    // Update status to pending first
+    setToolCalls(prev => prev.map(tc =>
+      tc.id === toolCallId ? { ...tc, status: 'pending' as const } : tc
+    ));
+
+    // Execute the tool
+    return executeTool(toolCall.serverId, toolCall.toolName, toolCall.parameters);
+  }, [toolCalls, executeTool]);
+
+  // ============================================================================
+  // DECLINE TOOL CALL
+  // ============================================================================
+
+  const declineToolCall = useCallback((toolCallId: string) => {
+    setToolCalls(prev => prev.map(tc =>
+      tc.id === toolCallId
+        ? { ...tc, status: 'declined' as const, completedAt: new Date().toISOString() }
+        : tc
+    ));
+    toast.info('Tool execution declined');
+  }, []);
+
   return {
     // State
     tools,
     allTools,
     toolCalls,
     pendingToolCalls,
+    awaitingApprovalCalls,
     loading,
     executing,
 
@@ -270,6 +357,9 @@ export function useTools() {
     loadTools,
     getTool,
     executeTool,
+    requestToolExecution,
+    approveToolCall,
+    declineToolCall,
     searchTools,
     parseToolCalls,
     clearToolCalls,

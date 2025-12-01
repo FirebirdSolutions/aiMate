@@ -6,7 +6,10 @@ import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Bot, User, Edit2, Check, X, RotateCw, Sparkles, Copy, Volume2, Info, ThumbsUp, ThumbsDown, Play, Share2, Send, Brain } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { toast } from "sonner";
+import { CodeBlock, InlineCode } from "./CodeBlock";
 import {
   Popover,
   PopoverContent,
@@ -268,10 +271,13 @@ export function ChatMessage({
                 ) : markdownSupport ? (
                   <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-2 prose-pre:my-2 prose-ul:my-2 prose-ol:my-2">
                     <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
                       components={{
                         code: ({ node, inline, className, children, ...props }: any) => {
+                          const codeString = String(children).replace(/\n$/, '');
+
                           // Hide structured content code blocks
-                          const codeString = String(children);
                           if (!inline && codeString.includes('```structured')) {
                             return null;
                           }
@@ -279,26 +285,24 @@ export function ChatMessage({
                             return null;
                           }
 
-                          const codeClass = syntaxHighlighting
-                            ? "bg-gray-200 dark:bg-gray-700"
-                            : "bg-gray-100 dark:bg-gray-800";
+                          // Extract language from className (e.g., "language-javascript")
+                          const match = /language-(\w+)/.exec(className || '');
+                          const language = match ? match[1] : '';
 
-                          return inline ? (
-                            <code
-                              className={`${codeClass} px-1.5 py-0.5 rounded text-sm`}
-                              {...props}
-                            >
-                              {children}
-                            </code>
-                          ) : (
-                            <code
-                              className={`block ${codeClass} p-3 rounded text-sm overflow-x-auto ${syntaxHighlighting ? 'font-mono' : ''}`}
-                              {...props}
-                            >
-                              {children}
-                            </code>
+                          // Use enhanced components for block and inline code
+                          if (inline) {
+                            return <InlineCode>{codeString}</InlineCode>;
+                          }
+
+                          // Block code - use CodeBlock component (handles mermaid too)
+                          return (
+                            <CodeBlock language={language} className="my-3">
+                              {codeString}
+                            </CodeBlock>
                           );
                         },
+                        // Override pre to avoid double wrapping
+                        pre: ({ children }) => <>{children}</>,
                       }}
                     >
                       {structuredContent ? content.replace(/```structured[\s\S]*?```/g, '').trim() : content}

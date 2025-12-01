@@ -95,6 +95,138 @@ const MOCK_TOOLS: Record<string, ToolDto[]> = {
 
 class ToolsService {
   // ============================================================================
+  // CONNECTION TESTING
+  // ============================================================================
+
+  /**
+   * Test connection to an MCP server
+   */
+  async testConnection(url: string, auth: string, authToken: string): Promise<{
+    success: boolean;
+    message: string;
+    latency?: number;
+  }> {
+    const startTime = Date.now();
+
+    if (AppConfig.isOfflineMode()) {
+      // Simulate connection test in offline mode
+      await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
+      const latency = Date.now() - startTime;
+
+      // Simulate some failures for testing
+      if (url.includes('invalid') || url.includes('fail')) {
+        return { success: false, message: 'Connection refused' };
+      }
+
+      return {
+        success: true,
+        message: 'Connected successfully',
+        latency
+      };
+    }
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (auth === 'Bearer' && authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      } else if (auth === 'API Key' && authToken) {
+        headers['X-API-Key'] = authToken;
+      }
+
+      const response = await fetch(`${url}/health`, {
+        method: 'GET',
+        headers,
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
+
+      const latency = Date.now() - startTime;
+
+      if (response.ok) {
+        return { success: true, message: 'Connected successfully', latency };
+      } else {
+        return { success: false, message: `Server returned ${response.status}` };
+      }
+    } catch (err) {
+      return {
+        success: false,
+        message: err instanceof Error ? err.message : 'Connection failed'
+      };
+    }
+  }
+
+  /**
+   * Discover tools from an MCP server by URL
+   */
+  async discoverTools(url: string, auth: string, authToken: string): Promise<ToolDto[]> {
+    if (AppConfig.isOfflineMode()) {
+      console.log('[ToolsService] Discovering mock tools for URL:', url);
+      await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 300));
+
+      // Return mock tools based on URL pattern
+      if (url.includes('echo')) {
+        return [
+          {
+            name: 'echo',
+            description: 'Echo back the input message',
+            category: 'utilities',
+            parameters: {
+              message: {
+                type: 'string',
+                description: 'Message to echo back',
+                required: true,
+              },
+            },
+          },
+          {
+            name: 'reverse',
+            description: 'Reverse the input string',
+            category: 'utilities',
+            parameters: {
+              text: {
+                type: 'string',
+                description: 'Text to reverse',
+                required: true,
+              },
+            },
+          },
+        ];
+      }
+
+      // Default mock tools
+      return MOCK_TOOLS['mcp-1'] || [];
+    }
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (auth === 'Bearer' && authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      } else if (auth === 'API Key' && authToken) {
+        headers['X-API-Key'] = authToken;
+      }
+
+      const response = await fetch(`${url}/tools`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tools: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (err) {
+      console.error('[ToolsService] Failed to discover tools:', err);
+      throw err;
+    }
+  }
+
+  // ============================================================================
   // TOOL DISCOVERY
   // ============================================================================
 

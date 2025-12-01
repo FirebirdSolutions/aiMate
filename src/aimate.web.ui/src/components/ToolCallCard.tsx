@@ -1,7 +1,8 @@
 /**
  * Tool Call Card
  *
- * Displays a tool call with its status, parameters, and result
+ * Displays a tool call with its status, parameters, and result.
+ * Supports approval/decline workflow for tools with 'ask' permission.
  */
 
 import { useState } from "react";
@@ -17,6 +18,11 @@ import {
   ChevronUp,
   Copy,
   RefreshCw,
+  ShieldQuestion,
+  Ban,
+  Check,
+  X,
+  AlertTriangle,
 } from "lucide-react";
 import {
   Collapsible,
@@ -29,6 +35,8 @@ import { toast } from "sonner";
 interface ToolCallCardProps {
   toolCall: ToolCall;
   onRetry?: () => void;
+  onApprove?: () => void;
+  onDecline?: () => void;
 }
 
 const STATUS_CONFIG = {
@@ -38,6 +46,13 @@ const STATUS_CONFIG = {
     bg: 'bg-yellow-50 dark:bg-yellow-900/20',
     border: 'border-yellow-200 dark:border-yellow-800',
     label: 'Pending',
+  },
+  awaiting_approval: {
+    icon: ShieldQuestion,
+    color: 'text-orange-600 dark:text-orange-400',
+    bg: 'bg-orange-50 dark:bg-orange-900/20',
+    border: 'border-orange-200 dark:border-orange-800',
+    label: 'Awaiting Approval',
   },
   running: {
     icon: Loader2,
@@ -60,10 +75,17 @@ const STATUS_CONFIG = {
     border: 'border-red-200 dark:border-red-800',
     label: 'Failed',
   },
+  declined: {
+    icon: Ban,
+    color: 'text-gray-600 dark:text-gray-400',
+    bg: 'bg-gray-50 dark:bg-gray-900/20',
+    border: 'border-gray-200 dark:border-gray-800',
+    label: 'Declined',
+  },
 };
 
-export function ToolCallCard({ toolCall, onRetry }: ToolCallCardProps) {
-  const [showParams, setShowParams] = useState(false);
+export function ToolCallCard({ toolCall, onRetry, onApprove, onDecline }: ToolCallCardProps) {
+  const [showParams, setShowParams] = useState(toolCall.status === 'awaiting_approval');
   const [showResult, setShowResult] = useState(true);
 
   const config = STATUS_CONFIG[toolCall.status];
@@ -167,6 +189,54 @@ export function ToolCallCard({ toolCall, onRetry }: ToolCallCardProps) {
           </p>
         </div>
       )}
+
+      {/* Approval Request */}
+      {toolCall.status === 'awaiting_approval' && (
+        <div className="mt-3 p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg border border-orange-200 dark:border-orange-800">
+          <div className="flex items-start gap-2 mb-3">
+            <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                Tool execution requires approval
+              </p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                Review the parameters above before allowing this tool to execute.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            {onDecline && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs gap-1.5 border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/30"
+                onClick={onDecline}
+              >
+                <X className="h-3.5 w-3.5" />
+                Decline
+              </Button>
+            )}
+            {onApprove && (
+              <Button
+                size="sm"
+                className="h-8 text-xs gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                onClick={onApprove}
+              >
+                <Check className="h-3.5 w-3.5" />
+                Allow
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Declined Notice */}
+      {toolCall.status === 'declined' && (
+        <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
+          <Ban className="h-3.5 w-3.5" />
+          <span>Tool execution was declined</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -177,7 +247,11 @@ export function ToolCallCard({ toolCall, onRetry }: ToolCallCardProps) {
 export function renderToolCalls(
   content: string,
   toolCalls: ToolCall[],
-  onRetry?: (toolCall: ToolCall) => void
+  handlers?: {
+    onRetry?: (toolCall: ToolCall) => void;
+    onApprove?: (toolCall: ToolCall) => void;
+    onDecline?: (toolCall: ToolCall) => void;
+  }
 ): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
 
@@ -211,7 +285,9 @@ export function renderToolCalls(
         <ToolCallCard
           key={toolCall.id}
           toolCall={toolCall}
-          onRetry={onRetry ? () => onRetry(toolCall) : undefined}
+          onRetry={handlers?.onRetry ? () => handlers.onRetry!(toolCall) : undefined}
+          onApprove={handlers?.onApprove ? () => handlers.onApprove!(toolCall) : undefined}
+          onDecline={handlers?.onDecline ? () => handlers.onDecline!(toolCall) : undefined}
         />
       );
     }
@@ -238,7 +314,9 @@ export function renderToolCalls(
         <ToolCallCard
           key={toolCall.id}
           toolCall={toolCall}
-          onRetry={onRetry ? () => onRetry(toolCall) : undefined}
+          onRetry={handlers?.onRetry ? () => handlers.onRetry!(toolCall) : undefined}
+          onApprove={handlers?.onApprove ? () => handlers.onApprove!(toolCall) : undefined}
+          onDecline={handlers?.onDecline ? () => handlers.onDecline!(toolCall) : undefined}
         />
       );
     }

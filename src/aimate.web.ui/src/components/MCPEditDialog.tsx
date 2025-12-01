@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,6 @@ import {
 } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 import {
@@ -18,9 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { X, RefreshCw, Eye, EyeOff, Lock } from "lucide-react";
+import { RefreshCw, Eye, EyeOff, Lock, CheckCircle2, XCircle, Loader2, Wrench, ChevronDown, ChevronRight, AlertCircle } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
 import { Separator } from "./ui/separator";
+import { Badge } from "./ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
+import { toast } from "sonner";
+import { toolsService } from "../api/services/tools.service";
+import type { MCPTool, ToolPermission } from "../context/AdminSettingsContext";
 
 interface MCPConnector {
   id: string;
@@ -31,9 +35,12 @@ interface MCPConnector {
   authToken: string;
   mcpId: string;
   description: string;
-  visibility: "private" | "public";
+  visibility: 'private' | 'public';
   groups: string[];
   enabled: boolean;
+  tools?: MCPTool[];
+  lastTested?: string;
+  connectionStatus?: 'unknown' | 'connected' | 'failed';
 }
 
 interface MCPEditDialogProps {
@@ -64,13 +71,50 @@ export function MCPEditDialog({
       visibility: "private",
       groups: [],
       enabled: true,
+      tools: [],
+      connectionStatus: 'unknown',
     }
   );
 
   const [showAuthToken, setShowAuthToken] = useState(false);
-  const [showImportExport, setShowImportExport] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string; latency?: number } | null>(null);
+  const [toolsExpanded, setToolsExpanded] = useState(true);
+
+  // Reset state when dialog opens with a new connector
+  useEffect(() => {
+    if (open) {
+      setFormData(
+        connector || {
+          id: Date.now().toString(),
+          name: "",
+          type: "MCP Streamable HTTP",
+          url: "",
+          auth: "Bearer",
+          authToken: "",
+          mcpId: "",
+          description: "",
+          visibility: "private",
+          groups: [],
+          enabled: true,
+          tools: [],
+          connectionStatus: 'unknown',
+        }
+      );
+      setTestResult(null);
+    }
+  }, [open, connector]);
 
   const handleSave = () => {
+    if (!formData.url) {
+      toast.error("URL is required");
+      return;
+    }
+    if (!formData.name) {
+      toast.error("Name is required");
+      return;
+    }
     onSave(formData);
     onOpenChange(false);
   };
@@ -82,14 +126,128 @@ export function MCPEditDialog({
     }
   };
 
+  const handleTestConnection = async () => {
+    if (!formData.url) {
+      toast.error("Please enter a URL first");
+      return;
+    }
+
+    setTesting(true);
+    setTestResult(null);
+
+    try {
+      const result = await toolsService.testConnection(
+        formData.url,
+        formData.auth,
+        formData.authToken
+      );
+
+      setTestResult(result);
+      setFormData(prev => ({
+        ...prev,
+        connectionStatus: result.success ? 'connected' : 'failed',
+        lastTested: new Date().toISOString(),
+      }));
+
+      if (result.success) {
+        toast.success(`Connected! Latency: ${result.latency}ms`);
+      } else {
+        toast.error(`Connection failed: ${result.message}`);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      setTestResult({ success: false, message });
+      toast.error(`Test failed: ${message}`);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleDiscoverTools = async () => {
+    if (!formData.url) {
+      toast.error("Please enter a URL first");
+      return;
+    }
+
+    setDiscovering(true);
+
+    try {
+      const discoveredTools = await toolsService.discoverTools(
+        formData.url,
+        formData.auth,
+        formData.authToken
+      );
+
+      // Merge with existing tools, preserving permissions
+      const existingToolMap = new Map(
+        (formData.tools || []).map(t => [t.name, t])
+      );
+
+      const mergedTools: MCPTool[] = discoveredTools.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        permission: existingToolMap.get(tool.name)?.permission || 'ask',
+      }));
+
+      setFormData(prev => ({
+        ...prev,
+        tools: mergedTools,
+      }));
+
+      toast.success(`Discovered ${mergedTools.length} tools`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error(`Failed to discover tools: ${message}`);
+    } finally {
+      setDiscovering(false);
+    }
+  };
+
+  const handleToolPermissionChange = (toolName: string, permission: ToolPermission) => {
+    setFormData(prev => ({
+      ...prev,
+      tools: (prev.tools || []).map(tool =>
+        tool.name === toolName ? { ...tool, permission } : tool
+      ),
+    }));
+  };
+
+  const setAllToolPermissions = (permission: ToolPermission) => {
+    setFormData(prev => ({
+      ...prev,
+      tools: (prev.tools || []).map(tool => ({ ...tool, permission })),
+    }));
+  };
+
+  const getPermissionBadge = (permission: ToolPermission) => {
+    switch (permission) {
+      case 'always':
+        return <Badge className="bg-green-600 text-white text-xs">Always</Badge>;
+      case 'ask':
+        return <Badge className="bg-yellow-600 text-white text-xs">Ask</Badge>;
+      case 'never':
+        return <Badge className="bg-red-600 text-white text-xs">Never</Badge>;
+    }
+  };
+
   const handleImport = () => {
-    // TODO: Implement import functionality
-    console.log("Import MCP connector");
+    toast.info("Import MCP connector - coming soon");
   };
 
   const handleExport = () => {
-    // TODO: Implement export functionality
-    console.log("Export MCP connector");
+    // Export connector as JSON
+    const exportData = {
+      ...formData,
+      authToken: '', // Don't export sensitive data
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mcp-${formData.mcpId || formData.name || 'connector'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Connector exported");
   };
 
   return (
@@ -97,7 +255,7 @@ export function MCPEditDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] h-[90vh] p-0 gap-0 flex flex-col">
         <DialogHeader className="flex-shrink-0 px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex flex-row items-center justify-between">
           <DialogTitle>
-            {connector ? "Edit Connection" : "Add Connection"}
+            {connector ? "Edit MCP Connection" : "Add MCP Connection"}
           </DialogTitle>
           <div className="flex items-center gap-2">
             <Button
@@ -118,12 +276,13 @@ export function MCPEditDialog({
             </Button>
           </div>
           <DialogDescription className="sr-only">
-            Configure MCP connector settings
+            Configure MCP connector settings including connection, authentication, and tool permissions
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1 overflow-hidden">
           <div className="px-6 py-4 space-y-4">
+            {/* Connection Type */}
             <div className="flex items-center justify-between">
               <Label htmlFor="connection-type">Type</Label>
               <span className="text-sm text-gray-500 dark:text-gray-400">
@@ -131,6 +290,7 @@ export function MCPEditDialog({
               </span>
             </div>
 
+            {/* URL and Connection Test */}
             <div className="space-y-2">
               <Label htmlFor="url">URL</Label>
               <div className="flex gap-2">
@@ -138,13 +298,28 @@ export function MCPEditDialog({
                   id="url"
                   value={formData.url}
                   onChange={(e) =>
-                    setFormData({ ...formData, url: e.target.value })
+                    setFormData({ ...formData, url: e.target.value, connectionStatus: 'unknown' })
                   }
                   placeholder="https://echo.firebird.co.nz"
                   className="flex-1"
                 />
-                <Button size="icon" variant="outline" className="cursor-pointer">
-                  <RefreshCw className="h-4 w-4" />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="cursor-pointer"
+                  onClick={handleTestConnection}
+                  disabled={testing || !formData.url}
+                  title="Test connection"
+                >
+                  {testing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : testResult?.success ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : testResult?.success === false ? (
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
+                  )}
                 </Button>
                 <Switch
                   checked={formData.enabled}
@@ -154,8 +329,15 @@ export function MCPEditDialog({
                   className="data-[state=checked]:bg-green-600"
                 />
               </div>
+              {testResult && (
+                <p className={`text-xs ${testResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                  {testResult.message}
+                  {testResult.latency && ` (${testResult.latency}ms)`}
+                </p>
+              )}
             </div>
 
+            {/* Auth */}
             <div className="space-y-2">
               <Label htmlFor="auth">Auth</Label>
               <Select
@@ -174,6 +356,7 @@ export function MCPEditDialog({
               </Select>
             </div>
 
+            {/* Auth Token */}
             {formData.auth !== "None" && (
               <div className="space-y-2">
                 <Label htmlFor="auth-token">Auth Token</Label>
@@ -208,6 +391,7 @@ export function MCPEditDialog({
 
             <Separator />
 
+            {/* ID and Name */}
             <div className="space-y-2">
               <Label htmlFor="mcp-id">ID</Label>
               <Input
@@ -246,6 +430,127 @@ export function MCPEditDialog({
 
             <Separator />
 
+            {/* Tools Section */}
+            <Collapsible open={toolsExpanded} onOpenChange={setToolsExpanded}>
+              <div className="flex items-center justify-between">
+                <CollapsibleTrigger className="flex items-center gap-2 hover:opacity-80">
+                  {toolsExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Wrench className="h-4 w-4" />
+                    Tools
+                    {formData.tools && formData.tools.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {formData.tools.length}
+                      </Badge>
+                    )}
+                  </h4>
+                </CollapsibleTrigger>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleDiscoverTools}
+                  disabled={discovering || !formData.url}
+                  className="cursor-pointer"
+                >
+                  {discovering ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Discover Tools
+                </Button>
+              </div>
+
+              <CollapsibleContent className="mt-3">
+                {formData.tools && formData.tools.length > 0 ? (
+                  <div className="space-y-3">
+                    {/* Bulk permission actions */}
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <span>Set all:</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => setAllToolPermissions('always')}
+                      >
+                        Always
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => setAllToolPermissions('ask')}
+                      >
+                        Ask
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => setAllToolPermissions('never')}
+                      >
+                        Never
+                      </Button>
+                    </div>
+
+                    {/* Tool list */}
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {formData.tools.map((tool) => (
+                        <div
+                          key={tool.name}
+                          className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800"
+                        >
+                          <div className="flex-1 min-w-0 mr-3">
+                            <div className="flex items-center gap-2">
+                              <Wrench className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
+                              <span className="font-medium text-sm truncate">{tool.name}</span>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                              {tool.description}
+                            </p>
+                          </div>
+                          <Select
+                            value={tool.permission}
+                            onValueChange={(value: ToolPermission) =>
+                              handleToolPermissionChange(tool.name, value)
+                            }
+                          >
+                            <SelectTrigger className="w-24 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="always">
+                                <span className="text-green-600">Always</span>
+                              </SelectItem>
+                              <SelectItem value="ask">
+                                <span className="text-yellow-600">Ask</span>
+                              </SelectItem>
+                              <SelectItem value="never">
+                                <span className="text-red-600">Never</span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No tools discovered yet</p>
+                    <p className="text-xs mt-1">Click "Discover Tools" to fetch available tools from the server</p>
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Separator />
+
+            {/* Visibility */}
             <div className="space-y-3">
               <h4 className="font-medium">Visibility</h4>
               <div className="p-4 bg-card rounded-lg border border-border">
@@ -274,6 +579,7 @@ export function MCPEditDialog({
               </div>
             </div>
 
+            {/* Groups */}
             <div className="space-y-3">
               <h4 className="font-medium">Groups</h4>
               <Select>
@@ -292,6 +598,7 @@ export function MCPEditDialog({
 
             <Separator />
 
+            {/* Warning */}
             <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
               <p className="text-sm text-yellow-800 dark:text-yellow-200">
                 <strong>Warning:</strong> MCP support is experimental and its specification changes
@@ -306,10 +613,11 @@ export function MCPEditDialog({
           </div>
         </ScrollArea>
 
+        {/* Footer */}
         <div className="flex-shrink-0 px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex justify-between">
           {connector && onDelete ? (
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleDelete}
               className="cursor-pointer"
             >
@@ -319,6 +627,9 @@ export function MCPEditDialog({
             <div />
           )}
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleSave} className="cursor-pointer">
               Save
             </Button>
