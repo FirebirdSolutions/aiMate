@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#1f2937"/>
+  <circle cx="256" cy="200" r="80" fill="#60a5fa"/>
+  <circle cx="200" cy="180" r="12" fill="#1f2937"/>
+  <circle cx="312" cy="180" r="12" fill="#1f2937"/>
+  <path d="M216 220 Q256 260 296 220" stroke="#1f2937" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M160 320 L256 400 L352 320" stroke="#60a5fa" stroke-width="24" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="480" text-anchor="middle" fill="#9ca3af" font-family="system-ui" font-size="48" font-weight="bold">aiMate</text>
+</svg>
