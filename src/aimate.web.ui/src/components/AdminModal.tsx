@@ -7,8 +7,6 @@ import { ConnectionEditDialog } from "./ConnectionEditDialog";
 import { ModelEditDialog } from "./ModelEditDialog";
 import { MCPEditDialog } from "./MCPEditDialog";
 import { PluginEditDialog } from "./PluginEditDialog";
-import { AgentEditDialog } from "./AgentEditDialog";
-import { useAgents, AgentPreset } from "../hooks/useAgents";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +15,18 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
-import { ShieldCheck, Users, Database, FileText, BarChart3, Pencil, Sparkles, Search, Code, Wrench, CloudSun, Plus, Settings, Layers, Download, X, Upload, Eye, Trash2, Edit2, Puzzle, Bot, Copy } from "lucide-react";
+import { ShieldCheck, Users, Database, FileText, BarChart3, Pencil, Sparkles, Search, Code, Wrench, CloudSun, Plus, Settings, Layers, Download, X, Upload, Eye, Trash2, Edit2, Puzzle, Bot, Copy, Trophy, Boxes, MoreVertical, Volume2, Image, Link2 } from "lucide-react";
+import { ModelLeaderboard } from "./ModelLeaderboard";
+import { CustomModelEditDialog } from "./CustomModelEditDialog";
+import { useCustomModels } from "../hooks/useCustomModels";
+import { PromptSuggestionsCompact } from "./PromptSuggestions";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { ScrollArea } from "./ui/scroll-area";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
@@ -33,6 +42,7 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Slider } from "./ui/slider";
 import { BaseModal } from "./BaseModal";
+import { toast } from "sonner";
 
 interface AdminModalProps {
   open: boolean;
@@ -58,7 +68,8 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
   }, [open, logUIEvent, addLog]);
 
   // MVP visible tabs - others hidden until needed
-  const visibleTabs = ['general', 'interface', 'connections', 'models', 'agents', 'plugins', 'mcp', 'websearch'];
+  // NOTE: 'agents' tab removed - functionality merged into Custom Models
+  const visibleTabs = ['general', 'interface', 'connections', 'models', 'customModels', 'evaluation', 'plugins', 'mcp', 'documents', 'websearch', 'images', 'audio', 'codeexecution'];
 
   const tabs = useMemo(() => [
     {
@@ -92,10 +103,16 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
       content: <ModelsTab enabledModels={enabledModels} onToggleModel={onToggleModel} />,
     },
     {
-      id: "agents",
-      label: "Agents",
-      icon: Bot,
-      content: <AgentsTab />,
+      id: "customModels",
+      label: "Custom Models",
+      icon: Boxes,
+      content: <CustomModelsTab />,
+    },
+    {
+      id: "evaluation",
+      label: "Evaluation",
+      icon: Trophy,
+      content: <EvaluationTab />,
     },
     {
       id: "plugins",
@@ -125,6 +142,12 @@ export function AdminModal({ open, onOpenChange, enabledModels, onToggleModel }:
       id: "codeexecution",
       label: "Code Execution",
       icon: Code,
+      content: <CodeExecutionTab />,
+    },
+    {
+      id: "audio",
+      label: "Audio",
+      icon: Volume2,
       content: <AudioTab />,
     },
     {
@@ -1774,282 +1797,6 @@ function PluginsTab() {
   );
 }
 
-function AgentsTab() {
-  const { addLog } = useDebug();
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<AgentPreset | null>(null);
-  const [editMode, setEditMode] = useState<'create' | 'edit'>('create');
-  const {
-    presets,
-    createPreset,
-    updatePreset,
-    deletePreset,
-    togglePreset,
-    duplicatePreset,
-    exportPresets,
-    importPresets,
-  } = useAgents();
-
-  const handleEdit = (agent: AgentPreset) => {
-    setSelectedAgent(agent);
-    setEditMode('edit');
-    setEditDialogOpen(true);
-    addLog({
-      action: `Editing agent: ${agent.name}`,
-      category: 'admin:agents:edit',
-      payload: { agentId: agent.id, name: agent.name },
-      type: 'info'
-    });
-  };
-
-  const handleAdd = () => {
-    setSelectedAgent(null);
-    setEditMode('create');
-    setEditDialogOpen(true);
-    addLog({
-      action: 'Adding new agent',
-      category: 'admin:agents:add',
-      type: 'info'
-    });
-  };
-
-  const handleSave = (agentData: Omit<AgentPreset, 'id' | 'createdAt' | 'updatedAt' | 'isBuiltIn'>) => {
-    if (selectedAgent) {
-      updatePreset(selectedAgent.id, agentData);
-      addLog({
-        action: `Agent updated: ${agentData.name}`,
-        category: 'admin:agents:update',
-        payload: agentData,
-        type: 'success'
-      });
-    } else {
-      createPreset(agentData);
-      addLog({
-        action: `Agent created: ${agentData.name}`,
-        category: 'admin:agents:create',
-        payload: agentData,
-        type: 'success'
-      });
-    }
-    setEditDialogOpen(false);
-  };
-
-  const handleDelete = (id: string) => {
-    const agent = presets.find(a => a.id === id);
-    deletePreset(id);
-    addLog({
-      action: `Agent deleted: ${agent?.name || id}`,
-      category: 'admin:agents:delete',
-      payload: { agentId: id },
-      type: 'warning'
-    });
-  };
-
-  const handleDuplicate = (id: string) => {
-    const agent = presets.find(a => a.id === id);
-    const newAgent = duplicatePreset(id);
-    if (newAgent) {
-      addLog({
-        action: `Agent duplicated: ${agent?.name} → ${newAgent.name}`,
-        category: 'admin:agents:duplicate',
-        payload: { originalId: id, newId: newAgent.id },
-        type: 'info'
-      });
-    }
-  };
-
-  const handleToggle = (id: string) => {
-    const agent = presets.find(a => a.id === id);
-    togglePreset(id);
-    addLog({
-      action: `Agent ${agent?.isEnabled ? 'disabled' : 'enabled'}: ${agent?.name}`,
-      category: 'admin:agents:toggle',
-      payload: { agentId: id, enabled: !agent?.isEnabled },
-      type: 'info'
-    });
-  };
-
-  const handleExport = () => {
-    const data = exportPresets();
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'aimate-agents.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    addLog({
-      action: 'Agents exported',
-      category: 'admin:agents:export',
-      type: 'info'
-    });
-  };
-
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const content = ev.target?.result as string;
-          const count = importPresets(content);
-          addLog({
-            action: `Imported ${count} agents`,
-            category: 'admin:agents:import',
-            payload: { count },
-            type: count > 0 ? 'success' : 'warning'
-          });
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
-  };
-
-  return (
-    <>
-      <AgentEditDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        agent={selectedAgent}
-        onSave={handleSave}
-        mode={editMode}
-      />
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Agent Presets</h3>
-            <div className="flex gap-2">
-              <Button onClick={handleImport} variant="outline" size="sm" className="cursor-pointer">
-                <Upload className="h-4 w-4 mr-1" />
-                Import
-              </Button>
-              <Button onClick={handleExport} variant="outline" size="sm" className="cursor-pointer">
-                <Download className="h-4 w-4 mr-1" />
-                Export
-              </Button>
-              <Button onClick={handleAdd} size="sm" className="cursor-pointer">
-                <Plus className="h-4 w-4 mr-1" />
-                Create Agent
-              </Button>
-            </div>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Create AI personas with custom system prompts, tool access, and parameters.
-          </p>
-
-          <div className="space-y-2">
-            {presets.length === 0 ? (
-              <div className="p-8 border border-gray-200 dark:border-gray-800 rounded-lg text-center">
-                <Bot className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  No agent presets configured
-                </p>
-                <Button
-                  onClick={handleAdd}
-                  variant="outline"
-                  size="sm"
-                  className="mt-3 cursor-pointer"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Create Your First Agent
-                </Button>
-              </div>
-            ) : (
-              presets.map((agent) => (
-                <div
-                  key={agent.id}
-                  className={`flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border ${
-                    agent.isEnabled
-                      ? 'border-gray-200 dark:border-gray-800'
-                      : 'border-gray-200 dark:border-gray-800 opacity-60'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                      style={{
-                        backgroundColor: (agent.color || '#8b5cf6') + '20',
-                        borderColor: agent.color || '#8b5cf6',
-                        borderWidth: 2
-                      }}
-                    >
-                      {agent.icon || '🤖'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">{agent.name}</h4>
-                        {agent.isBuiltIn && (
-                          <span className="text-xs px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded">
-                            Built-in
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
-                        {agent.description}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 cursor-pointer"
-                      onClick={() => handleDuplicate(agent.id)}
-                      title="Duplicate"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 cursor-pointer"
-                      onClick={() => handleEdit(agent)}
-                      title="Edit"
-                    >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                    {!agent.isBuiltIn && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 cursor-pointer text-red-500 hover:text-red-600"
-                        onClick={() => handleDelete(agent.id)}
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Switch
-                      checked={agent.isEnabled}
-                      onCheckedChange={() => handleToggle(agent.id)}
-                      className="ml-2 data-[state=checked]:bg-purple-600"
-                    />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <Separator />
-
-        <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-          <p className="text-sm text-purple-800 dark:text-purple-200">
-            <strong>About Agents:</strong> Agent presets let you quickly switch between AI personas.
-            Each agent can have its own system prompt, tool access, and response style.
-            Agents can also access your knowledge base for domain-specific assistance.
-          </p>
-        </div>
-      </div>
-    </>
-  );
-}
-
 function MCPTab() {
   const { addLog } = useDebug();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -2248,32 +1995,80 @@ function MCPTab() {
 }
 
 function DocumentsTab() {
-  const [contentExtractionEngine, setContentExtractionEngine] = useState("Default");
-  const [pdfExtractImages, setPdfExtractImages] = useState(false);
-  const [bypassEmbedding, setBypassEmbedding] = useState(false);
-  const [textSplitter, setTextSplitter] = useState("RecursiveCharacter");
-  const [chunkSize, setChunkSize] = useState("1500");
-  const [chunkOverlap, setChunkOverlap] = useState("100");
-  const [embeddingModelEngine, setEmbeddingModelEngine] = useState("Default");
-  const [embeddingModel, setEmbeddingModel] = useState("sentence-transformers/all-MiniLM-L6-v2");
-  const [fullContextMode, setFullContextMode] = useState(false);
-  const [hybridSearch, setHybridSearch] = useState(true);
-  const [rerankingEngine, setRerankingEngine] = useState("Default");
-  const [rerankingModel, setRerankingModel] = useState("ms-marco-TinyBERT-L-2-v2");
-  const [topKReranker, setTopKReranker] = useState("5");
-  const [relevanceThreshold, setRelevanceThreshold] = useState("0");
-  const [bm25Weight, setBm25Weight] = useState([0.5]);
-  const [ragTemplate, setRagTemplate] = useState("Use the following context to answer the question:\n\nContext: {{CONTEXT}}\n\nQuestion: {{QUERY}}");
+  const { settings, updateDocuments } = useAdminSettings();
+  const { addLog } = useDebug();
+  const docs = settings.documents;
+
+  // Get knowledge stats from AppData context (if available) - for display purposes
+  const [docStats, setDocStats] = useState({ total: 0, embedded: 0, pending: 0 });
+
+  const handleUpdate = (key: string, value: any) => {
+    updateDocuments({ [key]: value });
+    addLog({
+      action: `Documents setting updated: ${key}`,
+      category: 'admin:documents:update',
+      type: 'info',
+    });
+  };
 
   return (
     <div className="space-y-6">
+      {/* Knowledge Overview */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-semibold">Knowledge Base Overview</h3>
+            <p className="text-xs text-muted-foreground">Manage documents and RAG settings</p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              // Trigger opening Knowledge modal - this would need to be wired up through props
+              addLog({
+                action: 'Opening Knowledge modal from Documents tab',
+                category: 'admin:documents:openKnowledge',
+                type: 'info',
+              });
+              // For now show a toast - full integration would require lifting state
+              toast.info("Open Knowledge from the main menu to manage documents");
+            }}
+          >
+            <Database className="h-4 w-4 mr-2" />
+            Manage Documents
+          </Button>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-4 text-center">
+              <div className="text-2xl font-bold text-purple-600">{docStats.total}</div>
+              <div className="text-xs text-muted-foreground">Total Documents</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 text-center">
+              <div className="text-2xl font-bold text-green-600">{docStats.embedded}</div>
+              <div className="text-xs text-muted-foreground">Embedded</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4 text-center">
+              <div className="text-2xl font-bold text-yellow-600">{docStats.pending}</div>
+              <div className="text-xs text-muted-foreground">Pending</div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <Separator />
+
       {/* Content Extraction Engine */}
       <div>
         <h3 className="font-semibold mb-3">Content Extraction</h3>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Content Extraction Engine</Label>
-            <Select value={contentExtractionEngine} onValueChange={setContentExtractionEngine}>
+            <Select value={docs.contentExtractionEngine} onValueChange={(v) => handleUpdate('contentExtractionEngine', v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -2286,19 +2081,25 @@ function DocumentsTab() {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label>PDF Extract Images</Label>
+            <div>
+              <Label>PDF Extract Images</Label>
+              <p className="text-xs text-muted-foreground">Extract and embed images from PDF files</p>
+            </div>
             <Switch
-              checked={pdfExtractImages}
-              onCheckedChange={setPdfExtractImages}
+              checked={docs.pdfExtractImages}
+              onCheckedChange={(v) => handleUpdate('pdfExtractImages', v)}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label>Bypass Embedding</Label>
+            <div>
+              <Label>Bypass Embedding</Label>
+              <p className="text-xs text-muted-foreground">Store documents without generating embeddings</p>
+            </div>
             <Switch
-              checked={bypassEmbedding}
-              onCheckedChange={setBypassEmbedding}
+              checked={docs.bypassEmbedding}
+              onCheckedChange={(v) => handleUpdate('bypassEmbedding', v)}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -2313,7 +2114,7 @@ function DocumentsTab() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Text Splitter</Label>
-            <Select value={textSplitter} onValueChange={setTextSplitter}>
+            <Select value={docs.textSplitter} onValueChange={(v) => handleUpdate('textSplitter', v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -2328,11 +2129,11 @@ function DocumentsTab() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Chunk Size</Label>
-              <Input value={chunkSize} onChange={(e) => setChunkSize(e.target.value)} />
+              <Input value={docs.chunkSize} onChange={(e) => handleUpdate('chunkSize', e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Chunk Overlap</Label>
-              <Input value={chunkOverlap} onChange={(e) => setChunkOverlap(e.target.value)} />
+              <Input value={docs.chunkOverlap} onChange={(e) => handleUpdate('chunkOverlap', e.target.value)} />
             </div>
           </div>
         </div>
@@ -2346,7 +2147,7 @@ function DocumentsTab() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Embedding Model Engine</Label>
-            <Select value={embeddingModelEngine} onValueChange={setEmbeddingModelEngine}>
+            <Select value={docs.embeddingModelEngine} onValueChange={(v) => handleUpdate('embeddingModelEngine', v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -2362,8 +2163,8 @@ function DocumentsTab() {
             <Label>Embedding Model</Label>
             <div className="flex gap-2">
               <Input
-                value={embeddingModel}
-                onChange={(e) => setEmbeddingModel(e.target.value)}
+                value={docs.embeddingModel}
+                onChange={(e) => handleUpdate('embeddingModel', e.target.value)}
                 className="flex-1"
               />
               <Button size="icon" variant="outline" className="cursor-pointer">
@@ -2381,19 +2182,25 @@ function DocumentsTab() {
         <h3 className="font-semibold mb-3">Query Settings</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label>Full Context Mode</Label>
+            <div>
+              <Label>Full Context Mode</Label>
+              <p className="text-xs text-muted-foreground">Include full document content instead of chunks</p>
+            </div>
             <Switch
-              checked={fullContextMode}
-              onCheckedChange={setFullContextMode}
+              checked={docs.fullContextMode}
+              onCheckedChange={(v) => handleUpdate('fullContextMode', v)}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
 
           <div className="flex items-center justify-between">
-            <Label>Hybrid Search</Label>
+            <div>
+              <Label>Hybrid Search</Label>
+              <p className="text-xs text-muted-foreground">Combine semantic and lexical search</p>
+            </div>
             <Switch
-              checked={hybridSearch}
-              onCheckedChange={setHybridSearch}
+              checked={docs.hybridSearch}
+              onCheckedChange={(v) => handleUpdate('hybridSearch', v)}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
@@ -2408,7 +2215,7 @@ function DocumentsTab() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Reranking Engine</Label>
-            <Select value={rerankingEngine} onValueChange={setRerankingEngine}>
+            <Select value={docs.rerankingEngine} onValueChange={(v) => handleUpdate('rerankingEngine', v)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -2422,17 +2229,17 @@ function DocumentsTab() {
 
           <div className="space-y-2">
             <Label>Reranking Model</Label>
-            <Input value={rerankingModel} onChange={(e) => setRerankingModel(e.target.value)} />
+            <Input value={docs.rerankingModel} onChange={(e) => handleUpdate('rerankingModel', e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Top K (Reranker)</Label>
-              <Input value={topKReranker} onChange={(e) => setTopKReranker(e.target.value)} />
+              <Input value={docs.topKReranker} onChange={(e) => handleUpdate('topKReranker', e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Relevance Threshold</Label>
-              <Input value={relevanceThreshold} onChange={(e) => setRelevanceThreshold(e.target.value)} />
+              <Input value={docs.relevanceThreshold} onChange={(e) => handleUpdate('relevanceThreshold', e.target.value)} />
             </div>
           </div>
 
@@ -2443,12 +2250,12 @@ function DocumentsTab() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>BM25 Weight</Label>
-              <span className="text-sm">Custom</span>
+              <span className="text-sm">{docs.bm25Weight[0]}</span>
             </div>
             <div className="space-y-2">
               <Slider
-                value={bm25Weight}
-                onValueChange={setBm25Weight}
+                value={docs.bm25Weight}
+                onValueChange={(v) => handleUpdate('bm25Weight', v)}
                 min={0}
                 max={1}
                 step={0.1}
@@ -2456,7 +2263,7 @@ function DocumentsTab() {
               />
               <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 <span>semantic</span>
-                <span className="font-medium">{bm25Weight[0]}</span>
+                <span className="font-medium">{docs.bm25Weight[0]}</span>
                 <span>lexical</span>
               </div>
             </div>
@@ -2465,10 +2272,13 @@ function DocumentsTab() {
           <div className="space-y-2">
             <Label>RAG Template</Label>
             <Textarea
-              value={ragTemplate}
-              onChange={(e) => setRagTemplate(e.target.value)}
+              value={docs.ragTemplate}
+              onChange={(e) => handleUpdate('ragTemplate', e.target.value)}
               className="min-h-[100px] font-mono text-sm"
             />
+            <p className="text-xs text-muted-foreground">
+              Use {"{{CONTEXT}}"} for retrieved content and {"{{QUERY}}"} for user question
+            </p>
           </div>
         </div>
       </div>
@@ -2762,37 +2572,622 @@ function AudioTab() {
 }
 
 function ImagesTab() {
-  const { settings, updateImages } = useAdminSettings();
+  const { settings, updateImages, updateImageProvider, updateImageProviders } = useAdminSettings();
+  const { addLog } = useDebug();
   const images = settings.images;
+  const [editingProvider, setEditingProvider] = useState<string | null>(null);
+  const [showAddProvider, setShowAddProvider] = useState(false);
+
+  const providerTypeLabels: Record<string, string> = {
+    openai: 'OpenAI (DALL-E)',
+    stability: 'Stability AI',
+    comfyui: 'ComfyUI',
+    automatic1111: 'Automatic1111',
+    sora: 'OpenAI Sora',
+    midjourney: 'Midjourney',
+    replicate: 'Replicate',
+    custom: 'Custom API',
+  };
+
+  const providerTypeDescriptions: Record<string, string> = {
+    openai: 'Cloud-based image generation via OpenAI API',
+    stability: 'High-quality image generation via Stability AI',
+    comfyui: 'Local node-based image generation workflow',
+    automatic1111: 'Local Stable Diffusion web UI',
+    sora: 'Video generation via OpenAI Sora API',
+    midjourney: 'AI art generation via Midjourney API',
+    replicate: 'Run open-source models in the cloud',
+    custom: 'Custom image generation API endpoint',
+  };
+
+  const handleToggleProvider = (providerId: string, enabled: boolean) => {
+    updateImageProvider(providerId, { enabled });
+    addLog({
+      action: `Image provider ${enabled ? 'enabled' : 'disabled'}: ${providerId}`,
+      category: 'admin:images:provider:toggle',
+      type: 'info',
+    });
+  };
+
+  const handleSetDefault = (providerId: string) => {
+    const updatedProviders = images.providers.map(p => ({
+      ...p,
+      isDefault: p.id === providerId,
+    }));
+    updateImageProviders(updatedProviders);
+    updateImages({ defaultProvider: providerId });
+    addLog({
+      action: `Default image provider set: ${providerId}`,
+      category: 'admin:images:provider:default',
+      type: 'info',
+    });
+  };
+
+  const handleDeleteProvider = (providerId: string) => {
+    const updatedProviders = images.providers.filter(p => p.id !== providerId);
+    updateImageProviders(updatedProviders);
+    addLog({
+      action: `Image provider deleted: ${providerId}`,
+      category: 'admin:images:provider:delete',
+      type: 'warning',
+    });
+  };
+
+  const handleAddProvider = (type: string) => {
+    const newProvider = {
+      id: `${type}-${Date.now()}`,
+      name: `New ${providerTypeLabels[type]} Provider`,
+      type: type as any,
+      baseUrl: type === 'comfyui' ? 'http://localhost:8188' : type === 'automatic1111' ? 'http://localhost:7860' : '',
+      enabled: false,
+      isDefault: false,
+      settings: {},
+      allowUserKeys: type !== 'comfyui' && type !== 'automatic1111',
+      requiresAuth: type !== 'comfyui' && type !== 'automatic1111',
+    };
+    updateImageProviders([...images.providers, newProvider]);
+    setEditingProvider(newProvider.id);
+    setShowAddProvider(false);
+  };
+
+  const handleUpdateProviderSettings = (providerId: string, key: string, value: any) => {
+    const provider = images.providers.find(p => p.id === providerId);
+    if (provider) {
+      updateImageProvider(providerId, {
+        settings: { ...provider.settings, [key]: value },
+      });
+    }
+  };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Global Settings */}
       <div>
-        <h3 className="font-semibold mb-3">Image Generation</h3>
+        <h3 className="font-semibold mb-3">Image Generation Settings</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label>Enable Image Generation</Label>
+            <div>
+              <Label>Enable Image Generation</Label>
+              <p className="text-xs text-muted-foreground">Allow AI to generate images in chat</p>
+            </div>
             <Switch
               checked={images.imageGenerationEnabled}
               onCheckedChange={(v) => updateImages({ imageGenerationEnabled: v })}
               className="data-[state=checked]:bg-purple-600"
             />
           </div>
-          <div>
-            <Label>Image Model</Label>
-            <Select value={images.imageModel} onValueChange={(v) => updateImages({ imageModel: v })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="dall-e-3">DALL-E 3</SelectItem>
-                <SelectItem value="dall-e-2">DALL-E 2</SelectItem>
-                <SelectItem value="stable-diffusion">Stable Diffusion</SelectItem>
-              </SelectContent>
-            </Select>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Default Provider</Label>
+              <Select
+                value={images.defaultProvider}
+                onValueChange={(v) => {
+                  updateImages({ defaultProvider: v });
+                  handleSetDefault(v);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {images.providers.filter(p => p.enabled).map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Max Images Per Request</Label>
+              <Input
+                type="number"
+                min={1}
+                max={10}
+                value={images.maxImagesPerRequest}
+                onChange={(e) => updateImages({ maxImagesPerRequest: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Default Size</Label>
+              <Select value={images.defaultSize} onValueChange={(v) => updateImages({ defaultSize: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="256x256">256x256</SelectItem>
+                  <SelectItem value="512x512">512x512</SelectItem>
+                  <SelectItem value="1024x1024">1024x1024</SelectItem>
+                  <SelectItem value="1024x1792">1024x1792 (Portrait)</SelectItem>
+                  <SelectItem value="1792x1024">1792x1024 (Landscape)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Default Quality</Label>
+              <Select value={images.defaultQuality} onValueChange={(v) => updateImages({ defaultQuality: v })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="hd">HD</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </div>
+
+      <Separator />
+
+      {/* Image Providers */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-semibold">Image Providers</h3>
+            <p className="text-xs text-muted-foreground">Configure cloud and local image generation services</p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Provider
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {Object.entries(providerTypeLabels).map(([type, label]) => (
+                <DropdownMenuItem key={type} onClick={() => handleAddProvider(type)}>
+                  {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="space-y-3">
+          {images.providers.map((provider) => (
+            <Card key={provider.id} className={`${!provider.enabled ? 'opacity-60' : ''}`}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{provider.name}</span>
+                      {provider.isDefault && (
+                        <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded">
+                          Default
+                        </span>
+                      )}
+                      <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded">
+                        {providerTypeLabels[provider.type]}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {provider.baseUrl || providerTypeDescriptions[provider.type]}
+                    </p>
+                    {provider.allowUserKeys && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                        BYOK enabled - users can add their own API keys
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={provider.enabled}
+                      onCheckedChange={(v) => handleToggleProvider(provider.id, v)}
+                      className="data-[state=checked]:bg-purple-600"
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setEditingProvider(provider.id)}>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Configure
+                        </DropdownMenuItem>
+                        {!provider.isDefault && provider.enabled && (
+                          <DropdownMenuItem onClick={() => handleSetDefault(provider.id)}>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Set as Default
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteProvider(provider.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {/* Expanded Config */}
+                {editingProvider === provider.id && (
+                  <div className="mt-4 pt-4 border-t space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Provider Name</Label>
+                        <Input
+                          value={provider.name}
+                          onChange={(e) => updateImageProvider(provider.id, { name: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Base URL</Label>
+                        <Input
+                          value={provider.baseUrl}
+                          onChange={(e) => updateImageProvider(provider.id, { baseUrl: e.target.value })}
+                          placeholder={provider.type === 'comfyui' ? 'http://localhost:8188' : 'https://api.example.com/v1'}
+                        />
+                      </div>
+                    </div>
+
+                    {provider.requiresAuth && (
+                      <div className="space-y-2">
+                        <Label>API Key</Label>
+                        <Input
+                          type="password"
+                          value={provider.apiKey || ''}
+                          onChange={(e) => updateImageProvider(provider.id, { apiKey: e.target.value })}
+                          placeholder="sk-..."
+                        />
+                      </div>
+                    )}
+
+                    {/* Provider-specific settings */}
+                    {(provider.type === 'openai' || provider.type === 'stability' || provider.type === 'replicate') && (
+                      <div className="space-y-2">
+                        <Label>Model</Label>
+                        <Input
+                          value={provider.settings.model || ''}
+                          onChange={(e) => handleUpdateProviderSettings(provider.id, 'model', e.target.value)}
+                          placeholder={provider.type === 'openai' ? 'dall-e-3' : 'stable-diffusion-xl-1024-v1-0'}
+                        />
+                      </div>
+                    )}
+
+                    {(provider.type === 'comfyui' || provider.type === 'automatic1111' || provider.type === 'stability') && (
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Steps</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={150}
+                            value={provider.settings.steps || 20}
+                            onChange={(e) => handleUpdateProviderSettings(provider.id, 'steps', parseInt(e.target.value))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>CFG Scale</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={30}
+                            step={0.5}
+                            value={provider.settings.cfgScale || 7}
+                            onChange={(e) => handleUpdateProviderSettings(provider.id, 'cfgScale', parseFloat(e.target.value))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Sampler</Label>
+                          <Select
+                            value={provider.settings.sampler || 'euler'}
+                            onValueChange={(v) => handleUpdateProviderSettings(provider.id, 'sampler', v)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="euler">Euler</SelectItem>
+                              <SelectItem value="euler_ancestral">Euler Ancestral</SelectItem>
+                              <SelectItem value="heun">Heun</SelectItem>
+                              <SelectItem value="dpm_2">DPM2</SelectItem>
+                              <SelectItem value="dpm_2_ancestral">DPM2 Ancestral</SelectItem>
+                              <SelectItem value="lms">LMS</SelectItem>
+                              <SelectItem value="ddim">DDIM</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
+                    {provider.type === 'comfyui' && (
+                      <div className="space-y-2">
+                        <Label>Workflow</Label>
+                        <Input
+                          value={provider.settings.workflow || ''}
+                          onChange={(e) => handleUpdateProviderSettings(provider.id, 'workflow', e.target.value)}
+                          placeholder="default or workflow name"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label>Default Negative Prompt</Label>
+                      <Textarea
+                        value={provider.settings.negativePrompt || ''}
+                        onChange={(e) => handleUpdateProviderSettings(provider.id, 'negativePrompt', e.target.value)}
+                        placeholder="blurry, low quality, distorted..."
+                        className="min-h-[60px]"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label>Allow User API Keys (BYOK)</Label>
+                        <p className="text-xs text-muted-foreground">Let users provide their own API keys</p>
+                      </div>
+                      <Switch
+                        checked={provider.allowUserKeys}
+                        onCheckedChange={(v) => updateImageProvider(provider.id, { allowUserKeys: v })}
+                        className="data-[state=checked]:bg-purple-600"
+                      />
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button size="sm" onClick={() => setEditingProvider(null)}>
+                        Done
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EvaluationTab() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="font-semibold mb-2">Model Evaluation & Leaderboard</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Track model performance through user feedback and arena comparisons.
+          Rankings use Elo ratings from head-to-head comparisons.
+        </p>
+      </div>
+      <ModelLeaderboard showExport={true} />
+    </div>
+  );
+}
+
+function CustomModelsTab() {
+  const {
+    customModels,
+    enabledModels,
+    isLoading,
+    createModel,
+    updateModel,
+    deleteModel,
+    cloneModel,
+    toggleModel,
+    exportModels,
+    importModels,
+  } = useCustomModels();
+
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<typeof customModels[0] | null>(null);
+  const fileInputRef = useState<HTMLInputElement | null>(null);
+
+  const handleNewModel = () => {
+    setSelectedModel(null);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditModel = (model: typeof customModels[0]) => {
+    setSelectedModel(model);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveModel = async (data: any) => {
+    if (selectedModel) {
+      await updateModel(selectedModel.id, data);
+    } else {
+      await createModel(data);
+    }
+  };
+
+  const handleDeleteModel = async () => {
+    if (selectedModel) {
+      await deleteModel(selectedModel.id);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const json = await exportModels();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'custom-models.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      await importModels(text);
+    } catch (error) {
+      console.error('Import failed:', error);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold">Custom Models</h3>
+          <p className="text-sm text-muted-foreground">
+            Create wrapped models with custom system prompts, knowledge, and tools
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleImport}
+            id="import-models-input"
+          />
+          <Button variant="outline" size="sm" onClick={() => document.getElementById('import-models-input')?.click()}>
+            <Upload className="h-4 w-4 mr-1" />
+            Import
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-1" />
+            Export
+          </Button>
+          <Button size="sm" onClick={handleNewModel}>
+            <Plus className="h-4 w-4 mr-1" />
+            New Model
+          </Button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
+      ) : customModels.length === 0 ? (
+        <Card className="py-8">
+          <CardContent className="text-center">
+            <Boxes className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h4 className="font-medium mb-2">No Custom Models</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create a custom model to wrap a base model with your own system prompt, knowledge, and tools.
+            </p>
+            <Button onClick={handleNewModel}>
+              <Plus className="h-4 w-4 mr-1" />
+              Create Your First Model
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {customModels.map((model) => (
+            <Card key={model.id} className={`${!model.isEnabled ? 'opacity-60' : ''} ${model.isHidden ? 'border-dashed' : ''}`}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
+                    style={{ backgroundColor: (model.color || '#8b5cf6') + '20' }}
+                  >
+                    {model.avatar || '🤖'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium truncate">{model.name}</h4>
+                      {model.isBuiltIn && (
+                        <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">Built-in</span>
+                      )}
+                      {model.isHidden && (
+                        <span className="text-xs text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded">Hidden</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">{model.description}</p>
+                    {model.tags && model.tags.length > 0 && (
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {model.tags.slice(0, 3).map(tag => (
+                          <span key={tag} className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {model.promptSuggestions.length > 0 && (
+                      <div className="mt-2">
+                        <PromptSuggestionsCompact suggestions={model.promptSuggestions} maxVisible={2} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={model.isEnabled}
+                      onCheckedChange={() => toggleModel(model.id)}
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditModel(model)}>
+                          <Edit2 className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => cloneModel(model.id)}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Clone
+                        </DropdownMenuItem>
+                        {!model.isBuiltIn && (
+                          <DropdownMenuItem
+                            className="text-red-500"
+                            onClick={() => deleteModel(model.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <CustomModelEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        model={selectedModel}
+        onSave={handleSaveModel}
+        onDelete={selectedModel && !selectedModel.isBuiltIn ? handleDeleteModel : undefined}
+      />
     </div>
   );
 }

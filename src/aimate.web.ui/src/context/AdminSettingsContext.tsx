@@ -130,10 +130,44 @@ interface AudioSettings {
   voiceModel: string;
 }
 
+// Image Provider Types
+export type ImageProviderType = 'openai' | 'stability' | 'comfyui' | 'automatic1111' | 'sora' | 'midjourney' | 'replicate' | 'custom';
+
+export interface ImageProvider {
+  id: string;
+  name: string;
+  type: ImageProviderType;
+  baseUrl: string;
+  apiKey?: string;
+  enabled: boolean;
+  isDefault: boolean;
+  // Provider-specific settings
+  settings: {
+    model?: string;
+    size?: string;
+    quality?: string;
+    style?: string;
+    steps?: number;
+    cfgScale?: number;
+    sampler?: string;
+    workflow?: string; // For ComfyUI
+    negativePrompt?: string;
+  };
+  // BYOK settings
+  allowUserKeys: boolean;
+  requiresAuth: boolean;
+}
+
 // Images Settings
 interface ImagesSettings {
   imageGenerationEnabled: boolean;
-  imageModel: string;
+  defaultProvider: string;
+  providers: ImageProvider[];
+  // Global settings
+  maxImagesPerRequest: number;
+  allowNsfw: boolean;
+  defaultSize: string;
+  defaultQuality: string;
 }
 
 // Code Execution Settings
@@ -282,7 +316,105 @@ const defaultSettings: AdminSettings = {
   },
   images: {
     imageGenerationEnabled: true,
-    imageModel: 'dall-e-3',
+    defaultProvider: 'openai',
+    maxImagesPerRequest: 4,
+    allowNsfw: false,
+    defaultSize: '1024x1024',
+    defaultQuality: 'standard',
+    providers: [
+      {
+        id: 'openai',
+        name: 'OpenAI DALL-E',
+        type: 'openai',
+        baseUrl: 'https://api.openai.com/v1',
+        enabled: true,
+        isDefault: true,
+        settings: {
+          model: 'dall-e-3',
+          size: '1024x1024',
+          quality: 'standard',
+          style: 'vivid',
+        },
+        allowUserKeys: true,
+        requiresAuth: true,
+      },
+      {
+        id: 'stability',
+        name: 'Stability AI',
+        type: 'stability',
+        baseUrl: 'https://api.stability.ai/v1',
+        enabled: false,
+        isDefault: false,
+        settings: {
+          model: 'stable-diffusion-xl-1024-v1-0',
+          size: '1024x1024',
+          steps: 30,
+          cfgScale: 7,
+        },
+        allowUserKeys: true,
+        requiresAuth: true,
+      },
+      {
+        id: 'comfyui',
+        name: 'ComfyUI (Local)',
+        type: 'comfyui',
+        baseUrl: 'http://localhost:8188',
+        enabled: false,
+        isDefault: false,
+        settings: {
+          workflow: 'default',
+          steps: 20,
+          cfgScale: 7,
+          sampler: 'euler',
+        },
+        allowUserKeys: false,
+        requiresAuth: false,
+      },
+      {
+        id: 'automatic1111',
+        name: 'Automatic1111 (Local)',
+        type: 'automatic1111',
+        baseUrl: 'http://localhost:7860',
+        enabled: false,
+        isDefault: false,
+        settings: {
+          model: 'v1-5-pruned-emaonly',
+          size: '512x512',
+          steps: 20,
+          cfgScale: 7,
+          sampler: 'Euler a',
+        },
+        allowUserKeys: false,
+        requiresAuth: false,
+      },
+      {
+        id: 'sora',
+        name: 'OpenAI Sora',
+        type: 'sora',
+        baseUrl: 'https://api.openai.com/v1',
+        enabled: false,
+        isDefault: false,
+        settings: {
+          model: 'sora',
+          quality: 'standard',
+        },
+        allowUserKeys: true,
+        requiresAuth: true,
+      },
+      {
+        id: 'replicate',
+        name: 'Replicate',
+        type: 'replicate',
+        baseUrl: 'https://api.replicate.com/v1',
+        enabled: false,
+        isDefault: false,
+        settings: {
+          model: 'stability-ai/sdxl',
+        },
+        allowUserKeys: true,
+        requiresAuth: true,
+      },
+    ],
   },
   codeExecution: {
     codeExecutionEnabled: false,
@@ -303,6 +435,8 @@ interface AdminSettingsContextType {
   updateWebSearch: (updates: Partial<WebSearchSettings>) => void;
   updateAudio: (updates: Partial<AudioSettings>) => void;
   updateImages: (updates: Partial<ImagesSettings>) => void;
+  updateImageProviders: (providers: ImageProvider[]) => void;
+  updateImageProvider: (providerId: string, updates: Partial<ImageProvider>) => void;
   updateCodeExecution: (updates: Partial<CodeExecutionSettings>) => void;
   resetSettings: () => void;
 }
@@ -337,12 +471,6 @@ export function AdminSettingsProvider({ children }: { children: ReactNode }) {
   // Persist to localStorage whenever settings change
   useEffect(() => {
     try {
-      console.log('[AdminSettingsContext] Saving to localStorage:', {
-        connectionsCount: settings.connections.length,
-        modelsCount: settings.models.length,
-        connections: settings.connections.map(c => ({ id: c.id, name: c.name, url: c.url })),
-        models: settings.models.map(m => ({ id: m.id, name: m.name })),
-      });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch (e) {
       console.error('Failed to save admin settings:', e);
@@ -364,7 +492,6 @@ export function AdminSettingsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateConnections = useCallback((connections: Connection[]) => {
-    console.log('[AdminSettingsContext] updateConnections called:', connections);
     setSettings(prev => ({
       ...prev,
       connections,
@@ -372,7 +499,6 @@ export function AdminSettingsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateModels = useCallback((models: Model[]) => {
-    console.log('[AdminSettingsContext] updateModels called:', models);
     setSettings(prev => ({
       ...prev,
       models,
@@ -421,6 +547,25 @@ export function AdminSettingsProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const updateImageProviders = useCallback((providers: ImageProvider[]) => {
+    setSettings(prev => ({
+      ...prev,
+      images: { ...prev.images, providers },
+    }));
+  }, []);
+
+  const updateImageProvider = useCallback((providerId: string, updates: Partial<ImageProvider>) => {
+    setSettings(prev => ({
+      ...prev,
+      images: {
+        ...prev.images,
+        providers: prev.images.providers.map(p =>
+          p.id === providerId ? { ...p, ...updates } : p
+        ),
+      },
+    }));
+  }, []);
+
   const updateCodeExecution = useCallback((updates: Partial<CodeExecutionSettings>) => {
     setSettings(prev => ({
       ...prev,
@@ -447,6 +592,8 @@ export function AdminSettingsProvider({ children }: { children: ReactNode }) {
         updateWebSearch,
         updateAudio,
         updateImages,
+        updateImageProviders,
+        updateImageProvider,
         updateCodeExecution,
         resetSettings,
       }}

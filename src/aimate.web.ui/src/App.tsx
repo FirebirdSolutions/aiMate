@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ConversationSidebar, Conversation } from "./components/ConversationSidebar";
 import { ChatHeader } from "./components/ChatHeader";
@@ -8,13 +8,16 @@ import { ChatInput, AttachmentData } from "./components/ChatInput";
 import { DebugPanel } from "./components/DebugPanel";
 import { useMemories } from "./hooks/useMemories";
 import { useTools, ToolCall } from "./hooks/useTools";
-import { useAgents } from "./hooks/useAgents";
+import { useCustomModels } from "./hooks/useCustomModels";
+import { useContextMeter } from "./components/ContextMeter";
+import { useContextCompression, getCompressionInfo } from "./hooks/useContextCompression";
+import { getContextLimit } from "./utils/modelLimits";
 import { ShowcaseModeIndicator } from "./components/ShowcaseModeIndicator";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { DebugProvider, useDebug } from "./components/DebugContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthProvider } from "./context/AuthContext";
-import { AdminSettingsProvider } from "./context/AdminSettingsContext";
+import { AdminSettingsProvider, useAdminSettings } from "./context/AdminSettingsContext";
 import { UserSettingsProvider, useUserSettings } from "./context/UserSettingsContext";
 import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import { AppConfig } from "./utils/config";
@@ -24,6 +27,7 @@ import { Sparkles } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { exportToPdf, exportToJson, exportToMarkdown } from "./utils/exportPdf";
+import { generateTitle, generateFallbackTitle, needsTitleGeneration } from "./utils/titleGeneration";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,9 +52,52 @@ function ChatApp() {
   // Get all our data from context
   const { chat, conversations, workspaces, projects, admin } = useAppData();
   const { settings: userSettings } = useUserSettings();
+  const { settings: adminSettings } = useAdminSettings();
   const memories = useMemories();
   const tools = useTools();
-  const { activePreset } = useAgents();
+  const { selectedModel: activeCustomModel } = useCustomModels();
+
+  // Build system prompt for context meter
+  const currentSystemPrompt = useMemo(() => {
+    const customModelSystemPrompt = activeCustomModel?.systemPrompt || '';
+    const userSystemPrompt = userSettings.general?.systemPrompt || '';
+    return [customModelSystemPrompt, userSystemPrompt].filter(Boolean).join('\n\n');
+  }, [activeCustomModel?.systemPrompt, userSettings.general?.systemPrompt]);
+
+  // Build memory context for context meter
+  const currentMemoryContext = useMemo(() => {
+    return memories.getMemoryContext();
+  }, [memories]);
+
+  // Context meter - tracks token usage
+  const contextMeter = useContextMeter({
+    messages: chat.messages,
+    modelId: selectedModel,
+    systemPrompt: currentSystemPrompt,
+    memoryContext: currentMemoryContext,
+  });
+
+  // Context compression - optimize long conversations
+  const compressionSettings = userSettings.contextManagement || {
+    enabled: true,
+    threshold: 80,
+    strategy: 'hybrid' as const,
+    preserveRecentMessages: 5,
+    showIndicator: true,
+  };
+
+  const compression = useContextCompression({
+    messages: chat.messages,
+    contextLimit: getContextLimit(selectedModel),
+    settings: compressionSettings,
+    systemPromptTokens: contextMeter.breakdown.systemPrompt,
+    memoryTokens: contextMeter.breakdown.memories,
+  });
+
+  const compressionInfo = useMemo(() => {
+    if (!compressionSettings.showIndicator) return undefined;
+    return getCompressionInfo(compression, compressionSettings.strategy);
+  }, [compression, compressionSettings.showIndicator, compressionSettings.strategy]);
 
   // Load messages when conversation changes
   useEffect(() => {
@@ -192,23 +239,24 @@ function ChatApp() {
       };
       const defaultMaxTokens = styleToTokens[userSettings.personalisation?.responseStyle || 'balanced'];
 
-      // Agent configuration takes priority over user settings
-      const agentSystemPrompt = activePreset?.systemPrompt;
+      // Custom model configuration takes priority over user settings
+      const customModelSystemPrompt = activeCustomModel?.systemPrompt;
       const userSystemPrompt = userSettings.general?.systemPrompt;
 
-      // Combine prompts: agent prompt first, then user's custom prompt
-      const combinedSystemPrompt = [agentSystemPrompt, userSystemPrompt]
+      // Combine prompts: custom model prompt first, then user's custom prompt
+      const combinedSystemPrompt = [customModelSystemPrompt, userSystemPrompt]
         .filter(Boolean)
         .join('\n\n');
 
-      // Use agent's temperature/maxTokens if specified, otherwise use user settings
-      const temperature = activePreset?.temperature ?? defaultTemperature;
-      const maxTokens = activePreset?.maxTokens ?? defaultMaxTokens;
+      // Use custom model's temperature/maxTokens if specified, otherwise use user settings
+      const temperature = activeCustomModel?.parameters?.temperature ?? defaultTemperature;
+      const maxTokens = activeCustomModel?.parameters?.maxTokens ?? defaultMaxTokens;
 
-      // Merge knowledge IDs from attachments and agent preset
+      // Merge knowledge IDs from attachments and custom model bindings
       const knowledgeIds = [
         ...(attachments?.knowledgeIds || []),
-        ...(activePreset?.knowledgeIds || []),
+        ...(activeCustomModel?.knowledgeCollectionIds || []),
+        ...(activeCustomModel?.knowledgeFileIds || []),
       ];
 
       await chat.sendMessage(content, {
@@ -216,7 +264,12 @@ function ChatApp() {
         workspaceId: workspaces.currentWorkspace?.id,
         model: selectedModel,
         systemPrompt: combinedSystemPrompt,
+        // Pass all attachment types
         knowledgeIds: knowledgeIds.length > 0 ? knowledgeIds : undefined,
+        noteIds: attachments?.noteIds.length ? attachments.noteIds : undefined,
+        fileIds: attachments?.fileIds.length ? attachments.fileIds : undefined,
+        chatIds: attachments?.chatIds.length ? attachments.chatIds : undefined,
+        webpageUrls: attachments?.webpageUrls.length ? attachments.webpageUrls : undefined,
         memoryContext: memories.getContextString(),
         temperature,
         maxTokens,
@@ -230,12 +283,59 @@ function ChatApp() {
         category: 'chat:message'
       });
 
-      // Update conversation title if this is the first message
+      // Generate title for new conversations
       const conv = conversations.conversations.find(c => c.id === targetConversationId);
-      if (conv && conv.messageCount === 0) {
-        await conversations.updateConversation(targetConversationId, {
-          title: content.substring(0, 50) + (content.length > 50 ? "..." : ""),
-        });
+      const shouldGenerateTitle = conv && (
+        conv.messageCount === 0 ||
+        needsTitleGeneration(conv.title)
+      );
+
+      if (shouldGenerateTitle && adminSettings.interface?.titleGeneration !== false) {
+        // Get the last assistant message for title generation
+        const lastAssistantMsg = chat.messages.filter(m => m.role === 'assistant').pop();
+
+        if (lastAssistantMsg) {
+          // Find active LM connection for title generation
+          const activeConnection = adminSettings.connections.find(c => c.enabled && c.url);
+
+          if (activeConnection?.url) {
+            // Generate title using LLM (async, don't block)
+            generateTitle(
+              content,
+              lastAssistantMsg.content,
+              activeConnection.url,
+              activeConnection.apiKey,
+              selectedModel,
+              adminSettings.interface?.titleGenerationPrompt
+            ).then(async (generatedTitle) => {
+              if (generatedTitle) {
+                await conversations.updateConversation(targetConversationId!, {
+                  title: generatedTitle,
+                });
+                addLog({
+                  action: 'Title generated',
+                  payload: { title: generatedTitle },
+                  type: 'success',
+                  category: 'chat:title'
+                });
+              }
+            }).catch(err => {
+              console.error('[Title generation] Failed:', err);
+            });
+          } else {
+            // Fallback: Use truncated first message
+            const fallbackTitle = generateFallbackTitle(content);
+            await conversations.updateConversation(targetConversationId, {
+              title: fallbackTitle,
+            });
+          }
+        } else {
+          // No assistant response yet, use fallback
+          const fallbackTitle = generateFallbackTitle(content);
+          await conversations.updateConversation(targetConversationId, {
+            title: fallbackTitle,
+          });
+        }
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
@@ -600,6 +700,10 @@ function ChatApp() {
             capabilities: m.capabilities,
             color: '#888888', // Default color
           }))}
+          contextUsedTokens={contextMeter.usedTokens}
+          contextMaxTokens={contextMeter.maxTokens}
+          contextBreakdown={contextMeter.breakdown}
+          contextCompression={compressionInfo}
         />
 
         <div className="flex-1 overflow-hidden">

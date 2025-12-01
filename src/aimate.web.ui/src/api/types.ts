@@ -925,3 +925,401 @@ export interface ParseStructuredContentResponse {
   parsed: Record<string, any>;
 }
 
+// ============================================================================
+// MODEL EVALUATION
+// ============================================================================
+
+/**
+ * Evaluation tag categories for behavioral analysis
+ */
+export type EvaluationTagCategory =
+  | 'tool_use'           // Correctly chose/used tools
+  | 'general_chat'       // Facts, friendliness, coherence
+  | 'safety'             // Appropriate content, refusals
+  | 'instruction_following' // Did it follow the instructions?
+  | 'creativity'         // Novel/creative responses
+  | 'accuracy'           // Factual correctness
+  | 'helpfulness'        // Actually solved the problem
+  | 'code_quality'       // For code-related responses
+  | 'custom';            // User-defined tags
+
+/**
+ * Evaluation tag for categorizing model behaviors
+ */
+export interface EvaluationTagDto {
+  id: string;
+  key: string;
+  label: string;
+  category: EvaluationTagCategory;
+  description: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
+  color: string;
+  icon?: string;
+  isDefault: boolean;      // System-provided vs user-created
+  isActive: boolean;
+  displayOrder: number;
+}
+
+/**
+ * Create/update evaluation tag
+ */
+export interface CreateEvaluationTagDto {
+  key: string;
+  label: string;
+  category: EvaluationTagCategory;
+  description: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
+  color?: string;
+  icon?: string;
+}
+
+/**
+ * Elo rating for a model
+ */
+export interface ModelEloRatingDto {
+  modelId: string;
+  modelName: string;
+  provider: string;
+  eloRating: number;
+  wins: number;
+  losses: number;
+  ties: number;
+  totalMatches: number;
+  winRate: number;
+  confidenceInterval: { lower: number; upper: number };
+  lastUpdated: string;
+}
+
+/**
+ * Arena match - side-by-side model comparison
+ */
+export interface ArenaMatchDto {
+  id: string;
+  prompt: string;
+  conversationId?: string;
+  modelA: {
+    id: string;
+    name: string;
+    response: string;
+    responseTimeMs: number;
+    tokenCount: number;
+  };
+  modelB: {
+    id: string;
+    name: string;
+    response: string;
+    responseTimeMs: number;
+    tokenCount: number;
+  };
+  winner?: 'a' | 'b' | 'tie' | null;  // null = not yet voted
+  votedAt?: string;
+  voterId?: string;
+  tags?: string[];           // Topic tags for this match
+  createdAt: string;
+}
+
+/**
+ * Create arena match request
+ */
+export interface CreateArenaMatchDto {
+  prompt: string;
+  conversationId?: string;
+  modelPool?: string[];      // Optional: specific models to choose from
+}
+
+/**
+ * Submit arena vote
+ */
+export interface ArenaVoteDto {
+  matchId: string;
+  winner: 'a' | 'b' | 'tie';
+  tags?: string[];           // Topic tags for re-ranking
+  feedback?: string;         // Optional comment
+}
+
+/**
+ * Message sibling/variant info for regenerations
+ */
+export interface MessageVariantInfo {
+  parentMessageId?: string;   // The user message this is responding to
+  variantIndex: number;       // Which variant is this (0 = original, 1+ = regenerations)
+  totalVariants: number;      // Total variants for this parent
+  siblingIds: string[];       // IDs of all sibling variants
+  regeneratedWith?: {
+    model?: string;
+    temperature?: number;
+    timestamp: string;
+  };
+}
+
+/**
+ * Extended message with evaluation data
+ */
+export interface EvaluatedMessageDto extends MessageDto {
+  variantInfo?: MessageVariantInfo;
+  evaluation?: {
+    rating?: number;
+    tags: string[];
+    isPreferred?: boolean;   // Selected as best variant
+  };
+}
+
+/**
+ * Model leaderboard entry
+ */
+export interface LeaderboardEntryDto {
+  rank: number;
+  modelId: string;
+  modelName: string;
+  provider: string;
+  eloRating: number;
+  totalEvaluations: number;
+  averageRating: number;
+  winRate: number;
+  strengthsByTag: Record<string, number>;  // Performance by category
+  weaknessesByTag: Record<string, number>;
+  trendDirection: 'up' | 'down' | 'stable';
+  trendDelta: number;        // Elo change in last period
+}
+
+/**
+ * Leaderboard filter options
+ */
+export interface LeaderboardFilterDto {
+  tags?: string[];           // Filter by topic tags
+  minMatches?: number;       // Minimum matches to include
+  providers?: string[];      // Filter by provider
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+}
+
+/**
+ * Evaluation snapshot for fine-tuning export
+ */
+export interface EvaluationSnapshotDto {
+  id: string;
+  conversationId: string;
+  messageId: string;
+  prompt: string;
+  response: string;
+  modelId: string;
+  rating: number;
+  tags: string[];
+  feedback?: string;
+  isPositive: boolean;
+  createdAt: string;
+}
+
+/**
+ * Export evaluation data request
+ */
+export interface ExportEvaluationDataDto {
+  format: 'json' | 'jsonl' | 'csv';
+  minRating?: number;        // Only export above this rating
+  maxRating?: number;
+  tags?: string[];           // Filter by tags
+  models?: string[];         // Filter by models
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+  includeNegative?: boolean; // Include thumbs-down for contrast
+}
+
+/**
+ * Evaluation statistics by topic
+ */
+export interface EvaluationStatsByTopicDto {
+  topic: string;
+  totalEvaluations: number;
+  averageRating: number;
+  topModels: Array<{
+    modelId: string;
+    modelName: string;
+    averageRating: number;
+    evaluationCount: number;
+  }>;
+  tagBreakdown: Record<string, number>;
+}
+
+// ============================================================================
+// CUSTOM MODELS (Model Presets/Wrappers)
+// ============================================================================
+
+/**
+ * Dynamic variables that can be injected into system prompts
+ */
+export type DynamicVariable =
+  | '{{ CURRENT_DATE }}'    // YYYY-MM-DD format
+  | '{{ CURRENT_TIME }}'    // HH:MM:SS format
+  | '{{ CURRENT_DATETIME }}' // Full datetime
+  | '{{ USER_NAME }}'       // Current user's display name
+  | '{{ USER_EMAIL }}'      // Current user's email
+  | '{{ WORKSPACE_NAME }}'  // Active workspace name
+  | '{{ MODEL_NAME }}';     // Base model name
+
+/**
+ * Capability flags for custom models
+ */
+export interface CustomModelCapabilities {
+  vision: boolean;           // Image analysis (requires vision-capable base model)
+  webSearch: boolean;        // Real-time web search
+  fileUpload: boolean;       // Allow file uploads
+  codeInterpreter: boolean;  // Python code execution
+  imageGeneration: boolean;  // Image generation
+  citations: boolean;        // Show source citations
+  statusUpdates: boolean;    // Show progress steps during generation
+}
+
+/**
+ * Prompt suggestion / starter chip
+ */
+export interface PromptSuggestionDto {
+  id: string;
+  text: string;
+  icon?: string;
+  category?: string;
+}
+
+/**
+ * Advanced inference parameters
+ */
+export interface InferenceParametersDto {
+  temperature?: number;         // 0-2, creativity
+  topP?: number;                // 0-1, nucleus sampling
+  topK?: number;                // Token selection limit
+  frequencyPenalty?: number;    // -2 to 2
+  presencePenalty?: number;     // -2 to 2
+  maxTokens?: number;           // Max output tokens
+  stopSequences?: string[];     // Force stop at these strings
+  seed?: number;                // For reproducibility
+}
+
+/**
+ * Visibility/access control for custom models
+ */
+export interface CustomModelVisibility {
+  isPublic: boolean;            // Available to all users
+  isPrivate: boolean;           // Only creator can use
+  allowedUserIds?: string[];    // Specific users who can access
+  allowedGroupIds?: string[];   // Groups who can access
+}
+
+/**
+ * Custom Model - A wrapped/configured model preset
+ */
+export interface CustomModelDto {
+  id: string;
+
+  // Identity
+  name: string;
+  description?: string;
+  avatar?: string;              // URL or emoji
+  color?: string;
+  tags?: string[];              // For organization/filtering
+
+  // Base Model Configuration
+  baseModelId: string;          // The underlying model (e.g., "gpt-4", "claude-3-opus")
+  baseModelProvider: string;    // Provider of the base model
+
+  // System Prompt with Dynamic Variables
+  systemPrompt: string;         // Supports {{ VARIABLE }} syntax
+
+  // Bindings
+  knowledgeCollectionIds: string[];  // Bound knowledge for RAG
+  knowledgeFileIds: string[];        // Individual files for RAG
+  enabledToolIds: string[];          // Tools always enabled
+  enabledMcpServerIds: string[];     // MCP servers always active
+  filterIds: string[];               // Pipeline/filters to apply
+
+  // Capabilities
+  capabilities: CustomModelCapabilities;
+
+  // Inference Parameters
+  parameters: InferenceParametersDto;
+
+  // UI Helpers
+  promptSuggestions: PromptSuggestionDto[];  // Starter chips
+
+  // Access Control
+  visibility: CustomModelVisibility;
+  createdBy: string;
+
+  // Defaults
+  defaultWebSearchEnabled: boolean;
+  defaultKnowledgeEnabled: boolean;
+
+  // Metadata
+  isBuiltIn: boolean;
+  isEnabled: boolean;
+  isHidden: boolean;            // Hidden from selector but not deleted
+  usageCount: number;
+  lastUsed?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Create custom model request
+ */
+export interface CreateCustomModelDto {
+  name: string;
+  description?: string;
+  avatar?: string;
+  color?: string;
+  tags?: string[];
+  baseModelId: string;
+  baseModelProvider: string;
+  systemPrompt: string;
+  knowledgeCollectionIds?: string[];
+  knowledgeFileIds?: string[];
+  enabledToolIds?: string[];
+  enabledMcpServerIds?: string[];
+  filterIds?: string[];
+  capabilities?: Partial<CustomModelCapabilities>;
+  parameters?: Partial<InferenceParametersDto>;
+  promptSuggestions?: PromptSuggestionDto[];
+  visibility?: Partial<CustomModelVisibility>;
+  defaultWebSearchEnabled?: boolean;
+  defaultKnowledgeEnabled?: boolean;
+}
+
+/**
+ * Update custom model request
+ */
+export interface UpdateCustomModelDto extends Partial<CreateCustomModelDto> {
+  isEnabled?: boolean;
+  isHidden?: boolean;
+}
+
+/**
+ * Custom model import/export format
+ */
+export interface CustomModelExportDto {
+  version: string;              // Export format version
+  exportedAt: string;
+  models: CustomModelDto[];
+}
+
+/**
+ * Community shared model metadata
+ */
+export interface SharedCustomModelDto {
+  id: string;
+  name: string;
+  description?: string;
+  avatar?: string;
+  author: string;
+  authorId: string;
+  downloads: number;
+  rating: number;
+  ratingCount: number;
+  tags: string[];
+  baseModelProvider: string;    // So users know what base model is needed
+  createdAt: string;
+  updatedAt: string;
+}
+
+

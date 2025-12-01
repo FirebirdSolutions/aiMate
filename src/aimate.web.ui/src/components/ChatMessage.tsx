@@ -1,11 +1,12 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useUIEventLogger } from "./DebugContext";
 import { useUserSettings } from "../context/UserSettingsContext";
+import { useAdminSettings } from "../context/AdminSettingsContext";
 import { useAppData } from "../context/AppDataContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { Bot, User, Edit2, Check, X, RotateCw, Sparkles, Copy, Volume2, Info, ThumbsUp, ThumbsDown, Play, Share2, Send, Brain, Loader2 } from "lucide-react";
+import { Bot, User, Edit2, Check, X, RotateCw, Sparkles, Copy, Volume2, VolumeX, Info, ThumbsUp, ThumbsDown, Play, Share2, Send, Brain, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -57,6 +58,7 @@ export function ChatMessage({
 }: ChatMessageProps) {
   const { logUIEvent } = useUIEventLogger();
   const { settings } = useUserSettings();
+  const { settings: adminSettings } = useAdminSettings();
   const { knowledge } = useAppData();
   const interfaceSettings = settings.interface || {};
   const showTimestamps = interfaceSettings.showTimestamps ?? true;
@@ -71,7 +73,20 @@ export function ChatMessage({
   const [ratingType, setRatingType] = useState<"up" | "down">("up");
   const [shareOpen, setShareOpen] = useState(false);
   const [savingToKnowledge, setSavingToKnowledge] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const messageContentRef = useRef<HTMLDivElement>(null);
+
+  // Check if TTS is enabled
+  const ttsEnabled = adminSettings.audio?.textToSpeechEnabled ?? true;
+
+  // Clean up speech on unmount
+  useEffect(() => {
+    return () => {
+      if (isSpeaking) {
+        window.speechSynthesis?.cancel();
+      }
+    };
+  }, [isSpeaking]);
 
   // Handler for saving selected text to knowledge
   const handleSaveSelectionToKnowledge = async (text: string) => {
@@ -169,27 +184,68 @@ export function ChatMessage({
   };
 
   const handleReadAloud = () => {
+    if (!ttsEnabled) {
+      toast.info("Text-to-speech is disabled in settings");
+      return;
+    }
+
     if (!('speechSynthesis' in window)) {
       toast.error("Text-to-speech not supported in this browser");
       return;
     }
 
-    // Cancel any ongoing speech
+    // If already speaking, stop
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    // Cancel any ongoing speech from other messages
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(content);
+
+    // Apply voice settings from admin
+    const voiceModel = adminSettings.audio?.voiceModel || 'default';
+    const voices = window.speechSynthesis.getVoices();
+
+    // Try to match the voice model to available voices
+    if (voiceModel !== 'default' && voices.length > 0) {
+      const matchedVoice = voices.find(v =>
+        v.name.toLowerCase().includes(voiceModel.toLowerCase()) ||
+        v.voiceURI.toLowerCase().includes(voiceModel.toLowerCase())
+      );
+      if (matchedVoice) {
+        utterance.voice = matchedVoice;
+      }
+    }
+
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
 
     utterance.onstart = () => {
-      toast.info("Reading aloud...", { duration: 2000 });
+      setIsSpeaking(true);
+      logUIEvent('TTS started', 'ui:chat:message:tts:start');
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      logUIEvent('TTS completed', 'ui:chat:message:tts:end');
     };
 
     utterance.onerror = () => {
+      setIsSpeaking(false);
       toast.error("Failed to read aloud");
     };
 
     window.speechSynthesis.speak(utterance);
+  };
+
+  const handleStopSpeaking = () => {
+    window.speechSynthesis?.cancel();
+    setIsSpeaking(false);
+    logUIEvent('TTS stopped', 'ui:chat:message:tts:stop');
   };
 
   const handleLike = () => {
@@ -423,15 +479,22 @@ export function ChatMessage({
                     </TooltipTrigger>
                     <TooltipContent>Copied to clipboard</TooltipContent>
                   </Tooltip>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                    onClick={handleReadAloud}
-                    title="Read Aloud"
-                  >
-                    <Volume2 className="h-4 w-4" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-8 w-8 ${isSpeaking ? 'text-purple-600 dark:text-purple-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}
+                        onClick={isSpeaking ? handleStopSpeaking : handleReadAloud}
+                        disabled={!ttsEnabled}
+                      >
+                        {isSpeaking ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{isSpeaking ? 'Stop reading' : ttsEnabled ? 'Read aloud' : 'TTS disabled'}</p>
+                    </TooltipContent>
+                  </Tooltip>
                   <Popover open={infoOpen} onOpenChange={setInfoOpen}>
                     <PopoverTrigger asChild>
                       <Button
