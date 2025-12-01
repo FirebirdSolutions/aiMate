@@ -229,7 +229,9 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Search functionality | ❌ | TODO: Implement |
+| Search functionality | ✅ | Searches conversations and knowledge with debounced queries |
+| Filter toggles | ✅ | Chats and Knowledge filters |
+| Click to navigate | ✅ | Clicking conversation opens it |
 
 ### Knowledge
 
@@ -289,7 +291,10 @@
 - [x] Toast audit (removed non-working share buttons, implemented TTS)
 - [x] MCP design spec documentation
 - [x] Knowledge consolidation (removed Notes/Files buttons, unified under Knowledge)
+- [x] SearchModal implementation (real search across conversations & knowledge)
+- [x] Code cleanup (removed dead NotesModal/FilesModal, unused imports)
+- [x] Modal audit completed (all modals consistent, no "not implemented" toasts)
 
 ---
 
-*Last updated: 2025-11-30*
+*Last updated: 2025-12-01*
