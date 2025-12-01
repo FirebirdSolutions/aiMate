@@ -51,29 +51,3 @@ declare module 'gpt-tokenizer' {
   export function isWithinTokenLimit(text: string, limit: number): boolean;
   export function encodeChat(messages: Array<{ role: string; content: string }>, model?: string): number[];
 }
-
-declare module 'vite-plugin-pwa' {
-  import { Plugin } from 'vite';
-
-  interface VitePWAOptions {
-    registerType?: 'autoUpdate' | 'prompt';
-    includeAssets?: string[];
-    manifest?: {
-      name?: string;
-      short_name?: string;
-      description?: string;
-      theme_color?: string;
-      icons?: Array<{
-        src: string;
-        sizes: string;
-        type: string;
-        purpose?: string;
-      }>;
-      [key: string]: any;
-    };
-    workbox?: object;
-    [key: string]: any;
-  }
-
-  export function VitePWA(options?: VitePWAOptions): Plugin;
-}
