@@ -276,6 +276,27 @@ export function useKnowledge(workspaceId?: string) {
   }, []);
 
   // ============================================================================
+  // SAVE TEXT AS KNOWLEDGE
+  // ============================================================================
+
+  const saveTextAsKnowledge = useCallback(async (
+    content: string,
+    title?: string,
+    tags?: string[]
+  ) => {
+    // Generate a title if not provided
+    const docTitle = title || `Note - ${new Date().toLocaleString()}`;
+    const fileName = `${docTitle.replace(/[^a-z0-9]/gi, '_')}.md`;
+
+    // Create a text blob and convert to file
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const file = new File([blob], fileName, { type: 'text/markdown' });
+
+    // Use the existing upload function
+    return uploadDocument(file, { tags });
+  }, [uploadDocument]);
+
+  // ============================================================================
   // INITIALIZATION
   // ============================================================================
 
@@ -292,6 +313,7 @@ export function useKnowledge(workspaceId?: string) {
     // Actions
     refresh: () => loadDocuments(workspaceId),
     uploadDocument,
+    saveTextAsKnowledge,
     deleteDocument,
     updateDocument,
     searchDocuments,

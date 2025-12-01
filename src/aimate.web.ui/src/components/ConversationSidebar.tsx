@@ -1,7 +1,7 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "./ui/button";
 import { VirtualizedList, SimpleVirtualList } from "./ui/virtualized-list";
-import { MessageSquare, Plus, Trash2, X, Search, FolderKanban, Sparkles, Settings, Archive, ShieldCheck, LogOut, ChevronUp, Info, ChevronDown, ChevronRight, Brain, MoreVertical, Share, Download, Edit, Pin, FolderInput, Check } from "lucide-react";
+import { MessageSquare, Plus, Trash2, X, Search, FolderKanban, Sparkles, Settings, Archive, ShieldCheck, LogOut, ChevronUp, Info, ChevronDown, ChevronRight, Brain, MoreVertical, Share, Download, Edit, Pin, FolderInput, Check, Loader2 } from "lucide-react";
 import { useDebug } from "./DebugContext";
 import { ErrorBoundary, ModalErrorFallback } from "./ErrorBoundary";
 import { ConversationListSkeleton } from "./LoadingSkeletons";
@@ -15,6 +15,8 @@ import { ShareModal } from "./ShareModal";
 import { ArchivedModal } from "./ArchivedModal";
 import { Input } from "./ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
+import { useProjects } from "../hooks/useProjects";
+import { Badge } from "./ui/badge";
 import {
   Popover,
   PopoverContent,
@@ -79,6 +81,10 @@ export function ConversationSidebar({
   loading = false,
 }: ConversationSidebarProps) {
   const { showcaseMode } = useDebug();
+
+  // Use the useProjects hook for real project data
+  const projectsHook = useProjects();
+
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -96,11 +102,23 @@ export function ConversationSidebar({
   const [archivedOpen, setArchivedOpen] = useState(false);
   const [pinnedConversations, setPinnedConversations] = useState<string[]>([]);
   const [archivedConversationsLocal, setArchivedConversationsLocal] = useState<string[]>([]);
-  const [projects, setProjects] = useState<Project[]>([
-    { id: "1", name: "Website Redesign", description: "Redesigning the company website", createdAt: new Date(2024, 0, 15) },
-    { id: "2", name: "Mobile App", description: "iOS and Android app development", createdAt: new Date(2024, 1, 3) },
-    { id: "3", name: "Marketing Campaign", description: "Q1 marketing initiatives", createdAt: new Date(2024, 2, 20) },
-  ]);
+
+  // Map ProjectDto to simplified Project interface for the modal
+  const projects: Project[] = useMemo(() =>
+    projectsHook.projects.map(p => ({
+      id: p.id,
+      name: p.name,
+      description: p.description || '',
+      createdAt: new Date(p.createdAt),
+      // Extended properties for richer display
+      icon: p.icon,
+      color: p.color,
+      status: p.status,
+      priority: p.priority,
+      progressPercent: p.progressPercent,
+    })),
+    [projectsHook.projects]
+  );
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -125,15 +143,42 @@ export function ConversationSidebar({
     setProjectModalOpen(true);
   };
 
-  const handleCreateProject = (newProject: Project) => {
-    setProjects((prev) => [newProject, ...prev]);
-    // Close the create modal and open the view modal
-    setProjectModalOpen(false);
-    setTimeout(() => {
-      setSelectedProject(newProject);
-      setProjectModalMode("view");
-      setProjectModalOpen(true);
-    }, 100);
+  const handleCreateProject = async (newProject: Project) => {
+    try {
+      // Create project using the hook
+      const created = await projectsHook.createProject({
+        key: newProject.name.substring(0, 8).toUpperCase().replace(/\s/g, ''),
+        name: newProject.name,
+        description: newProject.description,
+        owner: 'User',
+        ownerEmail: 'user@aimate.nz',
+        status: 'Planning',
+        priority: 'Medium',
+        tags: [],
+        teamMembers: [],
+      });
+
+      // Close the create modal and open the view modal
+      setProjectModalOpen(false);
+      setTimeout(() => {
+        setSelectedProject({
+          id: created.id,
+          name: created.name,
+          description: created.description || '',
+          createdAt: new Date(created.createdAt),
+          icon: created.icon,
+          color: created.color,
+          status: created.status,
+          priority: created.priority,
+          progressPercent: created.progressPercent,
+        });
+        setProjectModalMode("view");
+        setProjectModalOpen(true);
+      }, 100);
+    } catch (err) {
+      console.error('Failed to create project:', err);
+      toast.error('Failed to create project');
+    }
   };
 
   const handleViewProject = (project: Project) => {
@@ -501,48 +546,81 @@ export function ConversationSidebar({
                 <Plus className="h-3 w-3" />
                 New Project
               </Button>
-              {projects.map((project) => (
-                <div key={project.id} className="relative group">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start gap-3 pl-10 text-sm pr-8 overflow-hidden"
-                    onClick={() => handleViewProject(project)}
-                  >
-                    <FolderKanban className="h-3 w-3 shrink-0" />
-                    <span className="truncate">{truncateText(project.name, 20)}</span>
-                  </Button>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreVertical className="h-3 w-3" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      side="right"
-                      align="start"
-                      className="w-40 p-1"
-                      onInteractOutside={(e) => showcaseMode && e.preventDefault()}
-                    >
-                      <div className="space-y-1">
-                        <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left">
-                          <Archive className="h-4 w-4" />
-                          <span>Archive</span>
-                        </button>
-                        <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left text-red-600 dark:text-red-400">
-                          <Trash2 className="h-4 w-4" />
-                          <span>Delete</span>
-                        </button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+              {projectsHook.loading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
                 </div>
-              ))}
+              ) : projects.length === 0 ? (
+                <div className="text-xs text-gray-500 dark:text-gray-400 pl-10 py-2">
+                  No projects yet
+                </div>
+              ) : (
+                projects.map((project) => (
+                  <div key={project.id} className="relative group">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start gap-2 pl-10 text-sm pr-8 overflow-hidden"
+                      onClick={() => handleViewProject(project)}
+                    >
+                      {project.icon ? (
+                        <span className="text-sm shrink-0">{project.icon}</span>
+                      ) : (
+                        <FolderKanban
+                          className="h-3 w-3 shrink-0"
+                          style={{ color: project.color || undefined }}
+                        />
+                      )}
+                      <span className="truncate flex-1">{truncateText(project.name, 18)}</span>
+                      {project.status === 'In Progress' && project.progressPercent !== undefined && (
+                        <span className="text-[10px] text-gray-400 shrink-0">{project.progressPercent}%</span>
+                      )}
+                    </Button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-3 w-3" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        side="right"
+                        align="start"
+                        className="w-40 p-1"
+                        onInteractOutside={(e) => showcaseMode && e.preventDefault()}
+                      >
+                        <div className="space-y-1">
+                          <button
+                            className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+                            onClick={() => handleViewProject(project)}
+                          >
+                            <Edit className="h-4 w-4" />
+                            <span>Edit</span>
+                          </button>
+                          <button className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left">
+                            <Archive className="h-4 w-4" />
+                            <span>Archive</span>
+                          </button>
+                          <button
+                            className="w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left text-red-600 dark:text-red-400"
+                            onClick={() => {
+                              projectsHook.deleteProject(project.id);
+                              toast.success('Project deleted');
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                ))
+              )}
             </CollapsibleContent>
           </Collapsible>
         </nav>
@@ -564,7 +642,7 @@ export function ConversationSidebar({
               height="100%"
               renderItem={renderVirtualItem}
               getItemKey={getItemKey}
-              className="flex-1"
+              className="flex-1 custom-scrollbar"
               innerClassName="p-2"
               overscan={5}
               onEndReached={hasMore ? onLoadMore : undefined}

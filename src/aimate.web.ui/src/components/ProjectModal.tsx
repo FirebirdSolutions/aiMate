@@ -38,6 +38,12 @@ export interface Project {
   name: string;
   description: string;
   createdAt: Date;
+  // Extended properties from ProjectDto
+  icon?: string;
+  color?: string;
+  status?: 'Planning' | 'In Progress' | 'On Hold' | 'Completed' | 'Cancelled';
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical';
+  progressPercent?: number;
 }
 
 interface ProjectFile {

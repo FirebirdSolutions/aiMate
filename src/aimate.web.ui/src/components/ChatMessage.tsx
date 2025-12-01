@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useUIEventLogger } from "./DebugContext";
 import { useUserSettings } from "../context/UserSettingsContext";
+import { useAppData } from "../context/AppDataContext";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { Bot, User, Edit2, Check, X, RotateCw, Sparkles, Copy, Volume2, Info, ThumbsUp, ThumbsDown, Play, Share2, Send, Brain } from "lucide-react";
+import { Bot, User, Edit2, Check, X, RotateCw, Sparkles, Copy, Volume2, Info, ThumbsUp, ThumbsDown, Play, Share2, Send, Brain, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -51,6 +52,7 @@ export function ChatMessage({
 }: ChatMessageProps) {
   const { logUIEvent } = useUIEventLogger();
   const { settings } = useUserSettings();
+  const { knowledge } = useAppData();
   const interfaceSettings = settings.interface || {};
   const showTimestamps = interfaceSettings.showTimestamps ?? true;
   const markdownSupport = interfaceSettings.markdownSupport ?? true;
@@ -63,6 +65,7 @@ export function ChatMessage({
   const [ratingOpen, setRatingOpen] = useState(false);
   const [ratingType, setRatingType] = useState<"up" | "down">("up");
   const [shareOpen, setShareOpen] = useState(false);
+  const [savingToKnowledge, setSavingToKnowledge] = useState(false);
 
   // Mock performance metrics
   const performanceMetrics = {
@@ -200,9 +203,32 @@ export function ChatMessage({
     setShareOpen(true);
   };
 
-  const handleSaveToKnowledge = () => {
-    setBrainTooltipOpen(true);
-    setTimeout(() => setBrainTooltipOpen(false), 2000);
+  const handleSaveToKnowledge = async () => {
+    if (savingToKnowledge) return;
+
+    try {
+      setSavingToKnowledge(true);
+      logUIEvent('Save to knowledge clicked', 'ui:chat:message:save-knowledge', { role, contentLength: content.length });
+
+      // Generate a title from the first line or first 50 chars
+      const firstLine = content.split('\n')[0] || content;
+      const title = `${isUser ? 'User' : 'AI'}: ${firstLine.substring(0, 50)}${firstLine.length > 50 ? '...' : ''}`;
+
+      await knowledge.saveTextAsKnowledge(
+        content,
+        title,
+        [isUser ? 'user-message' : 'ai-response', 'chat-saved']
+      );
+
+      setBrainTooltipOpen(true);
+      setTimeout(() => setBrainTooltipOpen(false), 2000);
+      toast.success('Saved to knowledge base');
+    } catch (err) {
+      console.error('Failed to save to knowledge:', err);
+      toast.error('Failed to save to knowledge');
+    } finally {
+      setSavingToKnowledge(false);
+    }
   };
 
   return (
@@ -448,12 +474,17 @@ export function ChatMessage({
                         size="icon"
                         className="h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                         onClick={handleSaveToKnowledge}
+                        disabled={savingToKnowledge}
                         title="Save to Knowledge"
                       >
-                        <Brain className="h-4 w-4" />
+                        {savingToKnowledge ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Brain className="h-4 w-4" />
+                        )}
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Added to knowledge</TooltipContent>
+                    <TooltipContent>Saved to knowledge</TooltipContent>
                   </Tooltip>
                 </div>
               ) : (
@@ -490,12 +521,17 @@ export function ChatMessage({
                         size="icon"
                         className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={handleSaveToKnowledge}
+                        disabled={savingToKnowledge}
                         title="Save to Knowledge"
                       >
-                        <Brain className="h-3 w-3" />
+                        {savingToKnowledge ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Brain className="h-3 w-3" />
+                        )}
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Added to knowledge</TooltipContent>
+                    <TooltipContent>Saved to knowledge</TooltipContent>
                   </Tooltip>
                 </div>
               )}

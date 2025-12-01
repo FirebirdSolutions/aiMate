@@ -6,18 +6,21 @@
  * - Language detection and display
  * - Syntax highlighting ready
  * - Mermaid diagram rendering for ```mermaid blocks
+ * - Save to knowledge functionality
  */
 
 import { useState, useCallback } from 'react';
-import { Copy, Check, FileCode } from 'lucide-react';
+import { Copy, Check, FileCode, Brain, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { MermaidDiagram } from './MermaidDiagram';
 import { toast } from 'sonner';
+import { useAppData } from '../context/AppDataContext';
 
 interface CodeBlockProps {
   language?: string;
   children: string;
   className?: string;
+  onSaveToKnowledge?: (code: string, language: string) => Promise<void>;
 }
 
 // Map common language aliases to display names
@@ -73,6 +76,8 @@ const LANGUAGE_DISPLAY: Record<string, string> = {
 
 export function CodeBlock({ language, children, className = '' }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { knowledge } = useAppData();
 
   const code = typeof children === 'string' ? children.trim() : String(children).trim();
   const lang = language?.toLowerCase() || '';
@@ -105,32 +110,76 @@ export function CodeBlock({ language, children, className = '' }: CodeBlockProps
     }
   }, [code]);
 
+  const handleSaveToKnowledge = useCallback(async () => {
+    if (saving) return;
+
+    try {
+      setSaving(true);
+      // Get file extension from language
+      const ext = lang || 'txt';
+      const title = `Code Snippet - ${displayLanguage} - ${new Date().toLocaleString()}`;
+
+      // Wrap code with language marker for markdown
+      const content = `\`\`\`${lang}\n${code}\n\`\`\``;
+
+      await knowledge.saveTextAsKnowledge(content, title, ['code-snippet', lang || 'code']);
+      toast.success('Code saved to knowledge!');
+    } catch (err) {
+      console.error('Failed to save code to knowledge:', err);
+      toast.error('Failed to save code');
+    } finally {
+      setSaving(false);
+    }
+  }, [code, lang, displayLanguage, knowledge, saving]);
+
   return (
     <div className={`relative group rounded-lg overflow-hidden bg-gray-900 ${className}`}>
-      {/* Header bar with language and copy button */}
+      {/* Header bar with language and action buttons */}
       <div className="flex items-center justify-between px-3 py-2 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-2 text-xs text-gray-400">
           <FileCode className="h-3.5 w-3.5" />
           <span>{displayLanguage}</span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs text-gray-400 hover:text-white hover:bg-gray-700 gap-1.5"
-          onClick={handleCopy}
-        >
-          {copied ? (
-            <>
-              <Check className="h-3.5 w-3.5 text-green-400" />
-              <span className="text-green-400">Copied!</span>
-            </>
-          ) : (
-            <>
-              <Copy className="h-3.5 w-3.5" />
-              <span>Copy</span>
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-gray-400 hover:text-white hover:bg-gray-700 gap-1.5"
+            onClick={handleSaveToKnowledge}
+            disabled={saving}
+            title="Save to Knowledge"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <Brain className="h-3.5 w-3.5" />
+                <span>Save</span>
+              </>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-gray-400 hover:text-white hover:bg-gray-700 gap-1.5"
+            onClick={handleCopy}
+          >
+            {copied ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-green-400" />
+                <span className="text-green-400">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                <span>Copy</span>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Code content */}
