@@ -7,9 +7,108 @@
 import { apiClient } from '../client';
 import { ToolDto, ToolExecutionRequest, ToolExecutionResponse, ToolParameter } from '../types';
 import { AppConfig } from '../../utils/config';
+import JSZip from 'jszip';
 
 // Mock tools for offline development
 const MOCK_TOOLS: Record<string, ToolDto[]> = {
+  // Core MCP server - built-in file tools
+  'core': [
+    {
+      name: 'create_file',
+      description: 'Create a text file with the specified content. Returns the file for download.',
+      category: 'files',
+      parameters: {
+        filename: {
+          type: 'string',
+          description: 'Name of the file to create (e.g., "report.md", "data.json")',
+          required: true,
+        },
+        content: {
+          type: 'string',
+          description: 'Content of the file',
+          required: true,
+        },
+        mimeType: {
+          type: 'string',
+          description: 'MIME type of the file (auto-detected if not specified)',
+          required: false,
+        },
+      },
+    },
+    {
+      name: 'create_zip',
+      description: 'Create a ZIP archive containing multiple files. Returns the archive for download.',
+      category: 'files',
+      parameters: {
+        filename: {
+          type: 'string',
+          description: 'Name of the ZIP file to create (e.g., "project.zip")',
+          required: true,
+        },
+        files: {
+          type: 'array',
+          description: 'Array of files to include: [{path: "folder/file.txt", content: "..."}]',
+          required: true,
+        },
+      },
+    },
+    {
+      name: 'create_csv',
+      description: 'Create a CSV file from structured data. Returns the file for download.',
+      category: 'files',
+      parameters: {
+        filename: {
+          type: 'string',
+          description: 'Name of the CSV file (e.g., "data.csv")',
+          required: true,
+        },
+        headers: {
+          type: 'array',
+          description: 'Column headers',
+          required: true,
+        },
+        rows: {
+          type: 'array',
+          description: 'Array of row arrays containing cell values',
+          required: true,
+        },
+        delimiter: {
+          type: 'string',
+          description: 'Field delimiter (default: ",")',
+          required: false,
+          default: ',',
+        },
+      },
+    },
+    {
+      name: 'execute_code',
+      description: 'Execute code in a sandboxed environment. Supports multiple languages including JavaScript, TypeScript, Python, C#, Go, and more.',
+      category: 'code',
+      parameters: {
+        language: {
+          type: 'string',
+          description: 'Programming language: javascript, typescript, python, csharp, go, rust, java, ruby, php, bash',
+          required: true,
+        },
+        code: {
+          type: 'string',
+          description: 'Source code to execute',
+          required: true,
+        },
+        timeout: {
+          type: 'integer',
+          description: 'Execution timeout in seconds (default: 30, max: 60)',
+          required: false,
+          default: 30,
+        },
+        stdin: {
+          type: 'string',
+          description: 'Standard input to provide to the program',
+          required: false,
+        },
+      },
+    },
+  ],
   'mcp-1': [
     {
       name: 'weather_lookup',
@@ -358,8 +457,8 @@ class ToolsService {
       // Simulate execution delay
       await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
 
-      // Return mock result based on tool name
-      return this.getMockExecutionResult(toolName, parameters, startTime);
+      // Return mock result based on tool name (async for zip creation)
+      return await this.getMockExecutionResult(toolName, parameters, startTime);
     }
 
     const request: ToolExecutionRequest = {
@@ -373,11 +472,11 @@ class ToolsService {
     );
   }
 
-  private getMockExecutionResult(
+  private async getMockExecutionResult(
     toolName: string,
     parameters: Record<string, any>,
     startTime: number
-  ): ToolExecutionResponse {
+  ): Promise<ToolExecutionResponse> {
     const executionTime = Date.now() - startTime;
 
     switch (toolName) {
@@ -413,17 +512,8 @@ class ToolsService {
         };
 
       case 'code_execute':
-        return {
-          success: true,
-          toolName,
-          result: {
-            language: parameters.language,
-            output: `Executed ${parameters.language} code successfully.\nOutput: Hello, World!`,
-            exitCode: 0,
-          },
-          executionTime,
-          timestamp: new Date().toISOString(),
-        };
+      case 'execute_code':
+        return this.getMockCodeExecutionResult(parameters, executionTime);
 
       case 'file_read':
         return {
@@ -439,6 +529,46 @@ class ToolsService {
           timestamp: new Date().toISOString(),
         };
 
+      case 'create_file':
+        return {
+          success: true,
+          toolName,
+          result: {
+            // File artifact structure - matches FileArtifactData interface
+            filename: parameters.filename,
+            content: parameters.content,
+            mimeType: parameters.mimeType || this.inferMimeType(parameters.filename),
+            encoding: 'utf-8',
+            size: new Blob([parameters.content]).size,
+          },
+          executionTime,
+          timestamp: new Date().toISOString(),
+        };
+
+      case 'create_zip':
+        // Actually create the zip client-side for the mock
+        return await this.createZipResult(parameters.filename, parameters.files, executionTime);
+
+      case 'create_csv':
+        const csvContent = this.generateCsv(
+          parameters.headers,
+          parameters.rows,
+          parameters.delimiter || ','
+        );
+        return {
+          success: true,
+          toolName,
+          result: {
+            filename: parameters.filename,
+            content: csvContent,
+            mimeType: 'text/csv',
+            encoding: 'utf-8',
+            size: new Blob([csvContent]).size,
+          },
+          executionTime,
+          timestamp: new Date().toISOString(),
+        };
+
       default:
         return {
           success: true,
@@ -448,6 +578,236 @@ class ToolsService {
           timestamp: new Date().toISOString(),
         };
     }
+  }
+
+  /**
+   * Infer MIME type from filename extension
+   */
+  private inferMimeType(filename: string): string {
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    const mimeMap: Record<string, string> = {
+      'txt': 'text/plain',
+      'md': 'text/markdown',
+      'json': 'application/json',
+      'js': 'application/javascript',
+      'ts': 'application/typescript',
+      'jsx': 'application/javascript',
+      'tsx': 'application/typescript',
+      'py': 'text/x-python',
+      'html': 'text/html',
+      'css': 'text/css',
+      'csv': 'text/csv',
+      'xml': 'application/xml',
+      'yaml': 'application/yaml',
+      'yml': 'application/yaml',
+      'zip': 'application/zip',
+    };
+    return mimeMap[ext] || 'application/octet-stream';
+  }
+
+  /**
+   * Generate CSV content from headers and rows
+   */
+  private generateCsv(headers: string[], rows: any[][], delimiter: string): string {
+    const escapeField = (field: any): string => {
+      const str = String(field ?? '');
+      // Escape fields containing delimiter, quotes, or newlines
+      if (str.includes(delimiter) || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const headerLine = headers.map(escapeField).join(delimiter);
+    const dataLines = rows.map(row => row.map(escapeField).join(delimiter));
+
+    return [headerLine, ...dataLines].join('\n');
+  }
+
+  /**
+   * Create a ZIP file result (client-side for mock, server-side for real)
+   */
+  private async createZipResult(
+    filename: string,
+    files: Array<{ path: string; content: string }>,
+    executionTime: number
+  ): Promise<ToolExecutionResponse> {
+    try {
+      const zip = new JSZip();
+
+      for (const file of files) {
+        zip.file(file.path, file.content);
+      }
+
+      // Generate base64 encoded zip
+      const zipContent = await zip.generateAsync({ type: 'base64' });
+
+      return {
+        success: true,
+        toolName: 'create_zip',
+        result: {
+          filename,
+          content: zipContent,
+          mimeType: 'application/zip',
+          encoding: 'base64',
+          size: Math.ceil(zipContent.length * 0.75), // Approximate decoded size
+          fileCount: files.length,
+        },
+        executionTime,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (err) {
+      return {
+        success: false,
+        toolName: 'create_zip',
+        error: err instanceof Error ? err.message : 'Failed to create ZIP',
+        executionTime,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
+   * Mock code execution result for development
+   * In production, this would call a backend sandbox service
+   */
+  private getMockCodeExecutionResult(
+    parameters: Record<string, any>,
+    executionTime: number
+  ): ToolExecutionResponse {
+    const language = (parameters.language || 'javascript').toLowerCase();
+    const code = parameters.code || '';
+
+    // Simulate language-specific output patterns
+    const languageOutputs: Record<string, { stdout: string; stderr?: string }> = {
+      javascript: {
+        stdout: this.simulateJsOutput(code),
+      },
+      js: {
+        stdout: this.simulateJsOutput(code),
+      },
+      typescript: {
+        stdout: this.simulateJsOutput(code),
+      },
+      ts: {
+        stdout: this.simulateJsOutput(code),
+      },
+      python: {
+        stdout: this.simulatePythonOutput(code),
+      },
+      py: {
+        stdout: this.simulatePythonOutput(code),
+      },
+      csharp: {
+        stdout: this.simulateCSharpOutput(code),
+      },
+      cs: {
+        stdout: this.simulateCSharpOutput(code),
+      },
+      go: {
+        stdout: code.includes('fmt.Println') ? 'Hello, World!\n' : 'Program executed successfully\n',
+      },
+      rust: {
+        stdout: code.includes('println!') ? 'Hello, World!\n' : 'Finished execution\n',
+      },
+      java: {
+        stdout: code.includes('System.out.println') ? 'Hello, World!\n' : 'Executed successfully\n',
+      },
+      ruby: {
+        stdout: code.includes('puts') ? 'Hello, World!\n' : 'nil\n',
+      },
+      php: {
+        stdout: code.includes('echo') ? 'Hello, World!\n' : '',
+      },
+      bash: {
+        stdout: this.simulateBashOutput(code),
+      },
+      sh: {
+        stdout: this.simulateBashOutput(code),
+      },
+    };
+
+    const output = languageOutputs[language] || { stdout: `Executed ${language} code successfully\n` };
+
+    return {
+      success: true,
+      toolName: 'execute_code',
+      result: {
+        language,
+        stdout: output.stdout,
+        stderr: output.stderr || '',
+        exitCode: 0,
+        executionTime: Math.round(50 + Math.random() * 200), // Simulated execution time in ms
+      },
+      executionTime,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  private simulateJsOutput(code: string): string {
+    const lines: string[] = [];
+    // Look for console.log patterns
+    const logMatches = code.matchAll(/console\.log\s*\(\s*(['"`])(.*?)\1\s*\)/g);
+    for (const match of logMatches) {
+      lines.push(match[2]);
+    }
+    // Look for simple string logs
+    const simpleMatches = code.matchAll(/console\.log\s*\(\s*(\d+(?:\s*[+\-*/]\s*\d+)*)\s*\)/g);
+    for (const match of simpleMatches) {
+      try {
+        lines.push(String(eval(match[1])));
+      } catch {
+        lines.push(match[1]);
+      }
+    }
+    return lines.length > 0 ? lines.join('\n') + '\n' : 'undefined\n';
+  }
+
+  private simulatePythonOutput(code: string): string {
+    const lines: string[] = [];
+    // Look for print patterns
+    const printMatches = code.matchAll(/print\s*\(\s*(['"])(.*?)\1\s*\)/g);
+    for (const match of printMatches) {
+      lines.push(match[2]);
+    }
+    // Look for f-string prints (simplified)
+    const fstringMatches = code.matchAll(/print\s*\(\s*f['"](.+?)['"]\s*\)/g);
+    for (const match of fstringMatches) {
+      lines.push(match[1].replace(/\{[^}]+\}/g, '<value>'));
+    }
+    return lines.length > 0 ? lines.join('\n') + '\n' : '';
+  }
+
+  private simulateCSharpOutput(code: string): string {
+    const lines: string[] = [];
+    // Look for Console.WriteLine patterns
+    const writeLineMatches = code.matchAll(/Console\.WriteLine\s*\(\s*(['"])(.*?)\1\s*\)/g);
+    for (const match of writeLineMatches) {
+      lines.push(match[2]);
+    }
+    // Look for Console.Write patterns
+    const writeMatches = code.matchAll(/Console\.Write\s*\(\s*(['"])(.*?)\1\s*\)/g);
+    for (const match of writeMatches) {
+      lines.push(match[2]);
+    }
+    return lines.length > 0 ? lines.join('\n') + '\n' : '';
+  }
+
+  private simulateBashOutput(code: string): string {
+    const lines: string[] = [];
+    // Look for echo patterns
+    const echoMatches = code.matchAll(/echo\s+(['"])(.*?)\1/g);
+    for (const match of echoMatches) {
+      lines.push(match[2]);
+    }
+    // Unquoted echo
+    const simpleEchoMatches = code.matchAll(/echo\s+([^\n;|&]+)/g);
+    for (const match of simpleEchoMatches) {
+      if (!match[1].startsWith('"') && !match[1].startsWith("'")) {
+        lines.push(match[1].trim());
+      }
+    }
+    return lines.length > 0 ? lines.join('\n') + '\n' : '';
   }
 
   // ============================================================================

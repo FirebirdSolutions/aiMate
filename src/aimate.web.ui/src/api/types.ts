@@ -745,7 +745,8 @@ export interface ToolExecutionRequest {
 export interface ToolExecutionResponse {
   success: boolean;
   toolName: string;
-  result: any;
+  result?: any;
+  error?: string;
   executionTime: number;
   timestamp: string;
 }
