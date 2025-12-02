@@ -28,6 +28,7 @@ import { ErrorBoundary, ModalErrorFallback } from "./ErrorBoundary";
 import { ConnectionHealthIndicator } from "./ConnectionHealthIndicator";
 import { ContextMeter, type TokenBreakdown, type CompressionInfo } from "./ContextMeter";
 import { useDebug, useUIEventLogger } from "./DebugContext";
+import { useAdminSettings } from "../context/AdminSettingsContext";
 import { useKeyboardShortcuts, createDefaultShortcuts, formatShortcut, type KeyboardShortcut } from "../hooks/useKeyboardShortcuts";
 
 interface ModelOption {
@@ -69,7 +70,9 @@ export function ChatHeader({
 }: ChatHeaderProps) {
   const { showcaseMode } = useDebug();
   const { logUIEvent } = useUIEventLogger();
+  const { settings: adminSettings } = useAdminSettings();
   const { enabledModels, recentModels, selectedModel: activeModel, selectModel } = useCustomModels();
+  const showCustomModels = adminSettings.interface?.showCustomModels ?? true;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -194,7 +197,8 @@ export function ChatHeader({
               </SelectContent>
             </Select>
 
-            {/* Custom Model Selector */}
+            {/* Custom Model Selector - only show if enabled in admin settings */}
+            {showCustomModels && (
             <DropdownMenu open={agentMenuOpen} onOpenChange={setAgentMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -265,6 +269,7 @@ export function ChatHeader({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            )}
           </div>
           
           <div className="flex items-center gap-2">

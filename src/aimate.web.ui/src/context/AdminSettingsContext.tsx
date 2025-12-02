@@ -23,6 +23,7 @@ interface InterfaceSettings {
   toolsFunctionCallingPrompt: string;
   banners: Array<{ id: string; type: string; text: string; enabled: boolean }>;
   promptSuggestions: Array<{ id: string; title: string; subtitle: string; prompt: string }>;
+  showCustomModels: boolean; // Show custom models in model selector
 }
 
 // Connection type
@@ -44,6 +45,7 @@ interface Model {
   color: string;
   description: string;
   connection: string;
+  isEnabled?: boolean; // Whether model is active/visible (defaults to true)
 }
 
 // Plugin type
@@ -217,6 +219,7 @@ const defaultSettings: AdminSettings = {
       subtitle: 'Subtitle (e.g. about the Roman Empire)',
       prompt: 'Prompt (e.g. Tell me a fun fact about the Roman Empire)'
     }],
+    showCustomModels: true, // Show custom models in model selector by default
   },
   connections: [
     {

@@ -386,9 +386,11 @@ export function KnowledgeModal({ open, onOpenChange }: KnowledgeModalProps) {
   };
 
   const handleViewCollectionItems = (collectionName: string) => {
-    setFilterCollection(collectionName);
+    // TODO: Once documents have collectionId, filter properly
+    // For now, show all items since collection assignment isn't implemented yet
+    setFilterCollection("all");
     setActiveTab("knowledge");
-    toast.success(`Showing items in "${collectionName}"`);
+    toast.info(`Collection filtering coming soon. Showing all knowledge items.`);
   };
 
   const handleOpenCollectionSettings = (collection: Collection) => {

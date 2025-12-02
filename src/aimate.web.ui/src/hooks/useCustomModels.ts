@@ -24,6 +24,7 @@ interface UseCustomModelsOptions {
 
 const SELECTED_MODEL_KEY = 'aiMate_activeCustomModelId';
 const RECENT_MODELS_KEY = 'aiMate_recentCustomModelIds';
+const MODELS_CHANGED_EVENT = 'aiMate_customModelsChanged';
 
 interface UseCustomModelsReturn {
   // State
@@ -91,13 +92,6 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
     }
   });
 
-  // Load models on mount
-  useEffect(() => {
-    if (autoLoad) {
-      loadModels();
-    }
-  }, [autoLoad]);
-
   const loadModels = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -110,6 +104,23 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
       setIsLoading(false);
     }
   }, []);
+
+  // Load models on mount and listen for changes from other instances
+  useEffect(() => {
+    if (autoLoad) {
+      loadModels();
+    }
+
+    // Listen for model changes from other hook instances
+    const handleModelsChanged = () => {
+      loadModels();
+    };
+    window.addEventListener(MODELS_CHANGED_EVENT, handleModelsChanged);
+
+    return () => {
+      window.removeEventListener(MODELS_CHANGED_EVENT, handleModelsChanged);
+    };
+  }, [autoLoad, loadModels]);
 
   // Persist selection to localStorage
   useEffect(() => {
@@ -155,6 +166,8 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
       const newModel = await customModelsService.createCustomModel(data);
       setCustomModels(prev => [...prev, newModel]);
       toast.success('Custom model created');
+      // Notify other instances
+      window.dispatchEvent(new Event(MODELS_CHANGED_EVENT));
       return newModel;
     } catch (error) {
       console.error('Failed to create custom model:', error);
@@ -171,6 +184,8 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
       const updated = await customModelsService.updateCustomModel(id, data);
       setCustomModels(prev => prev.map(m => m.id === id ? updated : m));
       toast.success('Custom model updated');
+      // Notify other instances
+      window.dispatchEvent(new Event(MODELS_CHANGED_EVENT));
     } catch (error) {
       console.error('Failed to update custom model:', error);
       toast.error('Failed to update custom model');
@@ -188,6 +203,8 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
         setSelectedModelId(null);
       }
       toast.success('Custom model deleted');
+      // Notify other instances
+      window.dispatchEvent(new Event(MODELS_CHANGED_EVENT));
     } catch (error) {
       console.error('Failed to delete custom model:', error);
       toast.error('Failed to delete custom model');
@@ -200,6 +217,8 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
       const cloned = await customModelsService.cloneCustomModel(id);
       setCustomModels(prev => [...prev, cloned]);
       toast.success('Custom model cloned');
+      // Notify other instances
+      window.dispatchEvent(new Event(MODELS_CHANGED_EVENT));
       return cloned;
     } catch (error) {
       console.error('Failed to clone custom model:', error);
@@ -214,6 +233,8 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
     try {
       const updated = await customModelsService.toggleCustomModel(id);
       setCustomModels(prev => prev.map(m => m.id === id ? updated : m));
+      // Notify other instances
+      window.dispatchEvent(new Event(MODELS_CHANGED_EVENT));
     } catch (error) {
       console.error('Failed to toggle custom model:', error);
       toast.error('Failed to toggle custom model');

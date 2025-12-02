@@ -87,8 +87,8 @@ export function BaseModal({
         className={`
           ${sizeClasses[size]}
           w-[100vw] h-[100vh] max-w-none rounded-none
-          sm:w-[95vw] sm:h-auto sm:max-h-[90vh] sm:rounded-lg
-          md:w-[85vw] md:max-h-[90vh] md:h-auto
+          sm:w-[95vw] sm:h-[85vh] sm:max-h-[90vh] sm:rounded-lg
+          md:w-[85vw] md:h-[85vh] md:max-h-[90vh]
           lg:w-[80vw]
           p-0 gap-0 flex flex-col overflow-hidden
         `}
