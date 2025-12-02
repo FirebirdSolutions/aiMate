@@ -824,6 +824,8 @@ To switch from E2B to Docker (self-hosted):
 - [x] ~~**Chart Artifact** - Render data visualizations (recharts integration)~~ ✅ Done
 - [x] ~~**Image Artifact** - Display generated images~~ ✅ Done
 - [x] ~~**Mermaid Artifact** - Render diagrams~~ ✅ Done
+- [x] ~~**Canvas Artifact** - Interactive p5.js / Canvas API visualizations~~ ✅ Done
+- [x] ~~**API Artifact** - REST API tester (mini Postman)~~ ✅ Done
 - [ ] **HTML Artifact** - Safe HTML preview with sandbox
 - [ ] **Pyodide Integration** - Python in browser via WebAssembly
 - [ ] **Monaco Editor** - Full code editing in artifacts
