@@ -13,6 +13,10 @@
  * - Diff: Code diff viewer (split/unified)
  * - Regex: Interactive regex tester
  * - SQL: In-browser SQLite playground
+ * - Image: Zoomable image viewer
+ * - Chart: Data visualizations (bar, line, pie, area)
+ * - Canvas: Interactive Canvas/p5.js visualizations
+ * - API: REST API tester (mini Postman)
  */
 
 export { ArtifactRenderer, parseArtifacts } from './ArtifactRenderer';
@@ -24,4 +28,8 @@ export { MathArtifact } from './MathArtifact';
 export { DiffArtifact } from './DiffArtifact';
 export { RegexArtifact } from './RegexArtifact';
 export { SqlArtifact } from './SqlArtifact';
+export { ImageArtifact } from './ImageArtifact';
+export { ChartArtifact } from './ChartArtifact';
+export { CanvasArtifact } from './CanvasArtifact';
+export { ApiArtifact } from './ApiArtifact';
 export * from './types';

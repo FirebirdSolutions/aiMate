@@ -107,6 +107,27 @@ export interface SqlArtifactData extends BaseArtifactData {
   description?: string;
 }
 
+// Canvas artifact - interactive Canvas/p5.js visualizations
+export interface CanvasArtifactData extends BaseArtifactData {
+  type: 'canvas';
+  code: string;
+  mode?: 'canvas' | 'p5'; // 'canvas' for raw Canvas API, 'p5' for p5.js
+  width?: number;
+  height?: number;
+  autoRun?: boolean;
+  description?: string;
+}
+
+// API artifact - REST API tester
+export interface ApiArtifactData extends BaseArtifactData {
+  type: 'api';
+  url: string;
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  headers?: Record<string, string>;
+  body?: string;
+  description?: string;
+}
+
 // Union type for all artifacts
 export type ArtifactData =
   | FileArtifactData
@@ -119,7 +140,9 @@ export type ArtifactData =
   | MathArtifactData
   | DiffArtifactData
   | RegexArtifactData
-  | SqlArtifactData;
+  | SqlArtifactData
+  | CanvasArtifactData
+  | ApiArtifactData;
 
 // Props for artifact components
 export interface ArtifactProps<T extends ArtifactData = ArtifactData> {

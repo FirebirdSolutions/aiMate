@@ -46,17 +46,25 @@ import { MathArtifact } from "./MathArtifact";
 import { DiffArtifact } from "./DiffArtifact";
 import { RegexArtifact } from "./RegexArtifact";
 import { SqlArtifact } from "./SqlArtifact";
+import { ImageArtifact } from "./ImageArtifact";
+import { ChartArtifact } from "./ChartArtifact";
+import { CanvasArtifact } from "./CanvasArtifact";
+import { ApiArtifact } from "./ApiArtifact";
 import { FileArtifact, FileArtifactData } from "../FileArtifact";
 import type {
   ArtifactData,
   JsonArtifactData,
   TableArtifactData,
   CodeArtifactData,
+  ChartArtifactData,
+  ImageArtifactData,
   MermaidArtifactData,
   MathArtifactData,
   DiffArtifactData,
   RegexArtifactData,
   SqlArtifactData,
+  CanvasArtifactData,
+  ApiArtifactData,
   ParsedArtifact,
 } from "./types";
 
@@ -225,6 +233,70 @@ export function parseArtifacts(content: string): ParseResult {
             };
             break;
 
+          case 'image':
+            artifact = {
+              type: 'image',
+              data: {
+                type: 'image',
+                src: parsed.src || parsed.url || '',
+                alt: parsed.alt,
+                width: parsed.width,
+                height: parsed.height,
+                title: parsed.title,
+              } as ImageArtifactData,
+              raw: fullMatch,
+            };
+            break;
+
+          case 'chart':
+            artifact = {
+              type: 'chart',
+              data: {
+                type: 'chart',
+                chartType: parsed.chartType || 'bar',
+                data: parsed.data || [],
+                xKey: parsed.xKey || 'name',
+                yKey: parsed.yKey || 'value',
+                colors: parsed.colors,
+                title: parsed.title,
+              } as ChartArtifactData,
+              raw: fullMatch,
+            };
+            break;
+
+          case 'canvas':
+            artifact = {
+              type: 'canvas',
+              data: {
+                type: 'canvas',
+                code: parsed.code || '',
+                mode: parsed.mode,
+                width: parsed.width || 400,
+                height: parsed.height || 400,
+                autoRun: parsed.autoRun ?? true,
+                description: parsed.description,
+                title: parsed.title,
+              } as CanvasArtifactData,
+              raw: fullMatch,
+            };
+            break;
+
+          case 'api':
+            artifact = {
+              type: 'api',
+              data: {
+                type: 'api',
+                url: parsed.url || '',
+                method: parsed.method || 'GET',
+                headers: parsed.headers,
+                body: parsed.body,
+                description: parsed.description,
+                title: parsed.title,
+              } as ApiArtifactData,
+              raw: fullMatch,
+            };
+            break;
+
           default:
             // Unknown artifact type - treat as JSON
             artifact = {
@@ -384,6 +456,46 @@ export function ArtifactRenderer({ artifacts, onSaveToKnowledge }: ArtifactRende
               />
             );
 
+          case 'image':
+            return (
+              <ImageArtifact
+                key={`image-${idx}`}
+                data={artifact.data as ImageArtifactData}
+                onSaveToKnowledge={handleSaveToKnowledge}
+                collapsed={false}
+              />
+            );
+
+          case 'chart':
+            return (
+              <ChartArtifact
+                key={`chart-${idx}`}
+                data={artifact.data as ChartArtifactData}
+                onSaveToKnowledge={handleSaveToKnowledge}
+                collapsed={true}
+              />
+            );
+
+          case 'canvas':
+            return (
+              <CanvasArtifact
+                key={`canvas-${idx}`}
+                data={artifact.data as CanvasArtifactData}
+                onSaveToKnowledge={handleSaveToKnowledge}
+                collapsed={true}
+              />
+            );
+
+          case 'api':
+            return (
+              <ApiArtifact
+                key={`api-${idx}`}
+                data={artifact.data as ApiArtifactData}
+                onSaveToKnowledge={handleSaveToKnowledge}
+                collapsed={true}
+              />
+            );
+
           default:
             // Default to JSON viewer for unknown types
             return (
@@ -413,6 +525,10 @@ export { MathArtifact } from "./MathArtifact";
 export { DiffArtifact } from "./DiffArtifact";
 export { RegexArtifact } from "./RegexArtifact";
 export { SqlArtifact } from "./SqlArtifact";
+export { ImageArtifact } from "./ImageArtifact";
+export { ChartArtifact } from "./ChartArtifact";
+export { CanvasArtifact } from "./CanvasArtifact";
+export { ApiArtifact } from "./ApiArtifact";
 export * from "./types";
 
 export default ArtifactRenderer;
