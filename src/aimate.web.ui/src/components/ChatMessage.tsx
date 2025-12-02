@@ -28,6 +28,7 @@ import { StructuredPanel } from "./StructuredPanel";
 import { ToolCallCard } from "./ToolCallCard";
 import { ToolCall } from "../hooks/useTools";
 import { TextSelectionToolbar } from "./TextSelectionToolbar";
+import { FileArtifact, parseFileArtifacts } from "./FileArtifact";
 
 interface ChatMessageProps {
   role: "user" | "assistant" | "system";
@@ -100,6 +101,11 @@ export function ChatMessage({
     totalTokens: 68,
     timeSeconds: 5.54,
   };
+
+  // Parse file artifacts from content (assistant messages only)
+  const { files: fileArtifacts, cleanedContent: contentWithoutFiles } = !isUser
+    ? parseFileArtifacts(content)
+    : { files: [], cleanedContent: content };
 
   const handleSaveEdit = () => {
     if (editedContent.trim() && onEdit) {
@@ -409,13 +415,24 @@ export function ChatMessage({
                         ),
                       }}
                     >
-                      {!isUser && structuredContent ? content.replace(/```structured[\s\S]*?```/g, '').trim() : content}
+                      {!isUser && structuredContent
+                        ? contentWithoutFiles.replace(/```structured[\s\S]*?```/g, '').trim()
+                        : contentWithoutFiles}
                     </ReactMarkdown>
                   </div>
                 ) : (
                   <p className="whitespace-pre-wrap break-words">{content}</p>
                 )}
               </div>
+
+              {/* File Artifacts */}
+              {fileArtifacts.length > 0 && (
+                <div className="w-full mt-2 space-y-2">
+                  {fileArtifacts.map((file, index) => (
+                    <FileArtifact key={`${file.filename}-${index}`} file={file} />
+                  ))}
+                </div>
+              )}
 
               {/* Text Selection Toolbar - only for assistant messages */}
               {!isUser && (

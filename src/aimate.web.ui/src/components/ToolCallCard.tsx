@@ -31,6 +31,7 @@ import {
 } from "./ui/collapsible";
 import { ToolCall } from "../hooks/useTools";
 import { toast } from "sonner";
+import { FileArtifact, isFileResult, extractFilesFromResult } from "./FileArtifact";
 
 interface ToolCallCardProps {
   toolCall: ToolCall;
@@ -146,25 +147,37 @@ export function ToolCallCard({ toolCall, onRetry, onApprove, onDecline }: ToolCa
 
       {/* Result */}
       {toolCall.status === 'completed' && toolCall.result && (
-        <Collapsible open={showResult} onOpenChange={setShowResult}>
-          <div className="flex items-center justify-between mt-2">
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 px-2">
-                {showResult ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                Result
-              </Button>
-            </CollapsibleTrigger>
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 px-2" onClick={handleCopyResult}>
-              <Copy className="h-3 w-3" />
-              Copy
-            </Button>
-          </div>
-          <CollapsibleContent>
-            <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-x-auto max-h-48">
-              {JSON.stringify(toolCall.result.result, null, 2)}
-            </pre>
-          </CollapsibleContent>
-        </Collapsible>
+        <>
+          {/* File Result - render as downloadable artifact */}
+          {isFileResult(toolCall.result.result) ? (
+            <div className="mt-3 space-y-2">
+              {extractFilesFromResult(toolCall.result.result).map((file, index) => (
+                <FileArtifact key={`${file.filename}-${index}`} file={file} showPreview={false} />
+              ))}
+            </div>
+          ) : (
+            /* Standard JSON Result */
+            <Collapsible open={showResult} onOpenChange={setShowResult}>
+              <div className="flex items-center justify-between mt-2">
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 px-2">
+                    {showResult ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                    Result
+                  </Button>
+                </CollapsibleTrigger>
+                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 px-2" onClick={handleCopyResult}>
+                  <Copy className="h-3 w-3" />
+                  Copy
+                </Button>
+              </div>
+              <CollapsibleContent>
+                <pre className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs overflow-x-auto max-h-48">
+                  {JSON.stringify(toolCall.result.result, null, 2)}
+                </pre>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </>
       )}
 
       {/* Error */}
