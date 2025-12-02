@@ -32,6 +32,11 @@ Artifacts are rich content blocks that the AI can generate within chat messages.
 | **JSON** | Collapsible tree viewer | Copy, Download, Fullscreen, Save to Knowledge |
 | **Table** | Sortable, searchable data table | Sort, Search, Export CSV, Fullscreen |
 | **Code** | Syntax-highlighted executable code | Run, Copy, Download, Save to Knowledge |
+| **Mermaid** | Diagrams (flowcharts, sequence, ER, etc.) | Re-render, Copy, Download SVG/PNG, Fullscreen |
+| **Math** | LaTeX mathematical expressions | Re-render, Copy LaTeX, Fullscreen |
+| **Diff** | Code diff viewer (split/unified) | Toggle view, Copy, Fullscreen |
+| **Regex** | Interactive regex pattern tester | Edit pattern, Toggle flags, Live matching |
+| **SQL** | In-browser SQLite playground | Run query, Import/Export DB, Reset |
 
 ## File Structure
 
@@ -44,7 +49,12 @@ src/components/
     ├── ArtifactRenderer.tsx   # Parser and router
     ├── JsonArtifact.tsx       # JSON tree viewer
     ├── TableArtifact.tsx      # Data table
-    └── CodeArtifact.tsx       # Code with execution
+    ├── CodeArtifact.tsx       # Code with execution
+    ├── MermaidArtifact.tsx    # Mermaid diagrams
+    ├── MathArtifact.tsx       # LaTeX math rendering
+    ├── DiffArtifact.tsx       # Code diff viewer
+    ├── RegexArtifact.tsx      # Regex tester
+    └── SqlArtifact.tsx        # SQLite playground
 ```
 
 ---
@@ -106,6 +116,123 @@ This is the file content...
 }
 ```
 ```
+
+### Mermaid Artifact (Diagrams)
+
+```markdown
+```artifact:mermaid
+{
+  "title": "User Flow",
+  "code": "graph TD\n    A[Start] --> B{Login?}\n    B -->|Yes| C[Dashboard]\n    B -->|No| D[Register]\n    D --> B"
+}
+```
+```
+
+Supported diagram types:
+- Flowcharts (`graph TD`, `graph LR`)
+- Sequence diagrams (`sequenceDiagram`)
+- Class diagrams (`classDiagram`)
+- ER diagrams (`erDiagram`)
+- Gantt charts (`gantt`)
+- Pie charts (`pie`)
+- Git graphs (`gitGraph`)
+- Mind maps (`mindmap`)
+- Timelines (`timeline`)
+- State diagrams (`stateDiagram`)
+
+### Math Artifact (LaTeX)
+
+```markdown
+```artifact:math
+{
+  "title": "Quadratic Formula",
+  "latex": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
+  "displayMode": true,
+  "description": "Solutions to ax² + bx + c = 0"
+}
+```
+```
+
+Features:
+- KaTeX rendering for fast math display
+- Display mode (block) or inline mode
+- Common macros: `\R`, `\N`, `\Z`, `\Q`, `\C` for number sets
+- Dark mode support
+
+### Diff Artifact (Code Comparison)
+
+```markdown
+```artifact:diff
+{
+  "title": "Bug Fix",
+  "oldText": "function add(a, b) {\n  return a - b;\n}",
+  "newText": "function add(a, b) {\n  return a + b;\n}",
+  "language": "javascript",
+  "viewMode": "unified"
+}
+```
+```
+
+Or with pre-formatted diff:
+
+```markdown
+```artifact:diff
+{
+  "title": "Config Changes",
+  "diff": "- old_setting = false\n+ old_setting = true\n  unchanged_line"
+}
+```
+```
+
+Features:
+- Split view (side-by-side)
+- Unified view (combined)
+- Line numbers
+- Addition/deletion highlighting
+
+### Regex Artifact (Pattern Tester)
+
+```markdown
+```artifact:regex
+{
+  "title": "Email Validator",
+  "pattern": "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
+  "flags": "gi",
+  "testString": "Contact us at hello@example.com or support@test.org",
+  "description": "Matches email addresses in text"
+}
+```
+```
+
+Features:
+- Live pattern matching
+- Capture group display
+- Flag toggles (g, i, m, s, u)
+- Match highlighting with colors
+- Editable pattern and test string
+
+### SQL Artifact (SQLite Playground)
+
+```markdown
+```artifact:sql
+{
+  "title": "Customer Database",
+  "schema": "CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, email TEXT, created_at TEXT);",
+  "seedData": "INSERT INTO customers VALUES (1, 'Alice', 'alice@example.com', '2024-01-01');\nINSERT INTO customers VALUES (2, 'Bob', 'bob@example.com', '2024-01-15');",
+  "query": "SELECT * FROM customers WHERE name LIKE 'A%';",
+  "description": "In-browser SQLite database"
+}
+```
+```
+
+Features:
+- Full SQLite running in WebAssembly (sql.js)
+- Schema initialization
+- Seed data support
+- Multiple query execution
+- Table browser sidebar
+- Import/export .sqlite files
+- Ctrl+Enter to run queries
 
 ---
 

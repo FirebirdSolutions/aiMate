@@ -60,6 +60,53 @@ export interface ImageArtifactData extends BaseArtifactData {
   height?: number;
 }
 
+// Mermaid artifact - diagrams (flowcharts, sequence, ER, etc.)
+export interface MermaidArtifactData extends BaseArtifactData {
+  type: 'mermaid';
+  code: string;
+}
+
+// Math artifact - LaTeX mathematical expressions
+export interface MathArtifactData extends BaseArtifactData {
+  type: 'math';
+  latex: string;
+  displayMode?: boolean; // Default: true (block display)
+  description?: string;
+}
+
+// Diff artifact - code diff viewer
+export interface DiffArtifactData extends BaseArtifactData {
+  type: 'diff';
+  // Either provide a pre-formatted diff string...
+  diff?: string;
+  // ...or provide two texts to compare
+  oldText?: string;
+  newText?: string;
+  // Metadata
+  oldFile?: string;
+  newFile?: string;
+  language?: string;
+  viewMode?: 'split' | 'unified';
+}
+
+// Regex artifact - interactive regex tester
+export interface RegexArtifactData extends BaseArtifactData {
+  type: 'regex';
+  pattern: string;
+  flags?: string; // e.g., 'gi' for global+case-insensitive
+  testString?: string;
+  description?: string;
+}
+
+// SQL artifact - in-browser SQLite playground
+export interface SqlArtifactData extends BaseArtifactData {
+  type: 'sql';
+  query: string;
+  schema?: string; // CREATE TABLE statements to initialize
+  seedData?: string; // INSERT statements to seed data
+  description?: string;
+}
+
 // Union type for all artifacts
 export type ArtifactData =
   | FileArtifactData
@@ -67,7 +114,12 @@ export type ArtifactData =
   | TableArtifactData
   | CodeArtifactData
   | ChartArtifactData
-  | ImageArtifactData;
+  | ImageArtifactData
+  | MermaidArtifactData
+  | MathArtifactData
+  | DiffArtifactData
+  | RegexArtifactData
+  | SqlArtifactData;
 
 // Props for artifact components
 export interface ArtifactProps<T extends ArtifactData = ArtifactData> {

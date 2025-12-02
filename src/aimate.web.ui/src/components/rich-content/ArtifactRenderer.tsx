@@ -12,6 +12,26 @@
  * {"headers": ["Name", "Age"], "rows": [["John", 30]]}
  * ```
  *
+ * ```artifact:mermaid
+ * {"code": "graph TD\n    A-->B"}
+ * ```
+ *
+ * ```artifact:math
+ * {"latex": "E = mc^2"}
+ * ```
+ *
+ * ```artifact:diff
+ * {"oldText": "hello", "newText": "hello world"}
+ * ```
+ *
+ * ```artifact:regex
+ * {"pattern": "\\d+", "testString": "abc123def"}
+ * ```
+ *
+ * ```artifact:sql
+ * {"query": "SELECT * FROM users", "schema": "CREATE TABLE users (id INT, name TEXT)"}
+ * ```
+ *
  * ```file:filename.ext
  * file content here
  * ```
@@ -21,8 +41,24 @@ import { useCallback } from "react";
 import { JsonArtifact } from "./JsonArtifact";
 import { TableArtifact } from "./TableArtifact";
 import { CodeArtifact } from "./CodeArtifact";
+import { MermaidArtifact } from "./MermaidArtifact";
+import { MathArtifact } from "./MathArtifact";
+import { DiffArtifact } from "./DiffArtifact";
+import { RegexArtifact } from "./RegexArtifact";
+import { SqlArtifact } from "./SqlArtifact";
 import { FileArtifact, FileArtifactData } from "../FileArtifact";
-import type { ArtifactData, JsonArtifactData, TableArtifactData, CodeArtifactData, ParsedArtifact } from "./types";
+import type {
+  ArtifactData,
+  JsonArtifactData,
+  TableArtifactData,
+  CodeArtifactData,
+  MermaidArtifactData,
+  MathArtifactData,
+  DiffArtifactData,
+  RegexArtifactData,
+  SqlArtifactData,
+  ParsedArtifact,
+} from "./types";
 
 // Pattern for artifact blocks: ```artifact:type or ```file:filename
 const ARTIFACT_PATTERN = /```(artifact:(\w+)|file:([^\n]+))\n([\s\S]*?)```/g;
@@ -111,6 +147,80 @@ export function parseArtifacts(content: string): ParseResult {
                 filename: parsed.filename,
                 executable: parsed.executable ?? true,
               } as CodeArtifactData,
+              raw: fullMatch,
+            };
+            break;
+
+          case 'mermaid':
+            artifact = {
+              type: 'mermaid',
+              data: {
+                type: 'mermaid',
+                code: parsed.code || '',
+                title: parsed.title,
+              } as MermaidArtifactData,
+              raw: fullMatch,
+            };
+            break;
+
+          case 'math':
+            artifact = {
+              type: 'math',
+              data: {
+                type: 'math',
+                latex: parsed.latex || parsed.code || '',
+                title: parsed.title,
+                displayMode: parsed.displayMode ?? true,
+                description: parsed.description,
+              } as MathArtifactData,
+              raw: fullMatch,
+            };
+            break;
+
+          case 'diff':
+            artifact = {
+              type: 'diff',
+              data: {
+                type: 'diff',
+                diff: parsed.diff,
+                oldText: parsed.oldText,
+                newText: parsed.newText,
+                oldFile: parsed.oldFile,
+                newFile: parsed.newFile,
+                language: parsed.language,
+                viewMode: parsed.viewMode,
+                title: parsed.title,
+              } as DiffArtifactData,
+              raw: fullMatch,
+            };
+            break;
+
+          case 'regex':
+            artifact = {
+              type: 'regex',
+              data: {
+                type: 'regex',
+                pattern: parsed.pattern || '',
+                flags: parsed.flags || 'g',
+                testString: parsed.testString || '',
+                description: parsed.description,
+                title: parsed.title,
+              } as RegexArtifactData,
+              raw: fullMatch,
+            };
+            break;
+
+          case 'sql':
+            artifact = {
+              type: 'sql',
+              data: {
+                type: 'sql',
+                query: parsed.query || 'SELECT 1;',
+                schema: parsed.schema,
+                seedData: parsed.seedData,
+                description: parsed.description,
+                title: parsed.title,
+              } as SqlArtifactData,
               raw: fullMatch,
             };
             break;
@@ -224,6 +334,56 @@ export function ArtifactRenderer({ artifacts, onSaveToKnowledge }: ArtifactRende
               />
             );
 
+          case 'mermaid':
+            return (
+              <MermaidArtifact
+                key={`mermaid-${idx}`}
+                data={artifact.data as MermaidArtifactData}
+                onSaveToKnowledge={handleSaveToKnowledge}
+                collapsed={true}
+              />
+            );
+
+          case 'math':
+            return (
+              <MathArtifact
+                key={`math-${idx}`}
+                data={artifact.data as MathArtifactData}
+                onSaveToKnowledge={handleSaveToKnowledge}
+                collapsed={true}
+              />
+            );
+
+          case 'diff':
+            return (
+              <DiffArtifact
+                key={`diff-${idx}`}
+                data={artifact.data as DiffArtifactData}
+                onSaveToKnowledge={handleSaveToKnowledge}
+                collapsed={true}
+              />
+            );
+
+          case 'regex':
+            return (
+              <RegexArtifact
+                key={`regex-${idx}`}
+                data={artifact.data as RegexArtifactData}
+                onSaveToKnowledge={handleSaveToKnowledge}
+                collapsed={true}
+              />
+            );
+
+          case 'sql':
+            return (
+              <SqlArtifact
+                key={`sql-${idx}`}
+                data={artifact.data as SqlArtifactData}
+                onSaveToKnowledge={handleSaveToKnowledge}
+                collapsed={true}
+              />
+            );
+
           default:
             // Default to JSON viewer for unknown types
             return (
@@ -248,6 +408,11 @@ export function ArtifactRenderer({ artifacts, onSaveToKnowledge }: ArtifactRende
 export { JsonArtifact } from "./JsonArtifact";
 export { TableArtifact } from "./TableArtifact";
 export { CodeArtifact } from "./CodeArtifact";
+export { MermaidArtifact } from "./MermaidArtifact";
+export { MathArtifact } from "./MathArtifact";
+export { DiffArtifact } from "./DiffArtifact";
+export { RegexArtifact } from "./RegexArtifact";
+export { SqlArtifact } from "./SqlArtifact";
 export * from "./types";
 
 export default ArtifactRenderer;
