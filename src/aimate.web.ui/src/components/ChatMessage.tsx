@@ -28,7 +28,7 @@ import { StructuredPanel } from "./StructuredPanel";
 import { ToolCallCard } from "./ToolCallCard";
 import { ToolCall } from "../hooks/useTools";
 import { TextSelectionToolbar } from "./TextSelectionToolbar";
-import { FileArtifact, parseFileArtifacts } from "./FileArtifact";
+import { ArtifactRenderer, parseArtifacts, type ArtifactData } from "./rich-content";
 
 interface ChatMessageProps {
   role: "user" | "assistant" | "system";
@@ -102,10 +102,21 @@ export function ChatMessage({
     timeSeconds: 5.54,
   };
 
-  // Parse file artifacts from content (assistant messages only)
-  const { files: fileArtifacts, cleanedContent: contentWithoutFiles } = !isUser
-    ? parseFileArtifacts(content)
-    : { files: [], cleanedContent: content };
+  // Parse artifacts from content (assistant messages only)
+  const { artifacts, cleanedContent: contentWithoutArtifacts } = !isUser
+    ? parseArtifacts(content)
+    : { artifacts: [], cleanedContent: content };
+
+  // Handle saving artifact to knowledge
+  const handleSaveArtifactToKnowledge = (artifact: ArtifactData) => {
+    // This will be wired up to the knowledge hook
+    const title = artifact.type === 'file'
+      ? (artifact as any).filename
+      : (artifact as any).title || `${artifact.type} artifact`;
+
+    toast.info(`Saving "${title}" to Knowledge...`);
+    // TODO: Wire up to knowledge.saveTextAsKnowledge
+  };
 
   const handleSaveEdit = () => {
     if (editedContent.trim() && onEdit) {
@@ -416,8 +427,8 @@ export function ChatMessage({
                       }}
                     >
                       {!isUser && structuredContent
-                        ? contentWithoutFiles.replace(/```structured[\s\S]*?```/g, '').trim()
-                        : contentWithoutFiles}
+                        ? contentWithoutArtifacts.replace(/```structured[\s\S]*?```/g, '').trim()
+                        : contentWithoutArtifacts}
                     </ReactMarkdown>
                   </div>
                 ) : (
@@ -425,12 +436,13 @@ export function ChatMessage({
                 )}
               </div>
 
-              {/* File Artifacts */}
-              {fileArtifacts.length > 0 && (
-                <div className="w-full mt-2 space-y-2">
-                  {fileArtifacts.map((file, index) => (
-                    <FileArtifact key={`${file.filename}-${index}`} file={file} />
-                  ))}
+              {/* Artifacts (files, JSON, tables, etc.) */}
+              {artifacts.length > 0 && (
+                <div className="w-full mt-2">
+                  <ArtifactRenderer
+                    artifacts={artifacts}
+                    onSaveToKnowledge={handleSaveArtifactToKnowledge}
+                  />
                 </div>
               )}
 

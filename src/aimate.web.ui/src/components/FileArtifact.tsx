@@ -23,6 +23,7 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
+  Brain,
 } from "lucide-react";
 import {
   Collapsible,
@@ -32,6 +33,7 @@ import {
 import { toast } from "sonner";
 
 export interface FileArtifactData {
+  type?: 'file';
   filename: string;
   content: string;
   mimeType?: string;
@@ -45,6 +47,7 @@ export interface FileArtifactData {
 interface FileArtifactProps {
   file: FileArtifactData;
   showPreview?: boolean;
+  onSaveToKnowledge?: (file: FileArtifactData) => void;
 }
 
 // Get icon based on file extension/mime type
@@ -145,9 +148,14 @@ function inferMimeType(filename: string): string {
   return mimeMap[ext] || 'application/octet-stream';
 }
 
-export function FileArtifact({ file, showPreview = true }: FileArtifactProps) {
+export function FileArtifact({ file, showPreview = true, onSaveToKnowledge }: FileArtifactProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const handleSaveToKnowledge = () => {
+    onSaveToKnowledge?.(file);
+    toast.success("Saved to Knowledge");
+  };
 
   const FileIcon = getFileIcon(file.filename, file.mimeType);
   const isTextFile = !file.encoding || file.encoding === 'utf-8';
@@ -249,6 +257,18 @@ export function FileArtifact({ file, showPreview = true }: FileArtifactProps) {
             ) : (
               <Copy className="h-3.5 w-3.5" />
             )}
+          </Button>
+        )}
+
+        {onSaveToKnowledge && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={handleSaveToKnowledge}
+            title="Save to Knowledge"
+          >
+            <Brain className="h-3.5 w-3.5" />
           </Button>
         )}
 
