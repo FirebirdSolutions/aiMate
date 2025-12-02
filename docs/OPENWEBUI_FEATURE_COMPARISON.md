@@ -39,7 +39,7 @@ This document catalogs OpenWebUI features for reference, organized by category a
 | Feature | Complexity | Status | Notes |
 |---------|------------|--------|-------|
 | Responsive design | LOW | **DONE** | Mobile-first design |
-| PWA support | LOW | **DONE** | Just implemented |
+| PWA support | LOW | PLANNED | Install via browser |
 | Dark/Light/OLED themes | LOW | **DONE** | Theme switching exists |
 | Custom background images | LOW | PLANNED | Settings > Interface |
 | Splash/loading screen | LOW | PLANNED | Simple loading state |
