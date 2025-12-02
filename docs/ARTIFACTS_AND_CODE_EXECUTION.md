@@ -417,6 +417,117 @@ To add a new artifact type:
 
 ---
 
+## Backend Code Execution Provider
+
+The backend uses an abstracted provider pattern for code execution, allowing you to switch between cloud and self-hosted solutions.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    ICodeExecutionProvider                        │
+│                         (Interface)                              │
+└─────────────────────┬───────────────────────┬───────────────────┘
+                      │                       │
+         ┌────────────┴────────────┐   ┌─────┴─────────────┐
+         │  E2BCodeExecutionProvider│   │DockerCodeExecution│
+         │       (Cloud)           │   │   Provider        │
+         │                         │   │   (Self-hosted)   │
+         │  ✓ Multi-language       │   │                   │
+         │  ✓ Managed security     │   │  ✓ Full sovereignty│
+         │  ✓ Easy setup           │   │  ✓ No external deps│
+         │  ✓ Scalable             │   │  ✓ Custom images   │
+         └─────────────────────────┘   └───────────────────┘
+```
+
+### Configuration (appsettings.json)
+
+```json
+{
+  "CodeExecution": {
+    "PreferredProvider": "E2B",
+    "ProviderOrder": ["E2B", "Docker"],
+    "FallbackOnError": true,
+    "DefaultTimeoutSeconds": 30,
+
+    "E2B": {
+      "ApiKey": "e2b_xxx_your_api_key"
+    },
+
+    "Docker": {
+      "Enabled": false,
+      "MaxMemoryMb": 256,
+      "MaxCpuPercent": 50,
+      "AllowNetwork": false
+    }
+  }
+}
+```
+
+### Provider Interface
+
+```csharp
+public interface ICodeExecutionProvider
+{
+    string ProviderName { get; }
+    IReadOnlyList<string> SupportedLanguages { get; }
+
+    bool SupportsLanguage(string language);
+    Task<CodeExecutionResult> ExecuteAsync(CodeExecutionRequest request, CancellationToken ct);
+    Task<bool> IsAvailableAsync(CancellationToken ct);
+    Task<ProviderHealthInfo> GetHealthAsync(CancellationToken ct);
+}
+```
+
+### Switching Providers
+
+To switch from E2B to Docker (self-hosted):
+
+1. Update `appsettings.json`:
+   ```json
+   {
+     "CodeExecution": {
+       "PreferredProvider": "Docker",
+       "Docker": {
+         "Enabled": true
+       }
+     }
+   }
+   ```
+
+2. Ensure Docker is installed and running
+
+3. Pre-pull required images:
+   ```bash
+   docker pull python:3.11-slim
+   docker pull node:20-slim
+   docker pull mcr.microsoft.com/dotnet/sdk:8.0
+   docker pull golang:1.21-alpine
+   ```
+
+### Adding a Custom Provider
+
+1. Implement `ICodeExecutionProvider`:
+   ```csharp
+   public class MyCustomProvider : ICodeExecutionProvider
+   {
+       public string ProviderName => "Custom";
+       // ... implement interface
+   }
+   ```
+
+2. Register in DI:
+   ```csharp
+   services.AddSingleton<ICodeExecutionProvider, MyCustomProvider>();
+   ```
+
+3. Add to provider order:
+   ```json
+   { "ProviderOrder": ["Custom", "E2B", "Docker"] }
+   ```
+
+---
+
 ## Future Enhancements
 
 - [ ] **Chart Artifact** - Render data visualizations (recharts integration)

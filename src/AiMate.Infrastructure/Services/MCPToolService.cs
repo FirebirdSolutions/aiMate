@@ -18,6 +18,7 @@ public class MCPToolService : IMCPToolService
     private readonly IFileUploadService? _fileUploadService;
     private readonly IKnowledgeGraphService? _knowledgeService;
     private readonly IDatasetGeneratorService? _datasetGenerator;
+    private readonly ICodeExecutionProvider? _codeExecutionProvider;
     private readonly Dictionary<string, MCPTool> _registeredTools = [];
     private readonly Dictionary<string, Func<Dictionary<string, object>, Task<MCPToolResult>>> _toolExecutors = [];
 
@@ -26,13 +27,15 @@ public class MCPToolService : IMCPToolService
         IHttpClientFactory httpClientFactory,
         IFileUploadService? fileUploadService = null,
         IKnowledgeGraphService? knowledgeService = null,
-        IDatasetGeneratorService? datasetGenerator = null)
+        IDatasetGeneratorService? datasetGenerator = null,
+        ICodeExecutionProvider? codeExecutionProvider = null)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
         _fileUploadService = fileUploadService;
         _knowledgeService = knowledgeService;
         _datasetGenerator = datasetGenerator;
+        _codeExecutionProvider = codeExecutionProvider;
         RegisterBuiltInTools();
     }
 
@@ -130,32 +133,47 @@ public class MCPToolService : IMCPToolService
         _registeredTools[webSearchTool.Name] = webSearchTool;
         _toolExecutors[webSearchTool.Name] = ExecuteWebSearchAsync;
 
-        // Code Interpreter Tool
-        var codeInterpreterTool = new MCPTool
+        // Execute Code Tool - Multi-language code execution
+        var executeCodeTool = new MCPTool
         {
-            Name = "code_interpreter",
-            Description = "Execute Python code in a sandboxed environment",
+            Name = "execute_code",
+            Description = "Execute code in a sandboxed environment. Supports Python, JavaScript, TypeScript, C#, Go, Rust, Java, Ruby, PHP, and Bash.",
             Parameters = new Dictionary<string, MCPToolParameter>
             {
+                ["language"] = new MCPToolParameter
+                {
+                    Type = "string",
+                    Description = "Programming language: python, javascript, typescript, csharp, go, rust, java, ruby, php, bash",
+                    Required = true
+                },
                 ["code"] = new MCPToolParameter
                 {
                     Type = "string",
-                    Description = "Python code to execute",
+                    Description = "Source code to execute",
                     Required = true
                 },
                 ["timeout"] = new MCPToolParameter
                 {
                     Type = "integer",
-                    Description = "Execution timeout in seconds",
+                    Description = "Execution timeout in seconds (default: 30, max: 60)",
                     Required = false,
                     DefaultValue = 30
+                },
+                ["stdin"] = new MCPToolParameter
+                {
+                    Type = "string",
+                    Description = "Standard input to provide to the program",
+                    Required = false
                 }
             },
             RequiresAuth = true
         };
 
-        _registeredTools[codeInterpreterTool.Name] = codeInterpreterTool;
-        _toolExecutors[codeInterpreterTool.Name] = ExecuteCodeInterpreterAsync;
+        _registeredTools[executeCodeTool.Name] = executeCodeTool;
+        _toolExecutors[executeCodeTool.Name] = ExecuteCodeAsync;
+
+        // Legacy code_interpreter alias (for backwards compatibility)
+        _toolExecutors["code_interpreter"] = ExecuteCodeAsync;
 
         // File Reader Tool
         var fileReaderTool = new MCPTool
@@ -326,36 +344,95 @@ public class MCPToolService : IMCPToolService
         return results;
     }
 
-    private async Task<MCPToolResult> ExecuteCodeInterpreterAsync(Dictionary<string, object> parameters)
+    private async Task<MCPToolResult> ExecuteCodeAsync(Dictionary<string, object> parameters)
     {
-        // MOCK IMPLEMENTATION: Code execution requires sandboxed environment
-        // REAL IMPLEMENTATION OPTIONS:
-        // 1. Docker container with Python image (security: network isolation, resource limits)
-        // 2. Process.Start with restricted permissions (Windows: Job Objects, Linux: cgroups)
-        // 3. E2B.dev API (https://e2b.dev) - Managed code execution sandbox
-        // 4. Pyodide (WebAssembly Python) - Browser-based, limited packages
-        var code = parameters["code"].ToString();
-        var timeout = parameters.TryGetValue("timeout", out object? value)
-            ? Convert.ToInt32(value)
+        var language = parameters.TryGetValue("language", out object? langValue)
+            ? langValue?.ToString() ?? "python"
+            : "python";
+        var code = parameters["code"]?.ToString() ?? string.Empty;
+        var timeout = parameters.TryGetValue("timeout", out object? timeoutValue)
+            ? Convert.ToInt32(timeoutValue)
             : 30;
+        var stdin = parameters.TryGetValue("stdin", out object? stdinValue)
+            ? stdinValue?.ToString()
+            : null;
 
-        await Task.Delay(100); // Simulate execution
-
-        return new MCPToolResult
+        // Check if we have a code execution provider configured
+        if (_codeExecutionProvider == null)
         {
-            Success = true,
-            Result = new
+            _logger.LogWarning("No code execution provider configured");
+            return new MCPToolResult
             {
-                output = "Code execution not yet implemented. Sandbox environment required.",
-                code,
-                execution_time_ms = 100
-            },
-            Metadata = new Dictionary<string, object>
+                Success = false,
+                Error = "Code execution not configured. Please configure E2B or Docker provider in appsettings.json"
+            };
+        }
+
+        // Check if the language is supported
+        if (!_codeExecutionProvider.SupportsLanguage(language))
+        {
+            return new MCPToolResult
             {
-                ["sandbox"] = "docker",
-                ["timeout"] = timeout
-            }
-        };
+                Success = false,
+                Error = $"Language '{language}' is not supported. Supported: {string.Join(", ", _codeExecutionProvider.SupportedLanguages)}"
+            };
+        }
+
+        // Check if the provider is available
+        if (!await _codeExecutionProvider.IsAvailableAsync())
+        {
+            var health = await _codeExecutionProvider.GetHealthAsync();
+            return new MCPToolResult
+            {
+                Success = false,
+                Error = $"Code execution provider ({_codeExecutionProvider.ProviderName}) is not available: {health.Message}"
+            };
+        }
+
+        try
+        {
+            _logger.LogInformation(
+                "Executing {Language} code via {Provider}",
+                language, _codeExecutionProvider.ProviderName);
+
+            var request = new CodeExecutionRequest
+            {
+                Language = language,
+                Code = code,
+                TimeoutSeconds = Math.Min(timeout, 60), // Cap at 60 seconds
+                Stdin = stdin
+            };
+
+            var result = await _codeExecutionProvider.ExecuteAsync(request);
+
+            return new MCPToolResult
+            {
+                Success = result.Success,
+                Error = result.Error,
+                Result = new
+                {
+                    language,
+                    stdout = result.Stdout,
+                    stderr = result.Stderr,
+                    exitCode = result.ExitCode,
+                    executionTime = result.ExecutionTimeMs
+                },
+                Metadata = new Dictionary<string, object>
+                {
+                    ["provider"] = _codeExecutionProvider.ProviderName,
+                    ["timeout"] = timeout
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Code execution failed for {Language}", language);
+            return new MCPToolResult
+            {
+                Success = false,
+                Error = $"Execution failed: {ex.Message}"
+            };
+        }
     }
 
     private async Task<MCPToolResult> ExecuteFileReaderAsync(Dictionary<string, object> parameters)
