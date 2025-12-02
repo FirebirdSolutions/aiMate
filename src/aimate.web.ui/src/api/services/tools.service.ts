@@ -80,6 +80,34 @@ const MOCK_TOOLS: Record<string, ToolDto[]> = {
         },
       },
     },
+    {
+      name: 'execute_code',
+      description: 'Execute code in a sandboxed environment. Supports multiple languages including JavaScript, TypeScript, Python, C#, Go, and more.',
+      category: 'code',
+      parameters: {
+        language: {
+          type: 'string',
+          description: 'Programming language: javascript, typescript, python, csharp, go, rust, java, ruby, php, bash',
+          required: true,
+        },
+        code: {
+          type: 'string',
+          description: 'Source code to execute',
+          required: true,
+        },
+        timeout: {
+          type: 'integer',
+          description: 'Execution timeout in seconds (default: 30, max: 60)',
+          required: false,
+          default: 30,
+        },
+        stdin: {
+          type: 'string',
+          description: 'Standard input to provide to the program',
+          required: false,
+        },
+      },
+    },
   ],
   'mcp-1': [
     {
@@ -484,17 +512,8 @@ class ToolsService {
         };
 
       case 'code_execute':
-        return {
-          success: true,
-          toolName,
-          result: {
-            language: parameters.language,
-            output: `Executed ${parameters.language} code successfully.\nOutput: Hello, World!`,
-            exitCode: 0,
-          },
-          executionTime,
-          timestamp: new Date().toISOString(),
-        };
+      case 'execute_code':
+        return this.getMockCodeExecutionResult(parameters, executionTime);
 
       case 'file_read':
         return {
@@ -646,6 +665,149 @@ class ToolsService {
         timestamp: new Date().toISOString(),
       };
     }
+  }
+
+  /**
+   * Mock code execution result for development
+   * In production, this would call a backend sandbox service
+   */
+  private getMockCodeExecutionResult(
+    parameters: Record<string, any>,
+    executionTime: number
+  ): ToolExecutionResponse {
+    const language = (parameters.language || 'javascript').toLowerCase();
+    const code = parameters.code || '';
+
+    // Simulate language-specific output patterns
+    const languageOutputs: Record<string, { stdout: string; stderr?: string }> = {
+      javascript: {
+        stdout: this.simulateJsOutput(code),
+      },
+      js: {
+        stdout: this.simulateJsOutput(code),
+      },
+      typescript: {
+        stdout: this.simulateJsOutput(code),
+      },
+      ts: {
+        stdout: this.simulateJsOutput(code),
+      },
+      python: {
+        stdout: this.simulatePythonOutput(code),
+      },
+      py: {
+        stdout: this.simulatePythonOutput(code),
+      },
+      csharp: {
+        stdout: this.simulateCSharpOutput(code),
+      },
+      cs: {
+        stdout: this.simulateCSharpOutput(code),
+      },
+      go: {
+        stdout: code.includes('fmt.Println') ? 'Hello, World!\n' : 'Program executed successfully\n',
+      },
+      rust: {
+        stdout: code.includes('println!') ? 'Hello, World!\n' : 'Finished execution\n',
+      },
+      java: {
+        stdout: code.includes('System.out.println') ? 'Hello, World!\n' : 'Executed successfully\n',
+      },
+      ruby: {
+        stdout: code.includes('puts') ? 'Hello, World!\n' : 'nil\n',
+      },
+      php: {
+        stdout: code.includes('echo') ? 'Hello, World!\n' : '',
+      },
+      bash: {
+        stdout: this.simulateBashOutput(code),
+      },
+      sh: {
+        stdout: this.simulateBashOutput(code),
+      },
+    };
+
+    const output = languageOutputs[language] || { stdout: `Executed ${language} code successfully\n` };
+
+    return {
+      success: true,
+      toolName: 'execute_code',
+      result: {
+        language,
+        stdout: output.stdout,
+        stderr: output.stderr || '',
+        exitCode: 0,
+        executionTime: Math.round(50 + Math.random() * 200), // Simulated execution time in ms
+      },
+      executionTime,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  private simulateJsOutput(code: string): string {
+    const lines: string[] = [];
+    // Look for console.log patterns
+    const logMatches = code.matchAll(/console\.log\s*\(\s*(['"`])(.*?)\1\s*\)/g);
+    for (const match of logMatches) {
+      lines.push(match[2]);
+    }
+    // Look for simple string logs
+    const simpleMatches = code.matchAll(/console\.log\s*\(\s*(\d+(?:\s*[+\-*/]\s*\d+)*)\s*\)/g);
+    for (const match of simpleMatches) {
+      try {
+        lines.push(String(eval(match[1])));
+      } catch {
+        lines.push(match[1]);
+      }
+    }
+    return lines.length > 0 ? lines.join('\n') + '\n' : 'undefined\n';
+  }
+
+  private simulatePythonOutput(code: string): string {
+    const lines: string[] = [];
+    // Look for print patterns
+    const printMatches = code.matchAll(/print\s*\(\s*(['"])(.*?)\1\s*\)/g);
+    for (const match of printMatches) {
+      lines.push(match[2]);
+    }
+    // Look for f-string prints (simplified)
+    const fstringMatches = code.matchAll(/print\s*\(\s*f['"](.+?)['"]\s*\)/g);
+    for (const match of fstringMatches) {
+      lines.push(match[1].replace(/\{[^}]+\}/g, '<value>'));
+    }
+    return lines.length > 0 ? lines.join('\n') + '\n' : '';
+  }
+
+  private simulateCSharpOutput(code: string): string {
+    const lines: string[] = [];
+    // Look for Console.WriteLine patterns
+    const writeLineMatches = code.matchAll(/Console\.WriteLine\s*\(\s*(['"])(.*?)\1\s*\)/g);
+    for (const match of writeLineMatches) {
+      lines.push(match[2]);
+    }
+    // Look for Console.Write patterns
+    const writeMatches = code.matchAll(/Console\.Write\s*\(\s*(['"])(.*?)\1\s*\)/g);
+    for (const match of writeMatches) {
+      lines.push(match[2]);
+    }
+    return lines.length > 0 ? lines.join('\n') + '\n' : '';
+  }
+
+  private simulateBashOutput(code: string): string {
+    const lines: string[] = [];
+    // Look for echo patterns
+    const echoMatches = code.matchAll(/echo\s+(['"])(.*?)\1/g);
+    for (const match of echoMatches) {
+      lines.push(match[2]);
+    }
+    // Unquoted echo
+    const simpleEchoMatches = code.matchAll(/echo\s+([^\n;|&]+)/g);
+    for (const match of simpleEchoMatches) {
+      if (!match[1].startsWith('"') && !match[1].startsWith("'")) {
+        lines.push(match[1].trim());
+      }
+    }
+    return lines.length > 0 ? lines.join('\n') + '\n' : '';
   }
 
   // ============================================================================

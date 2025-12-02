@@ -1,8 +1,9 @@
 /**
  * Code Artifact Component
  *
- * Renders executable code with syntax highlighting and browser sandbox execution.
- * Supports JavaScript and TypeScript execution in a sandboxed iframe.
+ * Renders executable code with syntax highlighting and execution support.
+ * - Browser sandbox: JavaScript, TypeScript (runs client-side in iframe)
+ * - MCP backend: Python, C#, Go, Rust, Java, Ruby, PHP, Bash (runs server-side)
  */
 
 import { useState, useRef, useCallback } from "react";
@@ -23,12 +24,20 @@ import {
   Terminal,
   AlertCircle,
   Loader2,
+  Server,
 } from "lucide-react";
 import { toast } from "sonner";
+import { toolsService } from "../../api/services/tools.service";
 import type { CodeArtifactData, ArtifactProps } from "./types";
 
-// Languages that can be executed in browser
-const EXECUTABLE_LANGUAGES = ['javascript', 'js', 'typescript', 'ts'];
+// Languages that can be executed in browser (client-side)
+const BROWSER_EXECUTABLE = ['javascript', 'js', 'typescript', 'ts'];
+
+// Languages that can be executed via MCP backend (server-side)
+const MCP_EXECUTABLE = ['python', 'py', 'csharp', 'cs', 'go', 'rust', 'java', 'ruby', 'php', 'bash', 'sh'];
+
+// All executable languages
+const EXECUTABLE_LANGUAGES = [...BROWSER_EXECUTABLE, ...MCP_EXECUTABLE];
 
 // Language display names and file extensions
 const LANGUAGE_INFO: Record<string, { display: string; ext: string }> = {
@@ -75,6 +84,8 @@ export function CodeArtifact({
 
   const language = data.language?.toLowerCase() || 'javascript';
   const langInfo = LANGUAGE_INFO[language] || { display: language, ext: 'txt' };
+  const isBrowserExecutable = BROWSER_EXECUTABLE.includes(language);
+  const isMcpExecutable = MCP_EXECUTABLE.includes(language);
   const isExecutable = data.executable !== false && EXECUTABLE_LANGUAGES.includes(language);
   const lineCount = data.code.split('\n').length;
 
@@ -128,9 +139,69 @@ export function CodeArtifact({
     toast.info("Execution stopped");
   }, []);
 
-  const runCode = useCallback(async () => {
-    if (!isExecutable || isRunning) return;
+  /**
+   * Execute code via MCP backend (for Python, C#, Go, etc.)
+   */
+  const runCodeViaMcp = useCallback(async () => {
+    setIsRunning(true);
+    setShowOutput(true);
+    setResult(null);
 
+    const startTime = performance.now();
+
+    try {
+      const response = await toolsService.executeTool('core', 'execute_code', {
+        language,
+        code: data.code,
+        timeout: 30,
+      });
+
+      const logs: ExecutionResult['logs'] = [];
+      let error: string | undefined;
+
+      if (response.success && response.result) {
+        // Parse stdout into log lines
+        if (response.result.stdout) {
+          const lines = response.result.stdout.split('\n').filter((l: string) => l);
+          for (const line of lines) {
+            logs.push({ type: 'log', args: [line] });
+          }
+        }
+        // Parse stderr as warnings/errors
+        if (response.result.stderr) {
+          const lines = response.result.stderr.split('\n').filter((l: string) => l);
+          for (const line of lines) {
+            logs.push({ type: 'error', args: [line] });
+          }
+        }
+        // Check exit code
+        if (response.result.exitCode !== 0) {
+          error = `Process exited with code ${response.result.exitCode}`;
+        }
+      } else {
+        error = response.error || 'Execution failed';
+      }
+
+      setResult({
+        logs,
+        error,
+        duration: performance.now() - startTime,
+      });
+    } catch (err) {
+      setResult({
+        logs: [],
+        error: err instanceof Error ? err.message : 'Execution failed',
+        duration: performance.now() - startTime,
+      });
+    } finally {
+      setIsRunning(false);
+    }
+  }, [language, data.code]);
+
+  /**
+   * Execute code in browser sandbox (for JavaScript/TypeScript)
+   */
+  const runCodeInBrowser = useCallback(async () => {
     setIsRunning(true);
     setShowOutput(true);
     setResult(null);
@@ -247,7 +318,20 @@ export function CodeArtifact({
       executionError = `Failed to start execution: ${e}`;
       cleanup();
     }
-  }, [data.code, language, isExecutable, isRunning]);
+  }, [data.code, language]);
+
+  /**
+   * Execute code - routes to browser or MCP based on language
+   */
+  const runCode = useCallback(async () => {
+    if (!isExecutable || isRunning) return;
+
+    if (isBrowserExecutable) {
+      await runCodeInBrowser();
+    } else if (isMcpExecutable) {
+      await runCodeViaMcp();
+    }
+  }, [isExecutable, isRunning, isBrowserExecutable, isMcpExecutable, runCodeInBrowser, runCodeViaMcp]);
 
   return (
     <div className={`rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 my-2 overflow-hidden ${fullscreen ? 'fixed inset-4 z-50 bg-white dark:bg-gray-900 flex flex-col' : 'max-w-2xl'}`}>
@@ -272,7 +356,7 @@ export function CodeArtifact({
               size="sm"
               className={`h-7 px-2 gap-1 ${isRunning ? 'text-red-500' : 'text-green-600 dark:text-green-400'}`}
               onClick={isRunning ? stopExecution : runCode}
-              title={isRunning ? "Stop" : "Run"}
+              title={isRunning ? "Stop" : isMcpExecutable ? "Run on Server" : "Run in Browser"}
             >
               {isRunning ? (
                 <>
@@ -281,7 +365,11 @@ export function CodeArtifact({
                 </>
               ) : (
                 <>
-                  <Play className="h-3 w-3" />
+                  {isMcpExecutable ? (
+                    <Server className="h-3 w-3" />
+                  ) : (
+                    <Play className="h-3 w-3" />
+                  )}
                   <span className="text-xs">Run</span>
                 </>
               )}
