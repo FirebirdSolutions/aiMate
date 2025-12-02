@@ -92,6 +92,19 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
     }
   });
 
+  const loadModels = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const models = await customModelsService.getCustomModels();
+      setCustomModels(models);
+    } catch (error) {
+      console.error('Failed to load custom models:', error);
+      toast.error('Failed to load custom models');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // Load models on mount and listen for changes from other instances
   useEffect(() => {
     if (autoLoad) {
@@ -108,19 +121,6 @@ export function useCustomModels(options: UseCustomModelsOptions = {}): UseCustom
       window.removeEventListener(MODELS_CHANGED_EVENT, handleModelsChanged);
     };
   }, [autoLoad, loadModels]);
-
-  const loadModels = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const models = await customModelsService.getCustomModels();
-      setCustomModels(models);
-    } catch (error) {
-      console.error('Failed to load custom models:', error);
-      toast.error('Failed to load custom models');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
   // Persist selection to localStorage
   useEffect(() => {

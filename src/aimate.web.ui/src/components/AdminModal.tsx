@@ -461,6 +461,21 @@ function InterfaceTab() {
 
   return (
     <div className="space-y-6">
+      {/* Custom Models Visibility */}
+      <div className="flex items-center justify-between">
+        <div>
+          <Label>Show Custom Models in Model Selector</Label>
+          <p className="text-xs text-muted-foreground">When disabled, custom models won't appear in the top bar</p>
+        </div>
+        <Switch
+          checked={iface.showCustomModels ?? true}
+          onCheckedChange={(v) => updateInterface({ showCustomModels: v })}
+          className="data-[state=checked]:bg-purple-600"
+        />
+      </div>
+
+      <Separator />
+
       {/* Task Model */}
       <div>
         <div className="flex items-center gap-2 mb-3">

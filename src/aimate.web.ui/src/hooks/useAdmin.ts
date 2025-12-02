@@ -41,7 +41,7 @@ function toModelDto(model: AdminModel): ModelDto {
     id: model.id,
     name: model.name,
     provider: model.connection || 'Custom',
-    isActive: true,
+    isActive: model.isEnabled ?? true, // Use persisted state, default to enabled
     contextWindow: 4096,
     color: model.color,
     capabilities: ['chat'],
@@ -68,6 +68,7 @@ function toAdminModel(dto: ModelDto): AdminModel {
     color: dto.color || 'text-gray-500',
     description: '',
     connection: dto.provider,
+    isEnabled: dto.isActive ?? true,
   };
 }
 
@@ -169,12 +170,21 @@ export function useAdmin() {
   }, [adminSettings.settings.models]);
 
   const toggleModel = useCallback(async (modelId: string) => {
+    // Find current state
+    const currentModel = models.find(m => m.id === modelId);
+    const newIsActive = !(currentModel?.isActive ?? true);
+
     // Optimistic update
-    setModels(prev => prev.map(m => 
-      m.id === modelId ? { ...m, isActive: !m.isActive } : m
+    setModels(prev => prev.map(m =>
+      m.id === modelId ? { ...m, isActive: newIsActive } : m
     ));
 
     if (AppConfig.isOfflineMode()) {
+      // Persist to AdminSettingsContext
+      const updatedModels = adminSettings.settings.models.map(m =>
+        m.id === modelId ? { ...m, isEnabled: newIsActive } : m
+      );
+      adminSettings.updateModels(updatedModels);
       return;
     }
 
@@ -186,7 +196,7 @@ export function useAdmin() {
       // Revert optimistic update
       await loadModels();
     }
-  }, [loadModels]);
+  }, [loadModels, models, adminSettings]);
 
   const createModel = useCallback(async (data: Partial<ModelDto>) => {
     if (AppConfig.isOfflineMode()) {
