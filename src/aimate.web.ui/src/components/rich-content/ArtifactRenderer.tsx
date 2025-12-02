@@ -20,8 +20,9 @@
 import { useCallback } from "react";
 import { JsonArtifact } from "./JsonArtifact";
 import { TableArtifact } from "./TableArtifact";
+import { CodeArtifact } from "./CodeArtifact";
 import { FileArtifact, FileArtifactData } from "../FileArtifact";
-import type { ArtifactData, JsonArtifactData, TableArtifactData, ParsedArtifact } from "./types";
+import type { ArtifactData, JsonArtifactData, TableArtifactData, CodeArtifactData, ParsedArtifact } from "./types";
 
 // Pattern for artifact blocks: ```artifact:type or ```file:filename
 const ARTIFACT_PATTERN = /```(artifact:(\w+)|file:([^\n]+))\n([\s\S]*?)```/g;
@@ -99,7 +100,21 @@ export function parseArtifacts(content: string): ParseResult {
             };
             break;
 
-          // Add more artifact types here as needed
+          case 'code':
+            artifact = {
+              type: 'code',
+              data: {
+                type: 'code',
+                language: parsed.language || 'javascript',
+                code: parsed.code || '',
+                title: parsed.title,
+                filename: parsed.filename,
+                executable: parsed.executable ?? true,
+              } as CodeArtifactData,
+              raw: fullMatch,
+            };
+            break;
+
           default:
             // Unknown artifact type - treat as JSON
             artifact = {
@@ -199,6 +214,16 @@ export function ArtifactRenderer({ artifacts, onSaveToKnowledge }: ArtifactRende
               />
             );
 
+          case 'code':
+            return (
+              <CodeArtifact
+                key={`code-${idx}`}
+                data={artifact.data as CodeArtifactData}
+                onSaveToKnowledge={handleSaveToKnowledge}
+                collapsed={true}
+              />
+            );
+
           default:
             // Default to JSON viewer for unknown types
             return (
@@ -222,6 +247,7 @@ export function ArtifactRenderer({ artifacts, onSaveToKnowledge }: ArtifactRende
 // Re-export types and components
 export { JsonArtifact } from "./JsonArtifact";
 export { TableArtifact } from "./TableArtifact";
+export { CodeArtifact } from "./CodeArtifact";
 export * from "./types";
 
 export default ArtifactRenderer;
