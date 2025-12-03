@@ -280,7 +280,7 @@ export function ApiArtifact({
           <div className="p-3 flex gap-2 border-b border-gray-200 dark:border-gray-700">
             <select
               value={method}
-              onChange={(e) => setMethod(e.target.value)}
+              onChange={(e) => setMethod(e.target.value as 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE')}
               className={`px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm font-mono font-medium ${METHOD_COLORS[method] || ''}`}
             >
               {['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map(m => (
