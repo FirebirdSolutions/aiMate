@@ -233,6 +233,7 @@ export interface ConversationDto {
 export type Conversation = ConversationDto;
 
 export interface CreateConversationDto {
+  id?: string;
   title?: string;
   workspaceId?: string;
   tags?: string[];
