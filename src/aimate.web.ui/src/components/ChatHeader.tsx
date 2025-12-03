@@ -138,7 +138,7 @@ export function ChatHeader({
     { id: "simulated", name: "Simulated", color: "text-gray-400" },
   ];
 
-  const models = availableModels || defaultModels;
+  const models = availableModels && availableModels.length > 0 ? availableModels : defaultModels;
 
   const handleModelChange = (value: string) => {
     if (onModelChange) {
@@ -186,7 +186,7 @@ export function ChatHeader({
                 </div>
               </SelectTrigger>
               <SelectContent>
-                {models.filter(model => enabledModels[model.id]).map(model => (
+                {models.map(model => (
                   <SelectItem key={model.id} value={model.id}>
                     <div className="flex items-center gap-2">
                       <Sparkles className={`h-4 w-4 ${model.color}`} />

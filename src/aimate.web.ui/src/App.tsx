@@ -42,7 +42,7 @@ const queryClient = new QueryClient({
 function ChatApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>("gpt-4-turbo");
+  const [selectedModel, setSelectedModel] = useState<string>("simulated"); // Default fallback
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
@@ -609,6 +609,16 @@ function ChatApp() {
     acc[model.id] = model.isActive || false;
     return acc;
   }, {} as Record<string, boolean>);
+
+  // Auto-select first available model when models load
+  useEffect(() => {
+    if (availableModels.length > 0) {
+      const currentModelExists = availableModels.some(m => m.id === selectedModel);
+      if (!currentModelExists) {
+        setSelectedModel(availableModels[0].id);
+      }
+    }
+  }, [availableModels, selectedModel]);
 
   const handleToggleModel = async (modelId: string) => {
     if (!admin) return;
