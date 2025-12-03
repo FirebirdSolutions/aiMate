@@ -295,7 +295,7 @@ export function MCPEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] h-[90vh] p-0 gap-0 flex flex-col">
+      <DialogContent className="w-[100vw] h-[100dvh] max-w-none rounded-none sm:w-[95vw] sm:h-[90vh] sm:max-h-[90vh] sm:max-w-2xl sm:rounded-lg p-0 gap-0 flex flex-col overflow-hidden">
         <DialogHeader className="flex-shrink-0 px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex flex-row items-center justify-between">
           <DialogTitle>
             {connector ? "Edit MCP Connection" : "Add MCP Connection"}
