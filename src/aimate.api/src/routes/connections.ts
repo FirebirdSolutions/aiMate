@@ -160,7 +160,10 @@ connectionsRouter.patch('/:id', async (req: Request, res: Response) => {
         id,
         userId: DEFAULT_USER_ID,
       },
-      data,
+      data: {
+        ...data,
+        settings: data.settings as object | undefined,
+      },
     });
 
     if (result.count === 0) {

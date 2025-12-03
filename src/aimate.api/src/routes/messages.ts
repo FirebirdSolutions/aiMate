@@ -92,7 +92,7 @@ messagesRouter.post('/', async (req: Request, res: Response) => {
         role: data.role,
         content: data.content,
         model: data.model,
-        metadata: data.metadata,
+        metadata: data.metadata as object,
       },
     });
 
@@ -148,7 +148,10 @@ messagesRouter.patch('/:id', async (req: Request, res: Response) => {
 
     const message = await prisma.message.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        metadata: data.metadata as object | undefined,
+      },
     });
 
     res.json({
@@ -207,7 +210,7 @@ messagesRouter.delete('/:id', async (req: Request, res: Response) => {
  * POST /messages/:id/regenerate
  * Regenerate an assistant message
  */
-messagesRouter.post('/:id/regenerate', async (req: Request, res: Response) => {
+messagesRouter.post('/:id/regenerate', async (_req: Request, res: Response) => {
   // This would typically:
   // 1. Get the conversation context up to this message
   // 2. Delete this message and any after it
@@ -254,7 +257,7 @@ messagesRouter.post('/:id/feedback', async (req: Request, res: Response) => {
 
     await prisma.message.update({
       where: { id },
-      data: { metadata },
+      data: { metadata: metadata as object },
     });
 
     res.json({ success: true });

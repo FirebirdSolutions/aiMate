@@ -94,8 +94,8 @@ conversationsRouter.post('/', async (req: Request, res: Response) => {
         userId: DEFAULT_USER_ID,
         title: data.title,
         workspaceId: data.workspaceId,
-        tags: data.tags,
-        metadata: data.metadata,
+        tags: data.tags as string[],
+        metadata: data.metadata as object,
       },
     });
 
@@ -185,7 +185,11 @@ conversationsRouter.patch('/:id', async (req: Request, res: Response) => {
         id,
         userId: DEFAULT_USER_ID,
       },
-      data,
+      data: {
+        ...data,
+        tags: data.tags as string[] | undefined,
+        metadata: data.metadata as object | undefined,
+      },
     });
 
     if (conversation.count === 0) {
