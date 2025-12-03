@@ -6,7 +6,9 @@ import { ApiErrorResponse } from './types';
 // CONFIGURATION
 // ============================================================================
 
-const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || 'http://localhost:5000';
+// Use relative URL when VITE_API_BASE_URL is empty (nginx proxy handles routing)
+const envBaseUrl = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_API_BASE_URL : undefined;
+const API_BASE_URL = envBaseUrl || ''; // Empty string = relative URLs
 
 // Retry configuration
 const MAX_RETRIES = 5;
