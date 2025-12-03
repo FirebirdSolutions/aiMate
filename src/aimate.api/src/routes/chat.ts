@@ -223,41 +223,10 @@ chatRouter.post('/completions', async (req: Request, res: Response) => {
 
 /**
  * POST /chat/send
- * Alternative endpoint that matches the frontend's SendMessageDto
+ * Alternative endpoint - use /chat/completions instead
  */
-chatRouter.post('/send', async (req: Request, res: Response) => {
-  // Redirect to completions endpoint with transformed data
-  const { content, conversationId, model, systemPrompt, temperature } = req.body;
-
-  const messages = [];
-  if (systemPrompt) {
-    messages.push({ role: 'system', content: systemPrompt });
-  }
-
-  // Get conversation history
-  if (conversationId) {
-    const history = await prisma.message.findMany({
-      where: { conversationId },
-      orderBy: { createdAt: 'asc' },
-      take: 50, // Limit context window
-    });
-
-    for (const msg of history) {
-      messages.push({ role: msg.role, content: msg.content });
-    }
-  }
-
-  messages.push({ role: 'user', content });
-
-  // Forward to completions endpoint
-  req.body = {
-    model: model || 'default',
-    messages,
-    temperature: temperature || 0.7,
-    stream: true,
-    conversationId,
-  };
-
-  // Call the completions handler directly
-  chatRouter.handle(req, res, () => {});
+chatRouter.post('/send', (_req: Request, res: Response) => {
+  res.status(501).json({
+    error: 'Use POST /api/v1/chat/completions instead',
+  });
 });

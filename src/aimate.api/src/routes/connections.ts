@@ -73,7 +73,7 @@ connectionsRouter.post('/', async (req: Request, res: Response) => {
         baseUrl: data.baseUrl,
         apiKey: data.apiKey, // TODO: Encrypt in production
         isEnabled: data.isEnabled,
-        settings: data.settings,
+        settings: data.settings as object,
       },
     });
 
@@ -160,7 +160,10 @@ connectionsRouter.patch('/:id', async (req: Request, res: Response) => {
         id,
         userId: DEFAULT_USER_ID,
       },
-      data,
+      data: {
+        ...data,
+        settings: data.settings as object | undefined,
+      },
     });
 
     if (result.count === 0) {
