@@ -245,7 +245,7 @@ export function SqlArtifact({
 
     try {
       const data = dbRef.current.export();
-      const blob = new Blob([data.buffer], { type: 'application/x-sqlite3' });
+      const blob = new Blob([data.buffer as ArrayBuffer], { type: 'application/x-sqlite3' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
