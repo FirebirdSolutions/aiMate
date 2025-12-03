@@ -73,7 +73,7 @@ connectionsRouter.post('/', async (req: Request, res: Response) => {
         baseUrl: data.baseUrl,
         apiKey: data.apiKey, // TODO: Encrypt in production
         isEnabled: data.isEnabled,
-        settings: data.settings,
+        settings: data.settings as object,
       },
     });
 
