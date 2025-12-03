@@ -102,12 +102,13 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 // Server Start
 // ============================================================================
 
-app.listen(PORT, () => {
+// Bind to 0.0.0.0 to accept connections from outside Docker container
+app.listen(Number(PORT), '0.0.0.0', () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
 ║   aiMate API Server                                           ║
-║   Running on http://localhost:${PORT}                           ║
+║   Running on http://0.0.0.0:${PORT}                             ║
 ║                                                               ║
 ║   Endpoints:                                                  ║
 ║   • GET  /health              - Health check                  ║

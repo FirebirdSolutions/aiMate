@@ -254,10 +254,7 @@ const defaultSettings: AdminSettings = {
     },
   ],
   models: [
-    // Default models - users can add more via Admin > Connections > Fetch > Add to Models
-    { id: 'gpt-4o', name: 'GPT-4o', color: 'text-green-500', description: 'Latest GPT-4o model', connection: 'OpenAI API', isEnabled: true },
-    { id: 'gpt-4o-mini', name: 'GPT-4o Mini', color: 'text-blue-500', description: 'Fast, affordable GPT-4o', connection: 'OpenAI API', isEnabled: true },
-    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', color: 'text-orange-500', description: 'Anthropic Claude 3.5', connection: 'Anthropic', isEnabled: true },
+    // No default models - users add models via Admin > Connections > Fetch > Add to Models
   ],
   plugins: [
     { id: 'web-search', name: 'Web Search', description: 'Search the web for real-time information', enabled: false, parameters: [{ name: 'api_key', type: 'string', value: '', required: true }, { name: 'max_results', type: 'number', value: '10', required: false }] },
