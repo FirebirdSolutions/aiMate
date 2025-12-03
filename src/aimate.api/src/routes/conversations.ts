@@ -12,6 +12,7 @@ export const conversationsRouter = Router();
 
 // Validation schemas
 const createConversationSchema = z.object({
+  id: z.string().uuid().optional(), // Allow client-provided ID
   title: z.string().optional().default('New Conversation'),
   workspaceId: z.string().uuid().optional(),
   tags: z.array(z.string()).optional().default([]),
@@ -91,6 +92,7 @@ conversationsRouter.post('/', async (req: Request, res: Response) => {
 
     const conversation = await prisma.conversation.create({
       data: {
+        id: data.id, // Use client-provided ID if available
         userId: DEFAULT_USER_ID,
         title: data.title,
         workspaceId: data.workspaceId,
