@@ -424,6 +424,9 @@ const defaultSettings: AdminSettings = {
   },
 };
 
+// IDs of dummy models that should be removed from localStorage
+const DUMMY_MODEL_IDS = ['gpt-4o', 'gpt-4o-mini', 'claude-3-5-sonnet-20241022'];
+
 const STORAGE_KEY = 'aimate-admin-settings';
 
 interface AdminSettingsContextType {
@@ -452,10 +455,15 @@ export function AdminSettingsProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        // Filter out dummy models from cached data
+        const filteredModels = (parsed.models || []).filter(
+          (m: Model) => !DUMMY_MODEL_IDS.includes(m.id)
+        );
         // Merge with defaults to handle any new fields
         return {
           ...defaultSettings,
           ...parsed,
+          models: filteredModels, // Use filtered models, not cached dummy models
           general: { ...defaultSettings.general, ...parsed.general },
           interface: { ...defaultSettings.interface, ...parsed.interface },
           documents: { ...defaultSettings.documents, ...parsed.documents },
