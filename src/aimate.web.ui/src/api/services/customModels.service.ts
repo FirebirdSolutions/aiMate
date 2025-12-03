@@ -5,7 +5,6 @@
  * knowledge, tools, and capabilities.
  */
 
-import { apiClient } from '../client';
 import {
   CustomModelDto,
   CreateCustomModelDto,
@@ -17,7 +16,6 @@ import {
   PromptSuggestionDto,
   ApiSuccessResponse,
 } from '../types';
-import { AppConfig } from '../../utils/config';
 
 // Storage key for localStorage persistence
 const STORAGE_KEY = 'aiMate_customModels';
@@ -475,12 +473,11 @@ class CustomModelsService {
 
   /**
    * Get all custom models
+   * Note: Always uses localStorage - custom models are user-specific preferences
    */
   async getCustomModels(): Promise<CustomModelDto[]> {
-    if (AppConfig.isOfflineMode()) {
-      return loadModels();
-    }
-    return apiClient.get<CustomModelDto[]>('/custom-models');
+    // Always use localStorage for custom models (backend endpoint not implemented yet)
+    return loadModels();
   }
 
   /**
@@ -493,13 +490,11 @@ class CustomModelsService {
 
   /**
    * Get custom model by ID
+   * Note: Always uses localStorage
    */
   async getCustomModel(id: string): Promise<CustomModelDto | null> {
-    if (AppConfig.isOfflineMode()) {
-      const models = loadModels();
-      return models.find(m => m.id === id) || null;
-    }
-    return apiClient.get<CustomModelDto>(`/custom-models/${id}`);
+    const models = loadModels();
+    return models.find(m => m.id === id) || null;
   }
 
   /**
@@ -536,64 +531,58 @@ class CustomModelsService {
       updatedAt: new Date().toISOString(),
     };
 
-    if (AppConfig.isOfflineMode()) {
-      const models = loadModels();
-      models.push(newModel);
-      saveModels(models);
-      return newModel;
-    }
-    return apiClient.post<CustomModelDto>('/custom-models', data);
+    // Always use localStorage for custom models
+    const models = loadModels();
+    models.push(newModel);
+    saveModels(models);
+    return newModel;
   }
 
   /**
    * Update a custom model
+   * Note: Always uses localStorage
    */
   async updateCustomModel(id: string, data: UpdateCustomModelDto): Promise<CustomModelDto> {
-    if (AppConfig.isOfflineMode()) {
-      const models = loadModels();
-      const index = models.findIndex(m => m.id === id);
-      if (index >= 0) {
-        models[index] = {
-          ...models[index],
-          ...data,
-          capabilities: data.capabilities
-            ? { ...models[index].capabilities, ...data.capabilities }
-            : models[index].capabilities,
-          parameters: data.parameters
-            ? { ...models[index].parameters, ...data.parameters }
-            : models[index].parameters,
-          visibility: data.visibility
-            ? { ...models[index].visibility, ...data.visibility }
-            : models[index].visibility,
-          updatedAt: new Date().toISOString(),
-        };
-        saveModels(models);
-        return models[index];
-      }
-      throw new Error('Custom model not found');
+    const models = loadModels();
+    const index = models.findIndex(m => m.id === id);
+    if (index >= 0) {
+      models[index] = {
+        ...models[index],
+        ...data,
+        capabilities: data.capabilities
+          ? { ...models[index].capabilities, ...data.capabilities }
+          : models[index].capabilities,
+        parameters: data.parameters
+          ? { ...models[index].parameters, ...data.parameters }
+          : models[index].parameters,
+        visibility: data.visibility
+          ? { ...models[index].visibility, ...data.visibility }
+          : models[index].visibility,
+        updatedAt: new Date().toISOString(),
+      };
+      saveModels(models);
+      return models[index];
     }
-    return apiClient.put<CustomModelDto>(`/custom-models/${id}`, data);
+    throw new Error('Custom model not found');
   }
 
   /**
    * Delete a custom model (or hide if built-in)
+   * Note: Always uses localStorage
    */
   async deleteCustomModel(id: string): Promise<ApiSuccessResponse> {
-    if (AppConfig.isOfflineMode()) {
-      const models = loadModels();
-      const model = models.find(m => m.id === id);
-      if (model?.isBuiltIn) {
-        // Can't delete built-in, just hide it
-        return this.updateCustomModel(id, { isHidden: true }).then(() => ({
-          success: true,
-          message: 'Model hidden',
-        }));
-      }
-      const filtered = models.filter(m => m.id !== id);
-      saveModels(filtered);
-      return { success: true, message: 'Model deleted' };
+    const models = loadModels();
+    const model = models.find(m => m.id === id);
+    if (model?.isBuiltIn) {
+      // Can't delete built-in, just hide it
+      return this.updateCustomModel(id, { isHidden: true }).then(() => ({
+        success: true,
+        message: 'Model hidden',
+      }));
     }
-    return apiClient.delete<ApiSuccessResponse>(`/custom-models/${id}`);
+    const filtered = models.filter(m => m.id !== id);
+    saveModels(filtered);
+    return { success: true, message: 'Model deleted' };
   }
 
   /**
@@ -639,19 +628,16 @@ class CustomModelsService {
 
   /**
    * Record model usage
+   * Note: Always uses localStorage
    */
   async recordUsage(id: string): Promise<void> {
-    if (AppConfig.isOfflineMode()) {
-      const models = loadModels();
-      const index = models.findIndex(m => m.id === id);
-      if (index >= 0) {
-        models[index].usageCount += 1;
-        models[index].lastUsed = new Date().toISOString();
-        saveModels(models);
-      }
-      return;
+    const models = loadModels();
+    const index = models.findIndex(m => m.id === id);
+    if (index >= 0) {
+      models[index].usageCount += 1;
+      models[index].lastUsed = new Date().toISOString();
+      saveModels(models);
     }
-    await apiClient.post(`/custom-models/${id}/usage`, {});
   }
 
   // ============================================================================
