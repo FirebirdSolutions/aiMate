@@ -1,12 +1,11 @@
 version: '3.8'
 
-# aiMate Docker Compose Configuration
-# TypeScript-based architecture with PostgreSQL backend
+# aiMate Docker Compose
+# Start: docker compose up --build
+# Stop:  docker compose down
 
 services:
-  # ============================================================================
-  # aiMate API (Node.js + Express + Prisma)
-  # ============================================================================
+  # API Server (Node.js + Express + Prisma)
   aimate-api:
     build:
       context: ./aimate.api
@@ -20,19 +19,16 @@ services:
       - PORT=3001
       - DATABASE_URL=postgres://aimate:${DB_PASSWORD:-aimate_dev_secret}@postgres:5432/aimate
       - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
-      - CORS_ORIGIN=http://localhost:5173
+      - CORS_ORIGIN=http://localhost:3000
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - aimate-network
     extra_hosts:
-      - "host.docker.internal:host-gateway"  # For local LM server access
+      - "host.docker.internal:host-gateway"
 
-  # ============================================================================
-  # aiMate Frontend (React + Vite) - Development
-  # In production, this would be served by nginx or the API server
-  # ============================================================================
+  # Frontend (React + nginx)
   aimate-ui:
     build:
       context: ./aimate.web.ui
@@ -41,17 +37,12 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - VITE_API_BASE_URL=http://localhost:3001/api/v1
     depends_on:
       - aimate-api
     networks:
       - aimate-network
 
-  # ============================================================================
-  # PostgreSQL with pgvector extension (for RAG)
-  # ============================================================================
+  # PostgreSQL with pgvector (for RAG)
   postgres:
     image: pgvector/pgvector:pg16
     container_name: aimate-db
@@ -62,7 +53,7 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD:-aimate_dev_secret}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d  # Initial extensions
+      - ./db/init:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
     healthcheck:
@@ -73,9 +64,7 @@ services:
     networks:
       - aimate-network
 
-  # ============================================================================
-  # Redis (for caching & sessions)
-  # ============================================================================
+  # Redis (caching)
   redis:
     image: redis:7-alpine
     container_name: aimate-redis
@@ -91,23 +80,6 @@ services:
       retries: 5
     networks:
       - aimate-network
-
-  # ============================================================================
-  # LiteLLM Proxy (Optional - for multi-provider routing)
-  # Uncomment if you want to use LiteLLM as a unified proxy
-  # ============================================================================
-  # litellm:
-  #   image: ghcr.io/berriai/litellm:latest
-  #   container_name: aimate-litellm
-  #   restart: unless-stopped
-  #   ports:
-  #     - "4000:4000"
-  #   environment:
-  #     - LITELLM_MASTER_KEY=${LITELLM_KEY:-sk-1234}
-  #   volumes:
-  #     - ./litellm_config.yaml:/app/config.yaml
-  #   networks:
-  #     - aimate-network
 
 volumes:
   postgres_data:
