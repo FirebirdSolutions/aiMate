@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36717.8 d17.14
+VisualStudioVersion = 17.14.36717.8
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AiMate.Api", "AiMate.Api\AiMate.Api.csproj", "{F1A2B3C4-D5E6-4A7B-8C9D-0E1F2A3B4C5D}"
 EndProject
@@ -11,6 +11,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AiMate.Shared", "AiMate.Shared\AiMate.Shared.csproj", "{D4E5F6A7-B8C9-4D5E-1F2A-3B4C5D6E7F8A}"
 EndProject
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "aimate.web.ui", "aiMate.Web.UI\aimate.web.ui.esproj", "{E08216F3-FA59-8F72-A56B-5FCAF9E2A5DB}"
+EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "open-webui", "open-webui\open-webui.esproj", "{902AF0E8-B460-32F5-DB97-69F828EC63FD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,8 +42,17 @@ Global
 		{E08216F3-FA59-8F72-A56B-5FCAF9E2A5DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E08216F3-FA59-8F72-A56B-5FCAF9E2A5DB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E08216F3-FA59-8F72-A56B-5FCAF9E2A5DB}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B84295AD-8CFB-494F-A295-C6DFEFED3881}
 	EndGlobalSection
 EndGlobal
