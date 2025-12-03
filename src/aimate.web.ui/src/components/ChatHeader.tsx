@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Button } from "./ui/button";
-import { Menu, MoreVertical, Plus, PanelLeftClose, PanelLeft, ChevronDown, Sparkles, MessageSquare, Keyboard, Bot, Check, Swords, Trophy } from "lucide-react";
+import { Menu, MoreVertical, Plus, PanelLeftClose, PanelLeft, ChevronDown, Sparkles, MessageSquare, Keyboard, Bot, Check, Swords, Trophy, Wifi, WifiOff, Cloud, CloudOff } from "lucide-react";
+import type { ConnectionMode } from "../hooks/useChat";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import {
   DropdownMenu,
@@ -52,7 +53,59 @@ interface ChatHeaderProps {
   contextMaxTokens?: number;
   contextBreakdown?: TokenBreakdown;
   contextCompression?: CompressionInfo;
+  // Connection mode indicator
+  connectionMode?: ConnectionMode;
 }
+
+// Connection mode display helper
+const ConnectionModeIndicator = ({ mode }: { mode?: ConnectionMode }) => {
+  if (!mode) return null;
+
+  const configs: Record<ConnectionMode, { icon: typeof Wifi; label: string; color: string; description: string }> = {
+    direct_lm: {
+      icon: Wifi,
+      label: 'Direct',
+      color: 'text-green-500',
+      description: 'Connected directly to LM server'
+    },
+    offline: {
+      icon: CloudOff,
+      label: 'Offline',
+      color: 'text-yellow-500',
+      description: 'Running in offline mock mode'
+    },
+    backend: {
+      icon: Cloud,
+      label: 'Backend',
+      color: 'text-blue-500',
+      description: 'Connected via backend API'
+    },
+    disconnected: {
+      icon: WifiOff,
+      label: 'Disconnected',
+      color: 'text-red-500',
+      description: 'No connection available'
+    }
+  };
+
+  const config = configs[mode];
+  const Icon = config.icon;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-800 ${config.color}`}>
+          <Icon className="h-3.5 w-3.5" />
+          <span className="text-xs font-medium hidden sm:inline">{config.label}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        <p className="font-medium">{config.label} Mode</p>
+        <p className="text-xs text-gray-400">{config.description}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+};
 
 export function ChatHeader({
   onNewChat,
@@ -67,6 +120,7 @@ export function ChatHeader({
   contextMaxTokens,
   contextBreakdown,
   contextCompression,
+  connectionMode,
 }: ChatHeaderProps) {
   const { showcaseMode } = useDebug();
   const { logUIEvent } = useUIEventLogger();
@@ -303,6 +357,7 @@ export function ChatHeader({
               />
             )}
 
+            <ConnectionModeIndicator mode={connectionMode} />
             <ConnectionHealthIndicator />
             <OfflineModeIndicator />
             

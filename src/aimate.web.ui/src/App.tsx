@@ -8,6 +8,7 @@ import { ChatInput, AttachmentData } from "./components/ChatInput";
 import { DebugPanel } from "./components/DebugPanel";
 import { useMemories } from "./hooks/useMemories";
 import { useTools, ToolCall } from "./hooks/useTools";
+import { useChat } from "./hooks/useChat";
 import { useCustomModels } from "./hooks/useCustomModels";
 import { useContextMeter } from "./components/ContextMeter";
 import { useContextCompression, getCompressionInfo } from "./hooks/useContextCompression";
@@ -23,7 +24,7 @@ import { AppDataProvider, useAppData } from "./context/AppDataContext";
 import { AppConfig } from "./utils/config";
 import { ScrollArea } from "./components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTitle } from "./components/ui/sheet";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Wifi, WifiOff, Cloud, CloudOff } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 import { exportToPdf, exportToJson, exportToMarkdown } from "./utils/exportPdf";
@@ -49,13 +50,17 @@ function ChatApp() {
   const { addLog } = useDebug();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Get all our data from context
-  const { chat, conversations, workspaces, projects, admin } = useAppData();
+  // Get all our data from context (except chat - we use it directly for conversation isolation)
+  const { conversations, workspaces, projects, admin } = useAppData();
   const { settings: userSettings } = useUserSettings();
   const { settings: adminSettings } = useAdminSettings();
   const memories = useMemories();
   const tools = useTools();
   const { selectedModel: activeCustomModel } = useCustomModels();
+
+  // IMPORTANT: Use useChat with activeConversationId for proper conversation isolation
+  // This ensures messages don't mix when switching conversations during streaming
+  const chat = useChat(activeConversationId || undefined);
 
   // Build system prompt for context meter
   const currentSystemPrompt = useMemo(() => {
@@ -426,11 +431,40 @@ function ChatApp() {
       category: 'tools:retry'
     });
 
-    await tools.executeTool(
+    const result = await tools.executeTool(
       toolCall.serverId,
       toolCall.toolName,
       toolCall.parameters
     );
+
+    // Continue to LLM with tool results so it can process and respond
+    if (result && (result.status === 'completed' || result.status === 'failed')) {
+      addLog({
+        action: 'Sending tool result to LLM',
+        api: 'LM server /chat/completions',
+        payload: { toolName: toolCall.toolName, status: result.status },
+        type: 'info',
+        category: 'tools:continuation'
+      });
+
+      await chat.sendToolResult([{
+        toolName: result.toolName,
+        serverId: result.serverId,
+        status: result.status,
+        result: result.result,
+        error: result.error,
+      }], {
+        model: selectedModel,
+        systemPrompt: userSettings.general?.systemPrompt,
+      });
+
+      addLog({
+        action: 'LLM processed tool result',
+        api: 'LM server /chat/completions',
+        type: 'success',
+        category: 'tools:continuation'
+      });
+    }
   };
 
   const handleExplainSelection = (text: string) => {
@@ -713,6 +747,7 @@ function ChatApp() {
           contextMaxTokens={contextMeter.maxTokens}
           contextBreakdown={contextMeter.breakdown}
           contextCompression={compressionInfo}
+          connectionMode={chat.connectionMode}
         />
 
         <div className="flex-1 overflow-hidden">

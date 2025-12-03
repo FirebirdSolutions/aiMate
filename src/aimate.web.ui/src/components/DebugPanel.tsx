@@ -1,7 +1,7 @@
 import { useDebug } from "./DebugContext";
 import { ScrollArea } from "./ui/scroll-area";
 import { Button } from "./ui/button";
-import { Trash2, Bug, ChevronDown, ChevronUp, Camera, Filter, X } from "lucide-react";
+import { Trash2, Bug, ChevronDown, ChevronUp, Camera, Filter, X, Download, Copy, AlertCircle } from "lucide-react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Select,
@@ -10,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { downloadLogs, copyLogsToClipboard, getIssueSummary, getLogs as getSystemLogs, type LogEntry as SystemLogEntry } from "../utils/debugLogger";
+import { toast } from "sonner";
 
 export function DebugPanel() {
   const { debugEnabled, showcaseMode, setShowcaseMode, logs, clearLogs, filterCategory, setFilterCategory, debugSettings } = useDebug();
@@ -173,6 +175,37 @@ export function DebugPanel() {
               </Button>
             </>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              downloadLogs();
+              toast.success('Debug logs downloaded');
+            }}
+            className="h-8 px-2"
+            title="Download logs as JSON file"
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Export
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async (e) => {
+              e.stopPropagation();
+              const success = await copyLogsToClipboard();
+              if (success) {
+                toast.success('Logs copied to clipboard');
+              } else {
+                toast.error('Failed to copy logs');
+              }
+            }}
+            className="h-8 px-2"
+            title="Copy logs to clipboard"
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"

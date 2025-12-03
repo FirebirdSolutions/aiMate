@@ -10,6 +10,7 @@ import { messagesService, MessageDto, SendMessageDto, knowledgeService, notesSer
 import { AppConfig } from '../utils/config';
 import { useAdminSettings } from '../context/AdminSettingsContext';
 import { toast } from 'sonner';
+import { logger, chatLogger, connectionLogger, setLogContext, startTimer } from '../utils/debugLogger';
 
 // Retry configuration for LM server connections
 const RETRY_CONFIG = {
@@ -96,14 +97,63 @@ export interface ChatMessage {
 // Module-level cache to persist messages per conversation in offline mode
 const conversationMessagesCache = new Map<string, ChatMessage[]>();
 
+// Connection mode enum for explicit state
+export type ConnectionMode = 'direct_lm' | 'offline' | 'backend' | 'disconnected';
+
 export function useChat(conversationId?: string) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [connectionMode, setConnectionMode] = useState<ConnectionMode>('disconnected');
 
+  // Track current conversation to detect switches
+  const currentConversationRef = useRef<string | undefined>(conversationId);
   const abortControllerRef = useRef<AbortController | null>(null);
   const adminSettings = useAdminSettings();
+
+  // Abort streaming when conversation changes
+  useEffect(() => {
+    if (currentConversationRef.current !== conversationId) {
+      // Conversation switched - abort any ongoing stream
+      if (abortControllerRef.current && streaming) {
+        console.log('[useChat] Conversation switched, aborting stream');
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+        setStreaming(false);
+      }
+      currentConversationRef.current = conversationId;
+      // Clear messages for new conversation (will be loaded by loadMessages)
+      setMessages([]);
+    }
+  }, [conversationId, streaming]);
+
+  // Update connection mode based on current state
+  useEffect(() => {
+    const connections = adminSettings.settings.connections;
+    const activeConnection = connections.find(c => c.enabled && c.url);
+    const prevMode = connectionMode;
+
+    let newMode: ConnectionMode;
+    if (activeConnection?.url) {
+      newMode = 'direct_lm';
+    } else if (AppConfig.isOfflineMode()) {
+      newMode = 'offline';
+    } else {
+      newMode = 'disconnected';
+    }
+
+    if (newMode !== prevMode) {
+      connectionLogger.stateChange(prevMode, newMode, activeConnection?.url || 'No active connection');
+      setConnectionMode(newMode);
+
+      // Update log context
+      setLogContext({
+        connectionMode: newMode,
+        connectionUrl: activeConnection?.url,
+      });
+    }
+  }, [adminSettings.settings.connections, connectionMode]);
 
   // Get active LM server connection (for offline mode)
   const getActiveLmConnection = useCallback(() => {
@@ -215,9 +265,25 @@ export function useChat(conversationId?: string) {
     }
   ) => {
     const activeConnection = getActiveLmConnection();
+    const sendTimer = startTimer('chat:send', 'sendMessage');
+
+    // Log the send attempt with full context
+    chatLogger.sendStart(content, {
+      conversationId: options?.conversationId,
+      model: options?.model,
+      hasAttachments: !!(options?.knowledgeIds?.length || options?.noteIds?.length || options?.fileIds?.length),
+      connectionMode,
+      activeConnectionUrl: activeConnection?.url,
+      includeHistory: options?.includeHistory,
+    });
 
     // PRIORITY 1: If we have an active LM server connection, use it directly (regardless of offline mode)
     if (activeConnection?.url) {
+      logger.info('chat:send', 'Using direct LM connection', {
+        url: activeConnection.url,
+        connectionName: activeConnection.name,
+        hasApiKey: !!activeConnection.apiKey,
+      });
 
       const userMsg: ChatMessage = {
         id: `msg-${Date.now()}`,
@@ -383,7 +449,10 @@ export function useChat(conversationId?: string) {
           try {
             if (attempt > 0) {
               const delay = getRetryDelay(attempt - 1);
-              console.log(`[useChat] Retry attempt ${attempt}/${RETRY_CONFIG.maxRetries} after ${delay}ms`);
+              logger.warn('chat:send', `Retry attempt ${attempt}/${RETRY_CONFIG.maxRetries}`, {
+                delay,
+                previousError: lastError?.message,
+              });
               toast.info(`Reconnecting to LM server... (attempt ${attempt}/${RETRY_CONFIG.maxRetries})`);
               await wait(delay);
             }
@@ -401,11 +470,24 @@ export function useChat(conversationId?: string) {
               requestBody.max_tokens = options.maxTokens;
             }
 
+            logger.debug('chat:send', 'Making fetch request', {
+              url: chatUrl,
+              model: requestBody.model,
+              messageCount: (requestBody.messages as any[])?.length,
+              stream: requestBody.stream,
+            });
+
             response = await fetch(chatUrl, {
               method: 'POST',
               headers,
               body: JSON.stringify(requestBody),
               signal: AbortSignal.timeout(30000), // 30 second timeout
+            });
+
+            logger.debug('chat:send', 'Fetch response received', {
+              status: response.status,
+              statusText: response.statusText,
+              ok: response.ok,
             });
 
             if (!response.ok) {
@@ -445,6 +527,7 @@ export function useChat(conversationId?: string) {
         let fullContent = '';
         let messageAdded = false;
         let streamInterrupted = false;
+        let buffer = ''; // Buffer for incomplete SSE lines
 
         if (reader) {
           try {
@@ -453,7 +536,11 @@ export function useChat(conversationId?: string) {
               if (done) break;
 
               const chunk = decoder.decode(value, { stream: true });
-              const lines = chunk.split('\n');
+              buffer += chunk;
+
+              // Process complete lines only - keep incomplete line in buffer
+              const lines = buffer.split('\n');
+              buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
               for (const line of lines) {
                 if (line.startsWith('data: ')) {
@@ -512,10 +599,16 @@ export function useChat(conversationId?: string) {
         if (!streamInterrupted) {
           // Send notification if user switched tabs during generation
           sendCompletionNotification(fullContent);
+          chatLogger.streamComplete(fullContent.length, performance.now());
+          sendTimer(); // Log completion with duration
         }
         return { ...assistantMsg, content: fullContent };
       } catch (err) {
-        console.error('[useChat] LM server call failed:', err);
+        chatLogger.error(err, {
+          url: chatUrl,
+          model: options?.model,
+          connectionName: activeConnection.name,
+        });
 
         // Map errors to user-friendly messages
         let userMessage = 'Unable to connect to the AI server.';
@@ -995,15 +1088,183 @@ export function useChat(conversationId?: string) {
     }
   }, [messages, adminSettings.settings.connections]);
 
+  // ============================================================================
+  // SEND TOOL RESULT (For MCP tool continuation)
+  // ============================================================================
+
+  /**
+   * Send tool execution results back to the LLM for continuation.
+   * This allows the LLM to process tool results and continue the conversation.
+   */
+  const sendToolResult = useCallback(async (
+    toolResults: Array<{
+      toolName: string;
+      serverId: string;
+      status: 'completed' | 'failed';
+      result?: any;
+      error?: string;
+    }>,
+    options?: {
+      model?: string;
+      systemPrompt?: string;
+      temperature?: number;
+    }
+  ) => {
+    const activeConnection = adminSettings.settings.connections?.find(c => c.enabled && c.url);
+
+    if (!activeConnection?.url) {
+      toast.error('No active LM connection for tool result processing');
+      return;
+    }
+
+    // Build tool result context for LLM
+    const toolResultsText = toolResults.map((tr, i) => {
+      if (tr.status === 'completed') {
+        return `Tool ${i + 1}: ${tr.toolName} (${tr.serverId})
+Status: Success
+Result: ${JSON.stringify(tr.result, null, 2)}`;
+      } else {
+        return `Tool ${i + 1}: ${tr.toolName} (${tr.serverId})
+Status: Failed
+Error: ${tr.error}`;
+      }
+    }).join('\n\n');
+
+    const toolResultMessage = `The following tool(s) have been executed. Please process the results and continue:
+
+--- TOOL EXECUTION RESULTS ---
+${toolResultsText}
+--- END TOOL RESULTS ---
+
+Based on these results, please continue the conversation appropriately. If a tool failed, suggest alternatives or ask for clarification.`;
+
+    setStreaming(true);
+
+    const assistantMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+      model: options?.model || activeConnection.name || 'LM Server',
+    };
+
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (activeConnection.apiKey) {
+        headers['Authorization'] = `Bearer ${activeConnection.apiKey}`;
+      }
+
+      // Build messages - include history + tool result as user message
+      const chatMessages = [
+        ...(options?.systemPrompt ? [{ role: 'system' as const, content: options.systemPrompt }] : []),
+        ...messages.map(m => ({ role: m.role, content: m.content })),
+        { role: 'user' as const, content: toolResultMessage }
+      ];
+
+      const chatUrl = activeConnection.url.replace(/\/$/, '') + '/chat/completions';
+      const requestBody: Record<string, unknown> = {
+        model: options?.model || 'default',
+        messages: chatMessages,
+        stream: true,
+      };
+      if (options?.temperature !== undefined) {
+        requestBody.temperature = options.temperature;
+      }
+
+      // Create abort controller for this request
+      abortControllerRef.current = new AbortController();
+
+      const response = await fetch(chatUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+      let messageAdded = false;
+      let buffer = ''; // Buffer for incomplete SSE lines
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          buffer += chunk;
+
+          // Process complete lines only
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const delta = parsed.choices?.[0]?.delta?.content || '';
+                if (delta) {
+                  fullContent += delta;
+
+                  if (!messageAdded) {
+                    setMessages(prev => [...prev, { ...assistantMsg, content: fullContent }]);
+                    messageAdded = true;
+                  } else {
+                    setMessages(prev => prev.map(msg =>
+                      msg.id === assistantMsg.id
+                        ? { ...msg, content: fullContent }
+                        : msg
+                    ));
+                  }
+                }
+              } catch {
+                // Skip invalid JSON chunks
+              }
+            }
+          }
+        }
+      }
+
+      console.log('[useChat] Tool result processed, LLM responded');
+      return { ...assistantMsg, content: fullContent };
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') {
+        console.log('[useChat] Tool result request aborted');
+        return;
+      }
+      console.error('[useChat] Failed to process tool results:', err);
+      toast.error('Failed to process tool results');
+      setMessages(prev => [...prev, {
+        ...assistantMsg,
+        content: '⚠️ Failed to process tool results. Please try again.'
+      }]);
+    } finally {
+      setStreaming(false);
+    }
+  }, [messages, adminSettings.settings.connections]);
+
   return useMemo(() => ({
     messages,
     streaming,
     loading,
     error,
+    connectionMode,
 
     // Actions
     loadMessages,
     sendMessage,
+    sendToolResult,
     continueMessage,
     regenerateMessage,
     editMessage,
@@ -1011,5 +1272,5 @@ export function useChat(conversationId?: string) {
     submitFeedback,
     cancelStreaming,
     clearMessages,
-  }), [messages, streaming, loading, error, loadMessages, sendMessage, continueMessage, regenerateMessage, editMessage, deleteMessage, submitFeedback, cancelStreaming, clearMessages]);
+  }), [messages, streaming, loading, error, connectionMode, loadMessages, sendMessage, sendToolResult, continueMessage, regenerateMessage, editMessage, deleteMessage, submitFeedback, cancelStreaming, clearMessages]);
 }

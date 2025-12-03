@@ -1,53 +1,83 @@
 version: '3.8'
 
+# aiMate Docker Compose
+# Start: docker compose up --build
+# Stop:  docker compose down
+
 services:
-  web:
+  # API Server (Node.js + Express + Prisma)
+  aimate-api:
     build:
-      context: .
-      dockerfile: AiMate.Web/Dockerfile
+      context: ./aimate.api
+      dockerfile: Dockerfile
+    container_name: aimate-api
+    restart: unless-stopped
     ports:
-      - "5000:80"
-      - "5001:443"
+      - "3001:3001"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ConnectionStrings__PostgreSQL=Host=postgres;Database=aimate;Username=aimate;Password=change_me_in_production
-      - LiteLLM__BaseUrl=http://litellm:4000
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=postgres://aimate:${DB_PASSWORD:-aimate_dev_secret}@postgres:5432/aimate
+      - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
+      - CORS_ORIGIN=http://localhost:3000
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+    networks:
+      - aimate-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Frontend (React + nginx)
+  aimate-ui:
+    build:
+      context: ./aimate.web.ui
+      dockerfile: Dockerfile
+    container_name: aimate-ui
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - aimate-api
     networks:
       - aimate-network
 
+  # PostgreSQL with pgvector (for RAG)
   postgres:
     image: pgvector/pgvector:pg16
+    container_name: aimate-db
+    restart: unless-stopped
     environment:
       - POSTGRES_DB=aimate
       - POSTGRES_USER=aimate
-      - POSTGRES_PASSWORD=change_me_in_production
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-aimate_dev_secret}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aimate"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - aimate-network
 
+  # Redis (caching)
   redis:
     image: redis:7-alpine
+    container_name: aimate-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    networks:
-      - aimate-network
-
-  litellm:
-    image: ghcr.io/berriai/litellm:latest
-    ports:
-      - "4000:4000"
-    environment:
-      - LITELLM_MASTER_KEY=sk-1234
-    volumes:
-      - ./litellm_config.yaml:/app/config.yaml
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - aimate-network
 
