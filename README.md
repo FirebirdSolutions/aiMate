@@ -19,7 +19,7 @@ aiMate is not just another chat interface. It's a complete **AI workspace platfo
 - **🌏 Culturally Aware** - Te Reo Māori integration, mental health support
 
 **Unlike OpenWebUI or ChatGPT**, aiMate is:
-- Built with proper architecture (Clean Architecture + C#)
+- Built with proper architecture (Clean Architecture (TS/REACT)+ C# Backend)
 - Designed for workspaces and collaboration, not just conversations
 - Actually open source with no bait-and-switch licensing
 - Tuned for New Zealand culture and needs
