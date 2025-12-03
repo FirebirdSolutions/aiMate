@@ -137,6 +137,40 @@ function ChatApp() {
     return () => window.removeEventListener('resize', handleResize);
   }, [sidebarOpen]);
 
+  // Check backend availability on startup
+  useEffect(() => {
+    const checkBackend = async () => {
+      try {
+        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+        const response = await fetch(`${apiUrl}/health`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000) // 5 second timeout
+        });
+        const available = response.ok;
+        AppConfig.setBackendAvailable(available);
+        addLog({
+          action: available ? 'Backend connected' : 'Backend unavailable',
+          category: 'connection:state',
+          payload: { url: apiUrl, status: response.status },
+          type: available ? 'success' : 'warning'
+        });
+        if (available) {
+          console.log('[App] Backend available at', apiUrl);
+        }
+      } catch (err) {
+        AppConfig.setBackendAvailable(false);
+        addLog({
+          action: 'Backend check failed',
+          category: 'connection:state',
+          payload: { error: String(err) },
+          type: 'warning'
+        });
+        console.warn('[App] Backend not reachable, using offline mode');
+      }
+    };
+    checkBackend();
+  }, [addLog]);
+
   // ============================================================================
   // HANDLERS
   // ============================================================================
