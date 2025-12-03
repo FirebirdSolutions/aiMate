@@ -190,9 +190,12 @@ export function useConversations(workspaceId?: string) {
   // ============================================================================
 
   const createConversation = useCallback(async (data: CreateConversationDto) => {
-    // Always create locally first (works with or without backend)
+    // Generate a stable UUID for the conversation
+    const convId = crypto.randomUUID();
+
+    // Create locally first (works with or without backend)
     const newConv: ConversationDto = {
-      id: `conv-${Date.now()}`,
+      id: convId,
       title: data.title || 'New Conversation',
       workspaceId: data.workspaceId || 'default',
       lastMessageAt: new Date().toISOString(),
@@ -205,22 +208,23 @@ export function useConversations(workspaceId?: string) {
       updatedAt: new Date().toISOString(),
     };
     setConversations(prev => [newConv, ...prev]);
+    globalConversationsCache = [newConv, ...globalConversationsCache];
 
-    // If not offline, also try to sync with backend (but don't fail if it errors)
+    // Sync with backend in background (don't block, don't change ID)
     if (!AppConfig.isOfflineMode()) {
-      try {
-        const backendConv = await conversationsService.createConversation(data);
-        // Update with backend ID if successful
-        setConversations(prev => prev.map(c =>
-          c.id === newConv.id ? { ...c, id: backendConv.id } : c
-        ));
-        return backendConv;
-      } catch (err) {
-        console.warn('[useConversations] Failed to sync conversation to backend:', err);
-        // Return local conversation - it still works
-      }
+      conversationsService.createConversation({ ...data, id: convId })
+        .then(backendConv => {
+          // Update any metadata from backend but keep our ID
+          setConversations(prev => prev.map(c =>
+            c.id === convId ? { ...c, ...backendConv, id: convId } : c
+          ));
+        })
+        .catch(err => {
+          console.warn('[useConversations] Failed to sync conversation to backend:', err);
+        });
     }
 
+    // Return immediately with our ID - no waiting for backend
     return newConv;
   }, []);
 
