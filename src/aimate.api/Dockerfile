@@ -6,6 +6,9 @@
 # ============================================================================
 FROM node:20-alpine AS builder
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
 WORKDIR /app
 
 # Install dependencies first (better layer caching)
@@ -27,6 +30,9 @@ RUN npm run build
 # Production Stage
 # ============================================================================
 FROM node:20-alpine AS production
+
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl libc6-compat
 
 WORKDIR /app
 
