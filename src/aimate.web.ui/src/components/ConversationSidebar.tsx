@@ -922,7 +922,8 @@ export function ConversationSidebar({
             <Brain className="h-4 w-4" />
             Knowledge
           </Button>
-          {/* Folders collapsible */}
+          {/* Folders collapsible - hidden in project mode */}
+          {!activeProjectId && (
           <Collapsible open={foldersExpanded} onOpenChange={setFoldersExpanded}>
             <CollapsibleTrigger asChild>
               <Button
@@ -1051,7 +1052,9 @@ export function ConversationSidebar({
               )}
             </CollapsibleContent>
           </Collapsible>
-          {/* Projects collapsible */}
+          )}
+          {/* Projects collapsible - hidden in project mode */}
+          {!activeProjectId && (
           <Collapsible open={projectsExpanded} onOpenChange={setProjectsExpanded}>
             <CollapsibleTrigger asChild>
               <Button
@@ -1159,6 +1162,7 @@ export function ConversationSidebar({
               )}
             </CollapsibleContent>
           </Collapsible>
+          )}
         </nav>
 
         {/* Conversations Section with Virtualized List */}

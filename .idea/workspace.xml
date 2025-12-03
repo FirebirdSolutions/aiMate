@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="80544ebc-08fd-4981-bdda-a5a2f5ffaf20" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/aimate.web.ui/aimate.web.ui.esproj" beforeDir="false" afterPath="$PROJECT_DIR$/src/aimate.web.ui/aimate.web.ui.esproj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/aimate.web.ui/docs/AGENTS_HELP.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/aimate.web.ui/docs/CSHARP_PLUGIN_ARCHITECTURE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/aimate.web.ui/docs/OPENWEBUI_FEATURE_COMPARISON.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/aimate.web.ui/docs/PLUGIN_ARCHITECTURE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/aimate.web.ui/docs/agent_presets_spec.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/aimate.web.ui/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/aimate.web.ui/package-lock.json" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="36GYORLcFmPYg8N2k1zB0Ulo0M0" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "claude/implement-model-evaluation-01UwMD4tHUo4W8VdkVfdznWR",
+    "ignore.virus.scanning.warn.message": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "E:/Source/Repos/aiMate",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-WS-252.28238.10" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="80544ebc-08fd-4981-bdda-a5a2f5ffaf20" name="Changes" comment="" />
+      <created>1764634343209</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1764634343209</updated>
+      <workItem from="1764634345135" duration="76000" />
+      <workItem from="1764634433616" duration="450000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
