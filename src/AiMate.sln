@@ -12,8 +12,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AiMate.Shared", "AiMate.Sha
 EndProject
 Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "aimate.web.ui", "aiMate.Web.UI\aimate.web.ui.esproj", "{E08216F3-FA59-8F72-A56B-5FCAF9E2A5DB}"
 EndProject
-Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "open-webui", "open-webui\open-webui.esproj", "{902AF0E8-B460-32F5-DB97-69F828EC63FD}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,12 +40,6 @@ Global
 		{E08216F3-FA59-8F72-A56B-5FCAF9E2A5DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E08216F3-FA59-8F72-A56B-5FCAF9E2A5DB}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E08216F3-FA59-8F72-A56B-5FCAF9E2A5DB}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
-		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{902AF0E8-B460-32F5-DB97-69F828EC63FD}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
