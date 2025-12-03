@@ -48,6 +48,7 @@ export interface LogContext {
   model?: string;
   connectionUrl?: string;
   connectionMode?: string;
+  [key: string]: string | undefined;
 }
 
 // Generate unique session ID for this browser session
