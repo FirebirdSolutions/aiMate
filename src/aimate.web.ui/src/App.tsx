@@ -141,8 +141,9 @@ function ChatApp() {
   useEffect(() => {
     const checkBackend = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
-        const response = await fetch(`${apiUrl}/health`, {
+        // Use proxied health endpoint (works regardless of how UI is accessed)
+        const healthUrl = '/api-health';
+        const response = await fetch(healthUrl, {
           method: 'GET',
           signal: AbortSignal.timeout(5000) // 5 second timeout
         });
@@ -151,11 +152,11 @@ function ChatApp() {
         addLog({
           action: available ? 'Backend connected' : 'Backend unavailable',
           category: 'connection:state',
-          payload: { url: apiUrl, status: response.status },
+          payload: { url: healthUrl, status: response.status },
           type: available ? 'success' : 'warning'
         });
         if (available) {
-          console.log('[App] Backend available at', apiUrl);
+          console.log('[App] Backend available via nginx proxy');
         }
       } catch (err) {
         AppConfig.setBackendAvailable(false);
