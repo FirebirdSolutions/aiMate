@@ -95,7 +95,7 @@ export function log(
     level,
     category,
     message,
-    data: data ? { ...data, ...currentContext } : currentContext,
+    data: data ? { ...data, ...currentContext } : { ...currentContext },
     sessionId: SESSION_ID,
   };
 
